@@ -1,11 +1,18 @@
 component output=false singleton=true {
 
 // CONSTRUCTOR
+	/**
+	 * @endpoint.inject                  coldbox:setting:elasticsearch.endpoint
+	 * @charset.inject                   coldbox:setting:elasticsearch.charset
+	 * @requestTimeoutInSeconds.inject   coldbox:setting:elasticsearch.requestTimeoutInSeconds
+	 * @nullResponseRetryAttempts.inject coldbox:setting:elasticsearch.nullResponseRetryAttempts
+	 *
+	 */
 	public any function init(
-		  string  endpoint                  = "http://localhost:9200"
-		, string  charset                   = "UTF-8"
-		, numeric requestTimeoutInSeconds   = "30"
-		, numeric nullResponseRetryAttempts = "3"
+		  required string  endpoint
+		, required string  charset
+		, required numeric requestTimeoutInSeconds
+		, required numeric nullResponseRetryAttempts
 	) output=false {
 		_setEndpoint( arguments.endpoint );
 		_setCharset( arguments.charset );
