@@ -396,11 +396,6 @@ component output=false singleton=true {
 		_throwErrorResult( deserialized, result.responseHeader.status_code ?: 500 );
 	}
 
-
-	<cffunction name="_throwErrorResult" access="private" returntype="void" output="false">
-		<cfargument name="result"     type="any"     required="true" />
-		<cfargument name="statusCode" type="numeric" required="true" />
-
 	private void function _throwErrorResult( required any result, required numeric statusCode ) output=false {
 		var errorMessage = "An unexpected error occurred";
 		var errorType    = "UnknownError";
@@ -443,11 +438,6 @@ component output=false singleton=true {
 		return uri;
 	}
 
-	<cffunction name="_calculateStartRecordFromPageInfo" access="private" returntype="numeric" output="false">
-		<cfargument name="page"       type="numeric" required="true" />
-		<cfargument name="pageOffset" type="numeric" required="true" />
-		<cfargument name="pageSize"   type="numeric" required="true" />
-
 	private numeric function _calculateStartRecordFromPageInfo( required numeric page, required numeric pageOffset, required numeric pageSize ) output=false {
 		if ( page lte 0 ) {
 			_throw(
@@ -459,13 +449,14 @@ component output=false singleton=true {
 		return ((page-1) * pageSize) + pageOffset;
 	}
 
-	private void function _throw( ) output=false {
+	private void function _throw(
 		  string type      = "ElasticSearchWrapper.unknown"
 		, string message   = ""
 		, string detail    = ""
 		, string errorCode = ""
+	) output=false {
 
-		throw type=arguments.type message=arguments.message detail=arguments.detail errorcode=arguments.errorCode;
+		throw( type=arguments.type, message=arguments.message, detail=arguments.detail, errorcode=arguments.errorCode );
 	}
 
 	private struct function _generateHighlightsDsl( required string highlightFields ) output=false {

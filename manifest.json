@@ -1,0 +1,7 @@
+{
+	  "id"        : "preside-ext-elasticsearch"
+	, "title"     : "Pixl8 ElasticSearch API Wrapper"
+	, "author"    : "Pixl8 Interactive"
+	, "version"   : "0.1.0"
+	, "changelog" : ""
+}
