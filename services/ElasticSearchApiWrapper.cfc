@@ -347,14 +347,13 @@ component output=false singleton=true {
 
 		while( !success && attempts < maxAttempts ) {
 			try {
-				http url=( endpoints[ endpointIndex ] & arguments.uri ) method=arguments.method result="result" charset=_getCharset() getAsBinary="yes" timeout=_getRequestTimeoutInSeconds() {
+				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" charset=_getCharset() getAsBinary="yes" timeout=_getRequestTimeoutInSeconds() {
 					if ( StructKeyExists( arguments, "body" ) ) {
 						httpparam type="body" value=arguments.body;
 						httpparam type="header" name="Content-Type" value="application/json; charset=#_getCharset()#";
 					}
-
-					success =  Len( Trim( result.responseHeader.status_code ?: "" ) );
-				}
+				};
+				success =  Len( Trim( result.responseHeader.status_code ?: "" ) );
 			} catch( any e ) {
 				success = false;
 			}
@@ -374,6 +373,7 @@ component output=false singleton=true {
 				, message   = "Made #attempts# attempts to contact ElasticSearch server but none returned a response"
 			)
 		}
+		return _processResult( result );
 	}
 
 	private any function _processResult( required struct result ) output=false {
