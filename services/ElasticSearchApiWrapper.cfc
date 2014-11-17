@@ -2,22 +2,13 @@ component output=false singleton=true {
 
 // CONSTRUCTOR
 	/**
-	 * @endpoint.inject                  coldbox:setting:elasticsearch.endpoint
-	 * @charset.inject                   coldbox:setting:elasticsearch.charset
-	 * @requestTimeoutInSeconds.inject   coldbox:setting:elasticsearch.requestTimeoutInSeconds
-	 * @nullResponseRetryAttempts.inject coldbox:setting:elasticsearch.nullResponseRetryAttempts
+	 * @systemConfigurationService.inject systemConfigurationService
 	 *
 	 */
 	public any function init(
-		  required string  endpoint
-		, required string  charset
-		, required numeric requestTimeoutInSeconds
-		, required numeric nullResponseRetryAttempts
+		required any  systemConfigurationService
 	) output=false {
-		_setEndpoint( arguments.endpoint );
-		_setCharset( arguments.charset );
-		_setRequestTimeoutInSeconds( arguments.requestTimeoutInSeconds );
-		_setNullResponseRetryAttempts( arguments.nullResponseRetryAttempts );
+		_setSystemConfigurationService( arguments.systemConfigurationService );
 
 		return this;
 	}
@@ -537,34 +528,26 @@ component output=false singleton=true {
 	}
 
 // GETTERS AND SETTERS
-	private array function _getEndpoint() output=false {
-		return _endpoint;
+	private any function _getSystemConfigurationService() output=false {
+		return _systemConfigurationService;
 	}
-	private void function _setEndpoint( required string endpoint ) output=false {
-		_endpoint = ListToArray( arguments.endpoint );
+	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
+		_systemConfigurationService = arguments.systemConfigurationService;
+	}
+
+	private array function _getEndpoint() output=false {
+		return ListToArray( _getSystemConfigurationService().getSetting( "elasticsearch", "endpoint", "http://localhost:9200" ) );
 	}
 
 	private string function _getCharset() output=false {
-		return _charset;
-	}
-	private void function _setCharset( required string charset ) output=false {
-		if ( !ListFindNoCase( "UTF-8,UTF-16,UTF-32", arguments.charset ) ) {
-			throw( type="pcmscore.api.elasticsearch.ElasticSearchWrapper.badCharset", message="Invalid charset for ElasticSearch communications. Valid character sets are UTF-8, UTF-16 and UTF-32", detail="The charset, '#arguments.charset#', can not be used by ElasticSearch" );
-		}
-		_charset = arguments.charset;
+		return _getSystemConfigurationService().getSetting( "elasticsearch", "charset", "UTF-8" );
 	}
 
 	private numeric function _getRequestTimeoutInSeconds() output=false {
-		return _requestTimeoutInSeconds;
-	}
-	private void function _setRequestTimeoutInSeconds( required numeric requestTimeoutInSeconds ) output=false {
-		_requestTimeoutInSeconds = arguments.requestTimeoutInSeconds;
+		return _getSystemConfigurationService().getSetting( "elasticsearch", "api_call_timeout", 30 );
 	}
 
 	private numeric function _getNullResponseRetryAttempts() output=false {
-		return _nullResponseRetryAttempts;
-	}
-	private void function _setNullResponseRetryAttempts( required numeric nullResponseRetryAttempts ) output=false {
-		_nullResponseRetryAttempts = arguments.nullResponseRetryAttempts;
+		return _getSystemConfigurationService().getSetting( "elasticsearch", "retry_attempts", 3 );
 	}
 }
