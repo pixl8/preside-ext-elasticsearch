@@ -389,6 +389,41 @@ component extends="testbox.system.BaseSpec" {
 				expect( svc.listDocumentTypes( "default_index" ).sort( "textnocase" ) ).toBe( [ "doctype_1", "doctype_2", "doctype_4" ] );
 			} );
 		} );
+
+		describe( "getFields()", function(){
+			it( "should return field configurations for the given index and doc type", function(){
+				var svc     = _getService();
+				var objects = {
+					  object_1 = { indexName="default_index", documentType="doctype_1", fields=[ "title", "body", "date", "object_1_field" ] }
+					, object_2 = { indexName="another_index", documentType="doctype_3", fields=[ "title", "body", "date", "object_2_field" ] }
+					, object_3 = { indexName="default_index", documentType="doctype_1", fields=[ "title", "body", "date", "object_3_field" ] }
+					, object_4 = { indexName="some_index"   , documentType="doctype_2", fields=[ "title", "body", "date", "object_4_field" ] }
+					, object_5 = { indexName="default_index", documentType="doctype_1", fields=[ "title", "body", "date", "object_5_field" ] }
+					, object_6 = { indexName="default_index", documentType="doctype_4", fields=[ "title", "body", "date", "object_6_field" ] }
+					, object_7 = { indexName="default_index", documentType="doctype_2", fields=[ "title", "body", "date", "object_7_field" ] }
+				};
+
+				svc.$( "listSearchEnabledObjects", objects.keyArray() );
+				for( var obj in objects ){
+					svc.$( "getObjectConfiguration" ).$args( obj ).$results( objects[obj] );
+				}
+
+				svc.$( "getFieldConfiguration" ).$args( "object_4", "title"          ).$results( { title          = "title"          } );
+				svc.$( "getFieldConfiguration" ).$args( "object_4", "body"           ).$results( { body           = "body"           } );
+				svc.$( "getFieldConfiguration" ).$args( "object_4", "date"           ).$results( { date           = "date"           } );
+				svc.$( "getFieldConfiguration" ).$args( "object_4", "object_4_field" ).$results( { object_4_field = "object_4_field" } );
+				svc.$( "getFieldConfiguration", { dummy="configuration" } );
+
+				var fields = svc.getFields( "some_index", "doctype_2" );
+
+				expect( fields ).toBe( {
+					  title          = { title          = "title"          }
+					, body           = { body           = "body"           }
+					, date           = { date           = "date"           }
+					, object_4_field = { object_4_field = "object_4_field" }
+				} );
+			} );
+		} );
 	}
 
 

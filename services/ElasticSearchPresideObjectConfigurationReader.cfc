@@ -34,7 +34,7 @@ component output=false {
 	public array function listDocumentTypes( required string indexName ) output=false {
 		var args = arguments;
 
-		return _simpleLocalCache( "listDocumentTypes", function(){
+		return _simpleLocalCache( "listDocumentTypes" & args.indexName, function(){
 			var docTypes = {};
 			var objects = listSearchEnabledObjects();
 
@@ -46,6 +46,26 @@ component output=false {
 			}
 
 			return docTypes.keyArray();
+		} );
+	}
+
+	public struct function getFields( required string indexName, required string documentType ) output=false {
+		var args = arguments;
+
+		return _simpleLocalCache( "listFieldsForDocumentType" & args.indexName & args.documentType, function(){
+			var fields = {};
+			var objects = listSearchEnabledObjects();
+
+			for( var object in objects ){
+				var conf = getObjectConfiguration( object );
+				if ( ( conf.indexName ?: "" ) == args.indexName && ( conf.documentType ?: "" ) == args.documentType ) {
+					for( var field in conf.fields ){
+						fields[ field ] = getFieldConfiguration( object, field );
+					}
+				}
+			}
+
+			return fields;
 		} );
 	}
 
