@@ -282,6 +282,71 @@ component extends="testbox.system.BaseSpec" {
 
 				expect( configuration.ignoreMalformedDates ?: "" ).toBe( true );
 			} );
+
+			it( "it should return 'string' type when property is a string", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( "string" );
+			} );
+
+			it( "it should return 'boolean' type when property is a boolean", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "boolean" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( "boolean" );
+			} );
+
+			it( "it should return 'date' type when property is a date", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( "date" );
+			} );
+
+			it( "it should return 'number' type when property is numeric", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( "number" );
+			} );
+
+			it( "should return string for types other tyan date, boolean, string and numeric", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "jazz" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( "string" );
+			} );
 		} );
 	}
 
@@ -291,7 +356,6 @@ component extends="testbox.system.BaseSpec" {
 	private any function _getService() output=false {
 		mockPresideObjectService = getMockBox().createStub();
 		mockConfigurationService = getMockBox().createStub();
-
 
 		return new elasticsearch.services.ElasticSearchPresideObjectConfigurationReader(
 			  presideObjectService       = mockPresideObjectService

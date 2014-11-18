@@ -69,6 +69,20 @@ component output=false {
 			var configuration = {};
 			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
 
+
+			switch( fieldType ){
+				case "numeric":
+					configuration.type = "number";
+				break;
+				case "string":
+				case "date":
+				case "boolean":
+					configuration.type = fieldType;
+				break;
+				default:
+					configuration.type = "string";
+			}
+
 			if ( fieldType == "string" ) {
 				configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
 				if ( !Len( Trim( configuration.searchable ) ) ) {
