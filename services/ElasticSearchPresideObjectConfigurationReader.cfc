@@ -7,6 +7,7 @@ component output=false {
 	 *
 	 */
 	public any function init( required any presideObjectService, required any systemConfigurationService ) output=false {
+		_setLocalCache( {} );
 		_setPresideObjectService( arguments.presideObjectService );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 
@@ -15,86 +16,107 @@ component output=false {
 
 // PUBLIC API METHODS
 	public array function listSearchEnabledObjects() output=false {
-		var poService = _getPresideObjectService();
+		return _simpleLocalCache( "listSearchEnabledObjects", function(){
+			var poService = _getPresideObjectService();
 
-		return poService.listObjects().filter( function( objectName ){
-			var searchEnabled = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", false );
+			return poService.listObjects().filter( function( objectName ){
+				var searchEnabled = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", false );
 
-			return IsBoolean( searchEnabled ) && searchEnabled;
+				return IsBoolean( searchEnabled ) && searchEnabled;
+			} );
+
 		} );
 	}
 
 	public struct function getObjectConfiguration( required string objectName ) output=false {
-		var poService     = _getPresideObjectService();
-		var configuration = {};
+		var args = arguments;
 
-		configuration.indexName    = poService.getObjectAttribute( objectName, "searchIndex" );
-		configuration.documentType = poService.getObjectAttribute( objectName, "searchDocumentType" );
-		configuration.fields       = [];
+		return _simpleLocalCache( "getObjectConfiguration" & args.objectName, function(){
+			var poService     = _getPresideObjectService();
+			var configuration = {};
 
-		if ( !Len( Trim( configuration.indexName ) ) ) {
-			configuration.indexName = _getDefaultIndexName();
-		}
-		if ( !Len( Trim( configuration.documentType ) ) ) {
-			configuration.documentType = arguments.objectName;
-		}
+			configuration.indexName    = poService.getObjectAttribute( args.objectName, "searchIndex" );
+			configuration.documentType = poService.getObjectAttribute( args.objectName, "searchDocumentType" );
+			configuration.fields       = [];
 
-		for( var prop in poService.getObjectProperties( arguments.objectName ) ){
-			var searchEnabled = poService.getObjectPropertyAttribute( arguments.objectName, prop.getAttribute( "name" ), "searchEnabled" );
-
-			if ( IsBoolean( searchEnabled ) && searchEnabled ){
-				configuration.fields.append( prop.getAttribute( "name" ) );
+			if ( !Len( Trim( configuration.indexName ) ) ) {
+				configuration.indexName = _getDefaultIndexName();
 			}
-		}
-		if ( !configuration.fields.find( "id" ) ) {
-			configuration.fields.append( "id" );
-		}
+			if ( !Len( Trim( configuration.documentType ) ) ) {
+				configuration.documentType = args.objectName;
+			}
 
-		return configuration;
+			for( var prop in poService.getObjectProperties( args.objectName ) ){
+				var searchEnabled = poService.getObjectPropertyAttribute( args.objectName, prop.getAttribute( "name" ), "searchEnabled" );
+
+				if ( IsBoolean( searchEnabled ) && searchEnabled ){
+					configuration.fields.append( prop.getAttribute( "name" ) );
+				}
+			}
+			if ( !configuration.fields.find( "id" ) ) {
+				configuration.fields.append( "id" );
+			}
+
+			return configuration;
+		} );
 	}
 
 	public struct function getFieldConfiguration( required string objectName, required string fieldName ) output=false {
-		var poService     = _getPresideObjectService();
-		var configuration = {};
-		var fieldType     = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "type" );
+		var args = arguments;
 
-		if ( fieldType == "string" ) {
-			configuration.searchable = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchSearchable" );
-			if ( !Len( Trim( configuration.searchable ) ) ) {
-				configuration.searchable = true;
-			} else {
-				configuration.searchable = IsBoolean( configuration.searchable ) && configuration.searchable;
-			}
+		return _simpleLocalCache( "getFieldConfiguration" & args.objectName & args.fieldname, function(){
+			var poService     = _getPresideObjectService();
+			var configuration = {};
+			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
 
-			configuration.analyzer = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchAnalyzer" );
-			if ( !Len( Trim( configuration.analyzer ) ) ) {
-				configuration.analyzer = "default";
-			}
-		} else {
-			configuration.searchable = false;
-
-			if ( fieldType == "date" ) {
-				configuration.dateFormat = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchDateFormat" );
-				configuration.ignoreMalformedDates = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchIgnoreMalformed" );
-
-				if ( !Len( Trim( configuration.dateFormat ) ) ) {
-					configuration.delete( "dateFormat" );
-				}
-				if ( !Len( Trim( configuration.ignoreMalformedDates ) ) ) {
-					configuration.ignoreMalformedDates = true;
+			if ( fieldType == "string" ) {
+				configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
+				if ( !Len( Trim( configuration.searchable ) ) ) {
+					configuration.searchable = true;
 				} else {
-					configuration.ignoreMalformedDates = IsBoolean( configuration.ignoreMalformedDates ) && configuration.ignoreMalformedDates;
+					configuration.searchable = IsBoolean( configuration.searchable ) && configuration.searchable;
+				}
+
+				configuration.analyzer = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchAnalyzer" );
+				if ( !Len( Trim( configuration.analyzer ) ) ) {
+					configuration.analyzer = "default";
+				}
+			} else {
+				configuration.searchable = false;
+
+				if ( fieldType == "date" ) {
+					configuration.dateFormat = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchDateFormat" );
+					configuration.ignoreMalformedDates = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchIgnoreMalformed" );
+
+					if ( !Len( Trim( configuration.dateFormat ) ) ) {
+						configuration.delete( "dateFormat" );
+					}
+					if ( !Len( Trim( configuration.ignoreMalformedDates ) ) ) {
+						configuration.ignoreMalformedDates = true;
+					} else {
+						configuration.ignoreMalformedDates = IsBoolean( configuration.ignoreMalformedDates ) && configuration.ignoreMalformedDates;
+					}
 				}
 			}
-		}
 
-		configuration.sortable = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchSortable" );
-		configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
+			configuration.sortable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
+			configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
 
-		return configuration;
+			return configuration;
+		} );
 	}
 
 // PRIVATE HELPERS
+	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
+		var cache = _getLocalCache();
+
+		if ( !cache.keyExists( cacheKey ) ) {
+			cache[ cacheKey ] = generator();
+		}
+
+		return cache[ cacheKey ] ?: NullValue();
+	}
+
 
 // GETTERS AND SETTERS
 	private any function _getPresideObjectService() output=false {
@@ -109,6 +131,13 @@ component output=false {
 	}
 	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
 		_systemConfigurationService = arguments.systemConfigurationService;
+	}
+
+	private struct function _getLocalCache() output=false {
+		return _localCache;
+	}
+	private void function _setLocalCache( required struct localCache ) output=false {
+		_localCache = arguments.localCache;
 	}
 
 	private any function _getDefaultIndexName() output=false {
