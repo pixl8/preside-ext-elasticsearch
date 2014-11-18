@@ -56,6 +56,40 @@ component output=false {
 	public struct function getFieldConfiguration( required string objectName, required string fieldName ) output=false {
 		var poService     = _getPresideObjectService();
 		var configuration = {};
+		var fieldType     = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "type" );
+
+		if ( fieldType == "string" ) {
+			configuration.searchable = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchSearchable" );
+			if ( !Len( Trim( configuration.searchable ) ) ) {
+				configuration.searchable = true;
+			} else {
+				configuration.searchable = IsBoolean( configuration.searchable ) && configuration.searchable;
+			}
+
+			configuration.analyzer = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchAnalyzer" );
+			if ( !Len( Trim( configuration.analyzer ) ) ) {
+				configuration.analyzer = "default";
+			}
+		} else {
+			configuration.searchable = false;
+
+			if ( fieldType == "date" ) {
+				configuration.dateFormat = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchDateFormat" );
+				configuration.ignoreMalformedDates = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchIgnoreMalformed" );
+
+				if ( !Len( Trim( configuration.dateFormat ) ) ) {
+					configuration.delete( "dateFormat" );
+				}
+				if ( !Len( Trim( configuration.ignoreMalformedDates ) ) ) {
+					configuration.ignoreMalformedDates = true;
+				} else {
+					configuration.ignoreMalformedDates = IsBoolean( configuration.ignoreMalformedDates ) && configuration.ignoreMalformedDates;
+				}
+			}
+		}
+
+		configuration.sortable = poService.getObjectPropertyAttribute( arguments.objectName, arguments.fieldName, "searchSortable" );
+		configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
 
 		return configuration;
 	}

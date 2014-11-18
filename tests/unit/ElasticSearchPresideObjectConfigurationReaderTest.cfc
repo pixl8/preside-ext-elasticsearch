@@ -123,20 +123,164 @@ component extends="testbox.system.BaseSpec" {
 		} );
 
 		describe( "getFieldConfiguration()", function(){
-			it( "should return default configuration when no attributes set on field", function(){
+			it( "should return searchable flag that has been set on the field", function(){
 				var svc        = _getService();
 				var objectName = "someobject";
 				var fieldName  = "somefield";
-				var defaultConfig = {
-					  searchable = true
-					, sortable   = true
-					, analyzer   = ""
-					, type       = "string"
-				};
 
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
 
-				expect( svc.getFieldConfiguration( objectName, fieldName ) ).toBe( defaultConfig );
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.searchable ?: "" ).toBe( false );
+			} );
+
+			it( "should return searchable flag as true when field is a string and no searchable attribute is set", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( "" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.searchable ?: "" ).toBe( true );
+			} );
+
+			it( "should always return searchable flag as false when field is not a string", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( true );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.searchable ?: "" ).toBe( false );
+			} );
+
+			it( "should return sortable flag as false when not configured", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSortable" ).$results( "" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.sortable ?: "" ).toBe( false );
+			} );
+
+			it( "should return sortable flag as true when explicitly set", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSortable" ).$results( true );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.sortable ?: "" ).toBe( true );
+			} );
+
+			it( "should return configured analyzer when field is searchable", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+				var analyzer   = "someAnalyzer";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( "" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchAnalyzer" ).$results( analyzer );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.analyzer ?: "" ).toBe( analyzer );
+			} );
+
+			it( "should return default analyzer when field is searchable and no analyzer configured", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+				var analyzer   = "";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( "" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchAnalyzer" ).$results( analyzer );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.analyzer ?: "" ).toBe( "default" );
+			} );
+
+			it( "should return dateFormat property when attribute set and property type is date", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+				var dateFormat = "yyyy-mm-dd";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchDateFormat" ).$results( dateFormat );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.dateFormat ?: "" ).toBe( dateFormat );
+			} );
+
+			it( "should not return a dateFormat property when not configured", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+				var dateFormat = "";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchDateFormat" ).$results( dateFormat );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.keyExists( "dateFormat" ) ).toBeFalse();
+			} );
+
+			it( "should return ignoreMalformedDates property when attribute set and property type is date", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchIgnoreMalformed" ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.ignoreMalformedDates ?: "" ).toBe( false );
+			} );
+
+			it( "should return ignoreMalformedDates as true when attribute not set and property type is date", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchIgnoreMalformed" ).$results( "" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.ignoreMalformedDates ?: "" ).toBe( true );
 			} );
 		} );
 	}
