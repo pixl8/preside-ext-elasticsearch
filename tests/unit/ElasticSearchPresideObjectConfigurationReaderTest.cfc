@@ -348,6 +348,47 @@ component extends="testbox.system.BaseSpec" {
 				expect( configuration.type ?: "" ).toBe( "string" );
 			} );
 		} );
+
+		describe( "listIndexes()", function(){
+			it( "should return an array of unique index names defined across all the objects", function(){
+				var svc     = _getService();
+				var objects = {
+					  object_1 = { indexName="default_index" }
+					, object_2 = { indexName="another_index" }
+					, object_3 = { indexName="default_index" }
+					, object_4 = { indexName="some_index" }
+				};
+
+				svc.$( "listSearchEnabledObjects", objects.keyArray() );
+				for( var obj in objects ){
+					svc.$( "getObjectConfiguration" ).$args( obj ).$results( objects[obj] );
+				}
+
+				expect( svc.listIndexes().sort( "textnocase" ) ).toBe( [ "another_index", "default_index", "some_index" ] );
+			} );
+		} );
+
+		describe( "listDocumentTypes()", function(){
+			it( "should return a unique array of document types for the given index", function(){
+				var svc     = _getService();
+				var objects = {
+					  object_1 = { indexName="default_index", documentType="doctype_1" }
+					, object_2 = { indexName="another_index", documentType="doctype_3" }
+					, object_3 = { indexName="default_index", documentType="doctype_1" }
+					, object_4 = { indexName="some_index"   , documentType="doctype_2" }
+					, object_5 = { indexName="default_index", documentType="doctype_1" }
+					, object_6 = { indexName="default_index", documentType="doctype_4" }
+					, object_7 = { indexName="default_index", documentType="doctype_2" }
+				};
+
+				svc.$( "listSearchEnabledObjects", objects.keyArray() );
+				for( var obj in objects ){
+					svc.$( "getObjectConfiguration" ).$args( obj ).$results( objects[obj] );
+				}
+
+				expect( svc.listDocumentTypes( "default_index" ).sort( "textnocase" ) ).toBe( [ "doctype_1", "doctype_2", "doctype_4" ] );
+			} );
+		} );
 	}
 
 
@@ -357,10 +398,12 @@ component extends="testbox.system.BaseSpec" {
 		mockPresideObjectService = getMockBox().createStub();
 		mockConfigurationService = getMockBox().createStub();
 
-		return new elasticsearch.services.ElasticSearchPresideObjectConfigurationReader(
+		var svc = new elasticsearch.services.ElasticSearchPresideObjectConfigurationReader(
 			  presideObjectService       = mockPresideObjectService
 			, systemConfigurationService = mockConfigurationService
 		);
+
+		return getMockBox().createMock( object=svc );
 	}
 
 }

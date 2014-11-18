@@ -15,6 +15,40 @@ component output=false {
 	}
 
 // PUBLIC API METHODS
+	public array function listIndexes() output=false {
+		return _simpleLocalCache( "listIndexes", function(){
+			var indexes = {};
+			var objects = listSearchEnabledObjects();
+
+			for( var object in objects ){
+				var conf = getObjectConfiguration( object );
+				if ( Len( Trim( conf.indexName ?: "" ) ) ) {
+					indexes[ conf.indexName ] = true;
+				}
+			}
+
+			return indexes.keyArray();
+		} );
+	}
+
+	public array function listDocumentTypes( required string indexName ) output=false {
+		var args = arguments;
+
+		return _simpleLocalCache( "listDocumentTypes", function(){
+			var docTypes = {};
+			var objects = listSearchEnabledObjects();
+
+			for( var object in objects ){
+				var conf = getObjectConfiguration( object );
+				if ( ( conf.indexName ?: "" ) == args.indexName && Len( Trim( conf.documentType ?: "" ) ) ) {
+					docTypes[ conf.documentType ] = true;
+				}
+			}
+
+			return docTypes.keyArray();
+		} );
+	}
+
 	public array function listSearchEnabledObjects() output=false {
 		return _simpleLocalCache( "listSearchEnabledObjects", function(){
 			var poService = _getPresideObjectService();
