@@ -69,6 +69,9 @@ component output=false {
 			var configuration = {};
 			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
 
+			configuration.searchable = false;
+			configuration.sortable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
+			configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
 
 			switch( fieldType ){
 				case "numeric":
@@ -83,22 +86,22 @@ component output=false {
 					configuration.type = "string";
 			}
 
-			if ( fieldType == "string" ) {
-				configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
-				if ( !Len( Trim( configuration.searchable ) ) ) {
-					configuration.searchable = true;
-				} else {
-					configuration.searchable = IsBoolean( configuration.searchable ) && configuration.searchable;
-				}
+			switch( configuration.type ){
+				case "string":
+					configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
+					if ( !Len( Trim( configuration.searchable ) ) ) {
+						configuration.searchable = true;
+					} else {
+						configuration.searchable = IsBoolean( configuration.searchable ) && configuration.searchable;
+					}
 
-				configuration.analyzer = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchAnalyzer" );
-				if ( !Len( Trim( configuration.analyzer ) ) ) {
-					configuration.analyzer = "default";
-				}
-			} else {
-				configuration.searchable = false;
+					configuration.analyzer = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchAnalyzer" );
+					if ( !Len( Trim( configuration.analyzer ) ) ) {
+						configuration.analyzer = "default";
+					}
+				break;
 
-				if ( fieldType == "date" ) {
+				case "date":
 					configuration.dateFormat = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchDateFormat" );
 					configuration.ignoreMalformedDates = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchIgnoreMalformed" );
 
@@ -110,11 +113,8 @@ component output=false {
 					} else {
 						configuration.ignoreMalformedDates = IsBoolean( configuration.ignoreMalformedDates ) && configuration.ignoreMalformedDates;
 					}
-				}
+				break;
 			}
-
-			configuration.sortable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
-			configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
 
 			return configuration;
 		} );
