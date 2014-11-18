@@ -403,6 +403,7 @@ component extends="testbox.system.BaseSpec" {
 					, object_7 = { indexName="default_index", documentType="doctype_2", fields=[ "title", "body", "date", "object_7_field" ] }
 				};
 
+
 				svc.$( "listSearchEnabledObjects", objects.keyArray() );
 				for( var obj in objects ){
 					svc.$( "getObjectConfiguration" ).$args( obj ).$results( objects[obj] );
@@ -413,6 +414,7 @@ component extends="testbox.system.BaseSpec" {
 				svc.$( "getFieldConfiguration" ).$args( "object_4", "date"           ).$results( { date           = "date"           } );
 				svc.$( "getFieldConfiguration" ).$args( "object_4", "object_4_field" ).$results( { object_4_field = "object_4_field" } );
 				svc.$( "getFieldConfiguration", { dummy="configuration" } );
+				mockPresideObjectService.$( "getObjectAttribute", false );
 
 				var fields = svc.getFields( "some_index", "doctype_2" );
 
@@ -423,10 +425,39 @@ component extends="testbox.system.BaseSpec" {
 					, object_4_field = { object_4_field = "object_4_field" }
 				} );
 			} );
+
+			it( "should merge fields from 'page' object when object is a page type", function(){
+				var svc     = _getService();
+				var objects = {
+					object_1 = { indexName="default_index", documentType="doctype_1", fields=[ "title", "body" ] }
+				};
+				var pageObject = { fields=[ "main_body", "title", "test" ] };
+
+				svc.$( "listSearchEnabledObjects", objects.keyArray() );
+				for( var obj in objects ){
+					svc.$( "getObjectConfiguration" ).$args( obj ).$results( objects[obj] );
+				}
+
+				mockPresideObjectService.$( "getObjectAttribute" ).$args( "object_1", "isPageType" ).$results( true );
+				svc.$( "getObjectConfiguration" ).$args( "page" ).$results( pageObject );
+
+				svc.$( "getFieldConfiguration" ).$args( "object_1", "title"     ).$results( { title     = "title"     } );
+				svc.$( "getFieldConfiguration" ).$args( "object_1", "body"      ).$results( { body      = "body"      } );
+				svc.$( "getFieldConfiguration" ).$args( "page"    , "main_body" ).$results( { main_body = "main_body" } );
+				svc.$( "getFieldConfiguration" ).$args( "page"    , "test"      ).$results( { test      = "test"      } );
+				svc.$( "getFieldConfiguration", { dummy="configuration" } );
+
+				var fields = svc.getFields( "default_index", "doctype_1" );
+
+				expect( fields ).toBe( {
+					  title     = { title     = "title"     }
+					, body      = { body      = "body"      }
+					, main_body = { main_body = "main_body" }
+					, test      = { test      = "test"      }
+				} );
+			} );
 		} );
 	}
-
-
 
 // HELPERS
 	private any function _getService() output=false {

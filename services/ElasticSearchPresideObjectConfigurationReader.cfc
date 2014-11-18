@@ -57,6 +57,15 @@ component output=false {
 			var objects = listSearchEnabledObjects();
 
 			for( var object in objects ){
+				var isPageType = _getPresideObjectService().getObjectAttribute( object, "isPageType" );
+				if ( IsBoolean( isPageType ) && isPageType ) {
+					var conf = getObjectConfiguration( "page" );
+
+					for( var field in conf.fields ){
+						fields[ field ] = getFieldConfiguration( "page", field );
+					}
+				}
+
 				var conf = getObjectConfiguration( object );
 				if ( ( conf.indexName ?: "" ) == args.indexName && ( conf.documentType ?: "" ) == args.documentType ) {
 					for( var field in conf.fields ){
