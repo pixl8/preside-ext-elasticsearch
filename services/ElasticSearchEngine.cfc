@@ -100,6 +100,16 @@ component output=false singleton=true {
 		return sourceIndexName & "_" & LCase( CreateUUId() );
 	}
 
+	public boolean function deleteRecord( required string objectName, required string id ) output=false {
+		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+
+		return _getApiWrapper().deleteDoc(
+			  index = objectConfig.indexName    ?: ""
+			, type  = objectConfig.documentType ?: ""
+			, id    = arguments.id
+		);
+	}
+
 // PRIVATE HELPERS
 	/**
 	 * odd proxy to ensureIndexesExist() - this simply helps us to

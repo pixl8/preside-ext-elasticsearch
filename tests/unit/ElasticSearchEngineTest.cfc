@@ -251,6 +251,32 @@ component extends="testbox.system.BaseSpec" {
 				expect( mapping ).toBe( { type="date", analyzer="preside_sortable", format="yyyy-MM-d", ignore_malformed=true } );
 			} );
 		} );
+
+		describe( "deleteRecord", function(){
+			it( "should calculate the index and document type based on the passed object name", function(){
+				var engine       = _getSearchEngine();
+				var recordId     = CreateUUId();
+				var object       = "some_object";
+				var indexName    = "myindex";
+				var documentType = "somedoctype";
+
+				mockConfigReader.$( "getObjectConfiguration" ).$args( object ).$results({
+					  indexName    = indexName
+					, documentType = documentType
+				} );
+
+				mockApiWrapper.$( "deleteDoc", true );
+
+				engine.deleteRecord( objectName=object, id=recordId );
+
+				expect( mockApiWrapper.$callLog().deleteDoc.len() ).toBe( 1 );
+				expect( mockApiWrapper.$callLog().deleteDoc[1] ).toBe( {
+					  index = indexName
+					, type  = documentType
+					, id    = recordId
+				} );
+			} );
+		} );
 	}
 
 // PRIVATE HELPERS
