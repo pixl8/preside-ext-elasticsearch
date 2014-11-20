@@ -98,9 +98,10 @@ component output=false {
 			var poService     = _getPresideObjectService();
 			var configuration = {};
 
-			configuration.indexName    = poService.getObjectAttribute( args.objectName, "searchIndex" );
-			configuration.documentType = poService.getObjectAttribute( args.objectName, "searchDocumentType" );
-			configuration.fields       = [];
+			configuration.indexName        = poService.getObjectAttribute( args.objectName, "searchIndex" );
+			configuration.documentType     = poService.getObjectAttribute( args.objectName, "searchDocumentType" );
+			configuration.hasOwnDataGetter = doesObjectHaveDataGetterMethod( args.objectName );
+			configuration.fields           = [];
 
 			if ( !Len( Trim( configuration.indexName ) ) ) {
 				configuration.indexName = _getDefaultIndexName();
@@ -181,6 +182,12 @@ component output=false {
 
 			return configuration;
 		} );
+	}
+
+	public boolean function doesObjectHaveDataGetterMethod( required string objectName ) output=false {
+		var object = _getPresideObjectService().getObject( arguments.objectName );
+
+		return IsValid( "function", object.getDataForSearchEngine ?: "" );
 	}
 
 // PRIVATE HELPERS

@@ -277,20 +277,81 @@ component extends="testbox.system.BaseSpec" {
 				} );
 			} );
 		} );
+
+		describe( "indexRecord", function(){
+			it( "should fectch record's data from getDataForSearchEngine() method on the record's object", function(){
+				var engine       = _getSearchEngine();
+				var recordId     = CreateUUId();
+				var objectName   = "some_object";
+				var object       = getMockbox().createStub();
+				var data         = { id=recordId, test="this" };
+				var indexName    = "myindex";
+				var documentType = "somedoctype";
+
+				object.$( "getDataForSearchEngine" ).$args( recordId ).$results( [ data ] );
+				mockApiWrapper.$( "addDoc", {} );
+				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+					  indexName    = indexName
+					, documentType = documentType
+				} );
+
+				engine.indexRecord( objectName, recordId );
+
+				expect( mockApiWrapper.$callLog().addDoc.len() ).toBe( 1 );
+				expect( mockApiWrapper.$callLog().addDoc[1] ).toBe( {
+					  index = indexName
+					, type  = documentType
+					, doc   = data
+					, id    = recordId
+				} );
+			} );
+
+			it( "should delete the record from the index when no records returned from the getDataForSearchEngine() method", function(){
+				var engine       = _getSearchEngine();
+				var recordId     = CreateUUId();
+				var objectName   = "some_object";
+				var object       = getMockbox().createStub();
+				var data         = { id=recordId, test="this" };
+				var indexName    = "myindex";
+				var documentType = "somedoctype";
+
+				object.$( "getDataForSearchEngine" ).$args( recordId ).$results( [] );
+				mockApiWrapper.$( "addDoc", {} );
+				mockApiWrapper.$( "deleteDoc", true );
+				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+					  indexName    = indexName
+					, documentType = documentType
+				} );
+
+				engine.indexRecord( objectName, recordId );
+
+				expect( mockApiWrapper.$callLog().addDoc.len() ).toBe( 0 );
+				expect( mockApiWrapper.$callLog().deleteDoc.len() ).toBe( 1 );
+				expect( mockApiWrapper.$callLog().deleteDoc[1] ).toBe( {
+					  index = indexName
+					, type  = documentType
+					, id    = recordId
+				} );
+			} );
+		} );
 	}
 
 // PRIVATE HELPERS
 	private function _getSearchEngine() output=false {
-		mockConfigReader = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
-		mockApiWrapper   = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
+		mockConfigReader         = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
+		mockApiWrapper           = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
+		mockPresideObjectService = getMockBox().createStub();
 
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
 		engine.$( "_checkIndexesExist" );
 
 		return engine.init(
-			  configurationReader = mockConfigReader
-			, apiWrapper          = mockApiWrapper
+			  configurationReader  = mockConfigReader
+			, apiWrapper           = mockApiWrapper
+			, presideObjectService = mockPresideObjectService
 		);
 	}
 

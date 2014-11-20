@@ -51,6 +51,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchIndex" ).$results( indexName );
 				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
 				mockPresideObjectService.$( "getObjectProperties", [] );
+				svc.$( "doesObjectHaveDataGetterMethod", false );
 
 
 				var configuration = svc.getObjectConfiguration( objectName );
@@ -65,6 +66,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchIndex" ).$results( "" );
 				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
 				mockPresideObjectService.$( "getObjectProperties", [] );
+				svc.$( "doesObjectHaveDataGetterMethod", false );
 
 				mockConfigurationService.$( "getSetting" ).$args( "elasticsearch", "default_index" ).$results( defaultIndex );
 
@@ -80,7 +82,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchDocumentType" ).$results( documentType );
 				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
 				mockPresideObjectService.$( "getObjectProperties", [] );
-
+				svc.$( "doesObjectHaveDataGetterMethod", false );
 
 				var configuration = svc.getObjectConfiguration( objectName );
 				expect( configuration.documentType ?: "" ).toBe( documentType );
@@ -94,7 +96,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchDocumentType" ).$results( documentType );
 				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
 				mockPresideObjectService.$( "getObjectProperties", [] );
-
+				svc.$( "doesObjectHaveDataGetterMethod", false );
 
 				var configuration = svc.getObjectConfiguration( objectName );
 				expect( configuration.documentType ?: "" ).toBe( objectName );
@@ -115,10 +117,38 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectProperties" ).$args( objectName ).$results( props );
 				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
-
+				svc.$( "doesObjectHaveDataGetterMethod", false );
 
 				var configuration = svc.getObjectConfiguration( objectName );
 				expect( configuration.fields ?: [] ).toBe( [ "prop_1", "prop_3", "prop_5", "id" ] );
+			} );
+
+			it( "should set hasOwnDataGetter to true when the object supplies its own getDataForSearchEngine() method", function(){
+				var svc        = _getService();
+				var objectName = "some_object";
+				var props      = [];
+
+				mockPresideObjectService.$( "getObjectProperties" ).$args( objectName ).$results( props );
+				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
+				svc.$( "doesObjectHaveDataGetterMethod" ).$args( objectName ).$results( true );
+
+				var configuration = svc.getObjectConfiguration( objectName );
+
+				expect( configuration.hasOwnDataGetter ?: "" ).toBe( true );
+			} );
+
+			it( "should set hasOwnDataGetter to false when the object does not supply its own getDataForSearchEngine() method", function(){
+				var svc        = _getService();
+				var objectName = "some_object";
+				var props      = [];
+
+				mockPresideObjectService.$( "getObjectProperties" ).$args( objectName ).$results( props );
+				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
+				svc.$( "doesObjectHaveDataGetterMethod" ).$args( objectName ).$results( false );
+
+				var configuration = svc.getObjectConfiguration( objectName );
+
+				expect( configuration.hasOwnDataGetter ?: "" ).toBe( false );
 			} );
 		} );
 
@@ -455,6 +485,20 @@ component extends="testbox.system.BaseSpec" {
 					, main_body = { main_body = "main_body" }
 					, test      = { test      = "test"      }
 				} );
+			} );
+		} );
+
+		describe( "doesObjectHaveDataGetterMethod()", function(){
+			it( "should return true when object has getDataForSearchEngine() method", function(){
+				var svc        = _getService();
+				var object     = getMockBox().createStub();
+				var objectName = "myObject";
+
+				object.$( "getDataForSearchEngine", [] );
+
+				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+
+				expect(  svc.doesObjectHaveDataGetterMethod( objectName ) ).toBeTrue(  );
 			} );
 		} );
 	}

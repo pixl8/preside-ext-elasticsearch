@@ -2,12 +2,14 @@ component output=false singleton=true {
 
 // CONSTRUCTOR
 	/**
-	 * @apiWrapper.inject          ElasticSearchApiWrapper
-	 * @configurationReader.inject ElasticSearchPresideObjectConfigurationReader
+	 * @apiWrapper.inject           elasticSearchApiWrapper
+	 * @configurationReader.inject  elasticSearchPresideObjectConfigurationReader
+	 * @presideObjectService.inject presideObjectService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService ) output=false {
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
+		_setPresideObjectService( arguments.presideObjectService );
 
 		_checkIndexesExist();
 
@@ -100,6 +102,29 @@ component output=false singleton=true {
 		return sourceIndexName & "_" & LCase( CreateUUId() );
 	}
 
+	public boolean function indexRecord( required string objectName, required string id ) output=false {
+		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var object       = _getPresideObjectService().getObject( arguments.objectName );
+		var doc          = object.getDataForSearchEngine( arguments.id );
+
+		if ( !IsArray( doc ) || !doc.len() ) {
+			return _getApiWrapper().deleteDoc(
+				  index = objectConfig.indexName    ?: ""
+				, type  = objectConfig.documentType ?: ""
+				, id    = arguments.id
+			);
+		}
+
+		var result = _getApiWrapper().addDoc(
+			  index = objectConfig.indexName    ?: ""
+			, type  = objectConfig.documentType ?: ""
+			, doc   = doc[1]
+			, id    = arguments.id
+		);
+
+		return true;
+	}
+
 	public boolean function deleteRecord( required string objectName, required string id ) output=false {
 		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
@@ -174,4 +199,10 @@ component output=false singleton=true {
 		_configurationReader = arguments.configurationReader;
 	}
 
+	private any function _getPresideObjectService() output=false {
+		return _presideObjectService;
+	}
+	private void function _setPresideObjectService( required any presideObjectService ) output=false {
+		_presideObjectService = arguments.presideObjectService;
+	}
 }
