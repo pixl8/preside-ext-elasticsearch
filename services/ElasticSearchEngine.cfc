@@ -105,7 +105,13 @@ component output=false singleton=true {
 	public boolean function indexRecord( required string objectName, required string id ) output=false {
 		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 		var object       = _getPresideObjectService().getObject( arguments.objectName );
-		var doc          = object.getDataForSearchEngine( arguments.id );
+		var doc          = "";
+
+		if ( IsBoolean( objectConfig.hasOwnDataGetter ?: "" ) && objectConfig.hasOwnDataGetter ) {
+			doc = object.getDataForSearchEngine( arguments.id );
+		} else {
+			doc = getObjectDataForIndexing( arguments.objectName, arguments.id );
+		}
 
 		if ( !IsArray( doc ) || !doc.len() ) {
 			return _getApiWrapper().deleteDoc(

@@ -292,8 +292,9 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "addDoc", {} );
 				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
-					  indexName    = indexName
-					, documentType = documentType
+					  indexName        = indexName
+					, documentType     = documentType
+					, hasOwnDataGetter = true
 				} );
 
 				engine.indexRecord( objectName, recordId );
@@ -312,7 +313,6 @@ component extends="testbox.system.BaseSpec" {
 				var recordId     = CreateUUId();
 				var objectName   = "some_object";
 				var object       = getMockbox().createStub();
-				var data         = { id=recordId, test="this" };
 				var indexName    = "myindex";
 				var documentType = "somedoctype";
 
@@ -321,8 +321,9 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "deleteDoc", true );
 				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
-					  indexName    = indexName
-					, documentType = documentType
+					  indexName        = indexName
+					, documentType     = documentType
+					, hasOwnDataGetter = true
 				} );
 
 				engine.indexRecord( objectName, recordId );
@@ -332,6 +333,35 @@ component extends="testbox.system.BaseSpec" {
 				expect( mockApiWrapper.$callLog().deleteDoc[1] ).toBe( {
 					  index = indexName
 					, type  = documentType
+					, id    = recordId
+				} );
+			} );
+
+			it( "should automatically get the record's data itself when the object does not provide a getDataForSearchEngine() method", function(){
+				var engine       = _getSearchEngine();
+				var recordId     = CreateUUId();
+				var objectName   = "some_object";
+				var object       = getMockbox().createStub();
+				var data         = { id=recordId, test="this" };
+				var indexName    = "myindex";
+				var documentType = "somedoctype";
+
+				mockApiWrapper.$( "addDoc", {} );
+				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+					  indexName        = indexName
+					, documentType     = documentType
+					, hasOwnDataGetter = false
+				} );
+				engine.$( "getObjectDataForIndexing" ).$args( objectName, recordId ).$results( [ data ] );
+
+				engine.indexRecord( objectName, recordId );
+
+				expect( mockApiWrapper.$callLog().addDoc.len() ).toBe( 1 );
+				expect( mockApiWrapper.$callLog().addDoc[1] ).toBe( {
+					  index = indexName
+					, type  = documentType
+					, doc   = data
 					, id    = recordId
 				} );
 			} );

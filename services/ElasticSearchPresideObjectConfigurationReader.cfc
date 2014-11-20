@@ -185,9 +185,13 @@ component output=false {
 	}
 
 	public boolean function doesObjectHaveDataGetterMethod( required string objectName ) output=false {
-		var object = _getPresideObjectService().getObject( arguments.objectName );
+		var args = arguments;
 
-		return IsValid( "function", object.getDataForSearchEngine ?: "" );
+		return _simpleLocalCache( "doesObjectHaveDataGetterMethod" & args.objectName, function(){
+			var object = _getPresideObjectService().getObject( args.objectName );
+
+			return IsValid( "function", object.getDataForSearchEngine ?: "" );
+		} );
 	}
 
 // PRIVATE HELPERS
