@@ -252,7 +252,7 @@ component extends="testbox.system.BaseSpec" {
 			} );
 		} );
 
-		describe( "deleteRecord", function(){
+		describe( "deleteRecord()", function(){
 			it( "should calculate the index and document type based on the passed object name", function(){
 				var engine       = _getSearchEngine();
 				var recordId     = CreateUUId();
@@ -278,7 +278,7 @@ component extends="testbox.system.BaseSpec" {
 			} );
 		} );
 
-		describe( "indexRecord", function(){
+		describe( "indexRecord()", function(){
 			it( "should fectch record's data from getDataForSearchEngine() method on the record's object", function(){
 				var engine       = _getSearchEngine();
 				var recordId     = CreateUUId();
@@ -363,6 +363,36 @@ component extends="testbox.system.BaseSpec" {
 					, type  = documentType
 					, doc   = data
 					, id    = recordId
+				} );
+			} );
+		} );
+
+		describe( "indexRecords()", function(){
+			it( "should fectch objects's data from getDataForSearchEngine() method", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "some_object";
+				var object       = getMockbox().createStub();
+				var data         = [ { id=CreateUUId(), test="this" }, { id=CreateUUId(), test="this" }, { id=CreateUUId(), test="this" }, { id=CreateUUId(), test="this" } ];
+				var indexName    = "myindex";
+				var documentType = "somedoctype";
+
+				object.$( "getDataForSearchEngine", data );
+				mockApiWrapper.$( "addDocs", {} );
+				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+					  indexName        = indexName
+					, documentType     = documentType
+					, hasOwnDataGetter = true
+				} );
+
+				engine.indexRecords( objectName );
+
+				expect( mockApiWrapper.$callLog().addDocs.len() ).toBe( 1 );
+				expect( mockApiWrapper.$callLog().addDocs[1] ).toBe( {
+					  index   = indexName
+					, type    = documentType
+					, docs    = data
+					, idField = "id"
 				} );
 			} );
 		} );
