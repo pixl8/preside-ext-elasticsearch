@@ -131,6 +131,10 @@ component output=false singleton=true {
 		return true;
 	}
 
+	public array function getObjectDataForIndexing( required string objectName, string id ) output=false {
+		throw( type="ElasticSearchEngine.not.implemented", message="Your object, [#arguments.objectName#], must supply its own getDataForSearchEngine() method because auto data fetching has not yet been implemented. This method must return an array of structs, each struct representing a document to index. It should accept optional arguments, 'id', 'maxRows' and 'startRow'." );
+	}
+
 	public boolean function deleteRecord( required string objectName, required string id ) output=false {
 		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
