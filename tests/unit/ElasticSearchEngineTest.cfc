@@ -367,33 +367,41 @@ component extends="testbox.system.BaseSpec" {
 			} );
 		} );
 
-		describe( "indexRecords()", function(){
-			it( "should fectch objects's data from getDataForSearchEngine() method", function(){
-				var engine       = _getSearchEngine();
-				var objectName   = "some_object";
-				var object       = getMockbox().createStub();
-				var data         = [ { id=CreateUUId(), test="this" }, { id=CreateUUId(), test="this" }, { id=CreateUUId(), test="this" }, { id=CreateUUId(), test="this" } ];
-				var indexName    = "myindex";
-				var documentType = "somedoctype";
+		describe( "indexAllRecords()", function(){
+			it( "should pump 100 records at a time into the elasticsearch server until the getPaginatedRecordsForObject() method returns no more data", function(){
+				var engine            = _getSearchEngine();
+				var oneHundredRecords = [];
+				var objectName        = "testObject";
+				var indexName         = "someindex" & CreateUUId();
+				var documentType      = "somedoctype";
 
-				object.$( "getDataForSearchEngine", data );
-				mockApiWrapper.$( "addDocs", {} );
-				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
-					  indexName        = indexName
-					, documentType     = documentType
-					, hasOwnDataGetter = true
+					documentType = documentType
 				} );
+				for( var i=1; i < 100; i++ ){
+					oneHundredRecords.append( { id=CreateUUId(), test=i } );
+				}
+				for( var i=1; i < 5; i++ ){
+					engine.$( "getPaginatedRecordsForObject" ).$args(
+						  objectName = objectName
+						, pageSize   = 100
+						, page       = i
+					).$results( i == 4 ? [] : oneHundredRecords );
+				}
 
-				engine.indexRecords( objectName );
+				mockApiWrapper.$( "addDocs", {} );
 
-				expect( mockApiWrapper.$callLog().addDocs.len() ).toBe( 1 );
-				expect( mockApiWrapper.$callLog().addDocs[1] ).toBe( {
-					  index   = indexName
-					, type    = documentType
-					, docs    = data
-					, idField = "id"
-				} );
+				engine.indexAllRecords( objectName, indexName );
+
+				expect( mockApiWrapper.$callLog().addDocs.len() ).toBe( 3 );
+				for( var i=1; i < 4; i++ ){
+					expect( mockApiWrapper.$callLog().addDocs[i] ).toBe( {
+						  index   = indexName
+						, type    = documentType
+						, docs    = oneHundredRecords
+						, idField = "id"
+					} );
+				}
 			} );
 		} );
 
@@ -420,6 +428,141 @@ component extends="testbox.system.BaseSpec" {
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ fields = configuredFields } );
 
 				expect( engine.calculateSelectFieldsForIndexing( objectName) ).toBe( [ "myobj.id", "group_concat( distinct field1.id ) as field1", "myobj.field2", "group_concat( distinct field3.id ) as field3", "myobj.field4" ] );
+			} );
+		} );
+
+		describe( "getObjectDataForIndexing()", function(){
+			it( "should select data from the object using any configured filters", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "myobj";
+				var selectFields = [ "myobj.id", "myobj.field1", "myobj.field2" ];
+				var filters      = [ "filterx", "filtery" ];
+
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ indexFilters = filters } );
+				mockPresideObjectService.$( "selectData", QueryNew('') );
+				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
+				engine.$( "convertQueryToArrayOfDocs", [] );
+
+				engine.getObjectDataForIndexing( objectName );
+
+				expect( mockPresideObjectService.$callLog().selectData.len() ).toBe( 1 );
+				expect( mockPresideObjectService.$callLog().selectData[1] ).toBe( {
+					  objectName   = objectName
+					, selectFields = selectFields
+					, savedFilters = filters
+					, groupBy      = objectName & ".id"
+					, maxRows      = 100
+					, startRow     = 1
+				} );
+			} );
+
+			it( "should filter data by id when id passed", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "myobj";
+				var selectFields = [ "myobj.id", "myobj.field1", "myobj.field2" ];
+				var filters      = [ "filterx", "filtery" ];
+				var id           = CreateUUId();
+
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ indexFilters = filters } );
+				mockPresideObjectService.$( "selectData", QueryNew('') );
+				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
+				engine.$( "convertQueryToArrayOfDocs", [] );
+
+				engine.getObjectDataForIndexing( objectName=objectName, id=id );
+
+				expect( mockPresideObjectService.$callLog().selectData.len() ).toBe( 1 );
+				expect( mockPresideObjectService.$callLog().selectData[1] ).toBe( {
+					  objectName   = objectName
+					, selectFields = selectFields
+					, filter       = { "#objectName#.id" = id }
+					, savedFilters = filters
+					, groupBy      = objectName & ".id"
+					, maxRows      = 100
+					, startRow     = 1
+				} );
+			} );
+
+			it( "should use maxRows and startRow values when passed", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "myobj";
+				var selectFields = [ "myobj.id", "myobj.field1", "myobj.field2" ];
+				var filters      = [ "filterx", "filtery" ];
+				var startRow     = 501;
+				var maxRows      = 500;
+
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ indexFilters = filters } );
+				mockPresideObjectService.$( "selectData", QueryNew('') );
+				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
+				engine.$( "convertQueryToArrayOfDocs", [] );
+
+				engine.getObjectDataForIndexing( objectName=objectName, startRow=startRow, maxRows=maxRows );
+
+				expect( mockPresideObjectService.$callLog().selectData.len() ).toBe( 1 );
+				expect( mockPresideObjectService.$callLog().selectData[1] ).toBe( {
+					  objectName   = objectName
+					, selectFields = selectFields
+					, savedFilters = filters
+					, groupBy      = objectName & ".id"
+					, maxRows      = maxRows
+					, startRow     = startRow
+				} );
+			} );
+
+			it( "should convert recordset to array of structs", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "myobj";
+				var selectFields = [ "myobj.id", "myobj.field1", "myobj.field2" ];
+				var filters      = [ "filterx", "filtery" ];
+				var records      = QueryNew( 'id,field1,field2' );
+				var docs         = [ { test=true }, { another="test" } ];
+
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ indexFilters = filters } );
+				mockPresideObjectService.$( "selectData", records );
+				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
+				engine.$( "convertQueryToArrayOfDocs" ).$args( objectName, records ).$results( docs );
+
+				expect( engine.getObjectDataForIndexing( objectName=objectName ) ).toBe( docs );
+			} );
+		} );
+
+		describe( "getPaginatedRecordsForObject()", function(){
+			it( "should fetch records from object's own data getter method when object has it's own data getter method", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "some_object";
+				var object       = getMockbox().createStub();
+
+				object.$( "getDataForSearchEngine", [] );
+				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+					hasOwnDataGetter = true
+				} );
+
+				engine.getPaginatedRecordsForObject( objectName=objectName, page=1, pageSize=100 );
+
+				expect( object.$callLog().getDataForSearchEngine.len() ).toBe( 1 );
+				expect( object.$callLog().getDataForSearchEngine[1] ).toBe( {
+					  startRow = 1
+					, maxRows  = 100
+				} );
+			} );
+
+			it( "should fetch records from auto data getter when object does not have its own data getter", function(){
+				var engine       = _getSearchEngine();
+				var objectName   = "some_object";
+
+				engine.$( "getObjectDataForIndexing", [] );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+					hasOwnDataGetter = false
+				} );
+
+				engine.getPaginatedRecordsForObject( objectName=objectName, page=3, pageSize=50 );
+
+				expect( engine.$callLog().getObjectDataForIndexing.len() ).toBe( 1 );
+				expect( engine.$callLog().getObjectDataForIndexing[1] ).toBe( {
+					  objectName = objectName
+					, startRow   = 101
+					, maxRows    = 50
+				} );
 			} );
 		} );
 	}

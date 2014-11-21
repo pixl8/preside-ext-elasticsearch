@@ -132,32 +132,50 @@ component output=false singleton=true {
 		return true;
 	}
 
-	public boolean function indexRecords( required string objectName ) output=false {
-		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
-		var object       = _getPresideObjectService().getObject( arguments.objectName );
-		var docs         = "";
+	public boolean function indexAllRecords( required string objectName, required string indexName ) output=false {
+		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var esApi     = _getApiWrapper();
+		var records   = [];
+		var page      = 0;
+		var pageSize  = 100;
 
-		docs = object.getDataForSearchEngine();
-
-		// if ( IsBoolean( objectConfig.hasOwnDataGetter ?: "" ) && objectConfig.hasOwnDataGetter ) {
-		// } else {
-		// 	doc = getObjectDataForIndexing( arguments.objectName, arguments.id );
-		// }
-
-		if ( IsArray( docs ) && docs.len() ) {
-			var result = _getApiWrapper().addDocs(
-				  index   = objectConfig.indexName    ?: ""
-				, type    = objectConfig.documentType ?: ""
-				, docs    = docs
-				, idField = "id"
+		do{
+			var records = getPaginatedRecordsForObject(
+				  objectName = objectName
+				, page       = ++page
+				, pageSize   = pageSize
 			);
-		}
+			if ( records.len() ) {
+				esApi.addDocs(
+					  index   = arguments.indexName
+					, type    = objConfig.documentType ?: ""
+					, docs    = records
+					, idField = "id"
+				);
+			}
+		} while( records.len() );
 
 		return true;
 	}
 
-	public array function getObjectDataForIndexing( required string objectName, string id ) output=false {
-		throw( type="ElasticSearchEngine.not.implemented", message="Your object, [#arguments.objectName#], must supply its own getDataForSearchEngine() method because auto data fetching has not yet been implemented. This method must return an array of structs, each struct representing a document to index. It should accept optional arguments, 'id', 'maxRows' and 'startRow'." );
+	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) output=false {
+		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var selectDataArgs = {
+			  objectName   = arguments.objectName
+			, selectFields = calculateSelectFieldsForIndexing( arguments.objectName )
+			, savedFilters = objConfig.indexFilters ?: []
+			, maxRows      = arguments.maxRows
+			, startRow     = arguments.startRow
+			, groupby      = "#arguments.objectName#.id"
+		};
+
+		if ( Len( Trim( arguments.id ?: "" ) ) ) {
+			selectDataArgs.filter = { "#arguments.objectName#.id" = arguments.id };
+		}
+
+		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
+
+		return convertQueryToArrayOfDocs( arguments.objectName, records );
 	}
 
 	public boolean function deleteRecord( required string objectName, required string id ) output=false {
@@ -189,6 +207,25 @@ component output=false singleton=true {
 
 			return selectFields;
 		} );
+	}
+
+	public array function getPaginatedRecordsForObject( required string objectName, required numeric page, required numeric pageSize ) output=false {
+		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var maxRows   = arguments.pageSize;
+		var startRow  = ( ( arguments.page - 1 ) * maxRows ) + 1;
+
+		if ( objConfig.hasOwnDataGetter ) {
+			return _getPresideObjectService().getObject( arguments.objectName ).getDataForSearchEngine(
+				  maxRows  = maxRows
+				, startRow = startRow
+			);
+		}
+
+		return getObjectDataForIndexing(
+			  objectName = arguments.objectName
+			, maxRows    = maxRows
+			, startRow   = startRow
+		);
 	}
 
 // PRIVATE HELPERS
