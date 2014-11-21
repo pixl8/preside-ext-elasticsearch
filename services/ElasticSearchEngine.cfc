@@ -24,19 +24,46 @@ component output=false singleton=true {
 
 		for( var ix in indexes ){
 			if ( !apiWrapper.getAliasIndexes( ix ).len() ) {
-				createIndex( ix );
+				var ux = createIndex( ix );
+				apiWrapper.addAlias( index=ux, alias=ix );
 			}
 		}
 		return;
 	}
 
-	public void function createIndex( required string indexName ) output=false {
+	public string function createIndex( required string indexName ) output=false {
 		var settings   = getIndexSettings( arguments.indexName );
 		var uniqueId   = createUniqueIndexName( arguments.indexName );
 		var apiWrapper = _getApiWrapper();
 
 		apiWrapper.createIndex( index=uniqueId, settings=settings );
-		apiWrapper.addAlias( index=uniqueId, alias=arguments.indexName );
+
+		return uniqueId;
+	}
+
+	public void function rebuildIndex( required string indexName ) output=false {
+		var uniqueIndexName = createIndex( arguments.indexName );
+		var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
+
+		for( var objectName in objects ){
+			indexAllRecords( objectName, uniqueIndexName );
+		}
+
+		_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
+
+		cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
+
+		return;
+	}
+
+	public void function cleanupOldIndexes( required string keepIndex, required string alias ) output=false {
+		var indexes = _getApiWrapper().getAliasIndexes( arguments.alias );
+
+		for( var indexName in indexes ){
+			if ( indexName != arguments.keepIndex ) {
+				_getApiWrapper().deleteIndex( indexName );
+			}
+		}
 	}
 
 	public struct function getIndexSettings( required string indexName ) output=false {

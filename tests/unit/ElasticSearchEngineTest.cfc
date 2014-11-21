@@ -23,12 +23,13 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockConfigReader.$( "listIndexes", indexes.keyArray().sort( "textnocase" ) );
+				mockApiWrapper.$( "addAlias", {} );
 
 				for( var ix in indexes ){
 					mockApiWrapper.$( "getAliasIndexes" ).$args( ix ).$results( indexes[ ix ] );
 				}
 
-				engine.$( "createIndex" );
+				engine.$( "createIndex", CreateUUId() );
 
 				engine.ensureIndexesExist();
 
@@ -38,6 +39,36 @@ component extends="testbox.system.BaseSpec" {
 				expect( engine.$callLog().createIndex[3] ).toBe( [ "ix_4" ] );
 				expect( engine.$callLog().createIndex[4] ).toBe( [ "ix_6" ] );
 
+			} );
+
+			it( "should alias each new created index with the index name", function(){
+				var engine     = _getSearchEngine();
+				var indexes = {
+					  ix_1 = []
+					, ix_2 = [ CreateUUId() ]
+					, ix_3 = []
+					, ix_4 = []
+					, ix_5 = [ CreateUUId() ]
+					, ix_6 = []
+				};
+
+				mockConfigReader.$( "listIndexes", indexes.keyArray().sort( "textnocase" ) );
+
+				for( var ix in indexes ){
+					mockApiWrapper.$( "getAliasIndexes" ).$args( ix ).$results( indexes[ ix ] );
+				}
+				mockApiWrapper.$( "addAlias", {} );
+
+				uniqueIndexes = [ "ux1", "ux2", "ux3", "ux4" ];
+				engine.$( "createIndex" ).$results( uniqueIndexes[1], uniqueIndexes[2], uniqueIndexes[3], uniqueIndexes[4] );
+
+				engine.ensureIndexesExist();
+
+				expect( mockApiWrapper.$callLog().addAlias.len() ).toBe( 4 );
+				expect( mockApiWrapper.$callLog().addAlias[1] ).toBe( { index=uniqueIndexes[1], alias="ix_1" } );
+				expect( mockApiWrapper.$callLog().addAlias[2] ).toBe( { index=uniqueIndexes[2], alias="ix_3" } );
+				expect( mockApiWrapper.$callLog().addAlias[3] ).toBe( { index=uniqueIndexes[3], alias="ix_4" } );
+				expect( mockApiWrapper.$callLog().addAlias[4] ).toBe( { index=uniqueIndexes[4], alias="ix_6" } );
 			} );
 		} );
 
@@ -50,29 +81,11 @@ component extends="testbox.system.BaseSpec" {
 				engine.$( "createUniqueIndexName" ).$args( indexName ).$results( uniqueIndexName );
 				engine.$( "getIndexSettings" ).$args( indexName ).$results( {} );
 				mockApiWrapper.$( "createIndex", {} );
-				mockApiWrapper.$( "addAlias", {} );
 
-				engine.createIndex( indexName );
+				expect( engine.createIndex( indexName ) ).toBe( uniqueIndexName );
 
 				expect( mockApiWrapper.$callLog().createIndex.len() ).toBe( 1 );
 				expect( mockApiWrapper.$callLog().createIndex[1].index ?: "" ).toBe( uniqueIndexName );
-			} );
-
-			it( "should alias the unique index name with the configured index name", function(){
-				var engine             = _getSearchEngine();
-				var indexName       = "My index";
-				var uniqueIndexName = CreateUUId();
-
-				engine.$( "createUniqueIndexName" ).$args( indexName ).$results( uniqueIndexName );
-				engine.$( "getIndexSettings" ).$args( indexName ).$results( {} );
-				mockApiWrapper.$( "createIndex", {} );
-				mockApiWrapper.$( "addAlias", {} );
-
-				engine.createIndex( indexName );
-
-				expect( mockApiWrapper.$callLog().addAlias.len() ).toBe( 1 );
-				expect( mockApiWrapper.$callLog().addAlias[1].index ?: "" ).toBe( uniqueIndexName );
-				expect( mockApiWrapper.$callLog().addAlias[1].alias ?: "" ).toBe( indexName );
 			} );
 
 			it( "should pass configured index settings to the elasticsearch server", function(){
@@ -84,13 +97,89 @@ component extends="testbox.system.BaseSpec" {
 				engine.$( "createUniqueIndexName" ).$args( indexName ).$results( uniqueIndexName );
 				engine.$( "getIndexSettings" ).$args( indexName ).$results( settings);
 				mockApiWrapper.$( "createIndex", {} );
-				mockApiWrapper.$( "addAlias", {} );
 
 				engine.createIndex( indexName );
 
 				expect( mockApiWrapper.$callLog().createIndex.len() ).toBe( 1 );
 				expect( mockApiWrapper.$callLog().createIndex[1].settings ?: {} ).toBe( settings );
 			} );
+		} );
+
+		describe( "rebuildIndex()", function(){
+			it( "should create a new version of the index with a unique name", function(){
+				var engine          = _getSearchEngine();
+				var indexName       = "myindex";
+				var uniqueIndexName = CreateUUId();
+
+				mockApiWrapper.$( "addAlias", {} );
+				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
+				mockConfigReader.$( "listObjectsForIndex", [] );
+				engine.$( "indexAllRecords", true );
+				engine.$( "cleanupOldIndexes" );
+
+				engine.rebuildIndex( indexName );
+
+				expect( engine.$callLog().createIndex.len() ).toBe( 1 );
+				expect( engine.$callLog().createIndex[1] ).toBe( [ indexName ] );
+			} );
+
+			it( "should loop over the objects configured for the index and index all their docs", function(){
+				var engine          = _getSearchEngine();
+				var indexName       = "myindex";
+				var uniqueIndexName = CreateUUId();
+				var objects         = [ "obj1", "obj2", "obj3", "obj4" ];
+
+				mockApiWrapper.$( "addAlias", {} );
+				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
+				mockConfigReader.$( "listObjectsForIndex" ).$args( indexName ).$results( objects );
+				for( var objName in objects ){
+					engine.$( "indexAllRecords" ).$args( objName, uniqueIndexName ).$results( true );
+				}
+				engine.$( "cleanupOldIndexes" );
+
+				engine.rebuildIndex( indexName );
+
+				expect( engine.$callLog().indexAllRecords.len() ).toBe( objects.len() );
+				var i=0;
+				for( var objName in objects ){
+					expect( engine.$callLog().indexAllRecords[++i] ).toBe( [ objName, uniqueIndexName ] );
+				}
+			} );
+
+			it( "should repoint the index alias to the newly created index", function(){
+				var engine          = _getSearchEngine();
+				var indexName       = "myindex";
+				var uniqueIndexName = CreateUUId();
+
+				mockApiWrapper.$( "addAlias", {} );
+				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
+				mockConfigReader.$( "listObjectsForIndex", [] );
+				engine.$( "indexAllRecords", true );
+				engine.$( "cleanupOldIndexes" );
+
+				engine.rebuildIndex( indexName );
+
+				expect( mockApiWrapper.$callLog().addAlias.len() ).toBe( 1 );
+				expect( mockApiWrapper.$callLog().addAlias[1] ).toBe( { index=uniqueIndexName, alias=indexName } );
+			} );
+
+			it( "should delete old unused indexes", function(){
+				var engine          = _getSearchEngine();
+				var indexName       = "myindex";
+				var uniqueIndexName = CreateUUId();
+
+				mockApiWrapper.$( "addAlias", {} );
+				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
+				mockConfigReader.$( "listObjectsForIndex", [] );
+				engine.$( "indexAllRecords", true );
+				engine.$( "cleanupOldIndexes" );
+
+				engine.rebuildIndex( indexName );
+
+				expect( engine.$callLog().cleanupOldIndexes.len() ).toBe( 1 );
+				expect( engine.$callLog().cleanupOldIndexes[1] ).toBe( { keepIndex=uniqueIndexName, alias=indexName } );
+			} );
+
 		} );
 
 		describe( "createUniqueIndexName()", function(){
