@@ -223,6 +223,7 @@ component output=false singleton=true {
 			var configuredFields = objConfig.fields ?: [];
 			var selectFields     = [];
 			var poService        = _getPresideObjectService();
+			var isPageType       = poService.getObjectAttribute( args.objectName, "isPageType", false );
 
 			for( var field in configuredFields ){
 				if ( poService.isManyToManyProperty( args.objectName, field ) ) {
@@ -230,6 +231,21 @@ component output=false singleton=true {
 				} else {
 					selectFields.append( args.objectName & "." & field );
 				}
+			}
+
+			if ( isPageType ) {
+				var pageConfiguredFields = _getConfigurationReader().getObjectConfiguration( "page" ).fields ?: [];
+
+				for( var field in pageConfiguredFields ){
+					if ( !configuredFields.find( field ) ) {
+						if ( poService.isManyToManyProperty( "page", field ) ) {
+							selectFields.append( "group_concat( distinct page$#field#.id ) as #field#" );
+						} else {
+							selectFields.append( "page." & field );
+						}
+					}
+				}
+
 			}
 
 			return selectFields;

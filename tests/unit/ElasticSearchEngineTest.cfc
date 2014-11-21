@@ -500,6 +500,7 @@ component extends="testbox.system.BaseSpec" {
 				var objectName       = "myobj";
 				var configuredFields = [ "id", "field1", "field2" ];
 
+				mockPresideObjectService.$( "getObjectAttribute", false );
 				mockPresideObjectService.$( "isManyToManyProperty", false );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ fields = configuredFields } );
 
@@ -511,12 +512,28 @@ component extends="testbox.system.BaseSpec" {
 				var objectName       = "myobj";
 				var configuredFields = [ "id", "field1", "field2", "field3", "field4" ];
 
+				mockPresideObjectService.$( "getObjectAttribute", false );
 				mockPresideObjectService.$( "isManyToManyProperty" ).$args( objectName, "field1" ).$results( true );
 				mockPresideObjectService.$( "isManyToManyProperty" ).$args( objectName, "field3" ).$results( true );
 				mockPresideObjectService.$( "isManyToManyProperty", false );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ fields = configuredFields } );
 
 				expect( engine.calculateSelectFieldsForIndexing( objectName) ).toBe( [ "myobj.id", "group_concat( distinct field1.id ) as field1", "myobj.field2", "group_concat( distinct field3.id ) as field3", "myobj.field4" ] );
+			} );
+
+			it( "should return additional field selections from the page object when the object is a page type", function(){
+				var engine           = _getSearchEngine();
+				var objectName       = "myobj";
+				var configuredFields = [ "id", "field1", "field2", "field3", "field4" ];
+				var pageFields = [ "id", "pageField1", "pageField2", "field3", "field4" ];
+
+				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "isPageType", false ).$results( true );
+				mockPresideObjectService.$( "isManyToManyProperty" ).$args( "page", "pageField2" ).$results( true );
+				mockPresideObjectService.$( "isManyToManyProperty", false );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ fields = configuredFields } );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( "page" ).$results({ fields = pageFields } );
+
+				expect( engine.calculateSelectFieldsForIndexing( objectName) ).toBe( [ "myobj.id", "myobj.field1", "myobj.field2", "myobj.field3", "myobj.field4", "page.pageField1", "group_concat( distinct page$pageField2.id ) as pageField2" ] );
 			} );
 		} );
 
