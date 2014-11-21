@@ -100,6 +100,7 @@ component output=false {
 
 			configuration.indexName        = poService.getObjectAttribute( args.objectName, "searchIndex" );
 			configuration.documentType     = poService.getObjectAttribute( args.objectName, "searchDocumentType" );
+			configuration.indexFilters     = ListToArray( poService.getObjectAttribute( args.objectName, "searchIndexFilters" ) );
 			configuration.hasOwnDataGetter = doesObjectHaveDataGetterMethod( args.objectName );
 			configuration.fields           = [];
 

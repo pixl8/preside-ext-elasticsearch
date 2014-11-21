@@ -150,6 +150,20 @@ component extends="testbox.system.BaseSpec" {
 
 				expect( configuration.hasOwnDataGetter ?: "" ).toBe( false );
 			} );
+
+			it( "should return an array of saved filters to use when retrieving data for indexing", function(){
+				var svc          = _getService();
+				var objectName   = "someobject";
+				var filters      = "filter1,filter2,filter3";
+
+				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchIndexFilters" ).$results( filters );
+				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectProperties", [] );
+				svc.$( "doesObjectHaveDataGetterMethod", false );
+
+				var configuration = svc.getObjectConfiguration( objectName );
+				expect( configuration.indexFilters ?:[] ).toBe( ListToArray( filters ) );
+			} );
 		} );
 
 		describe( "getFieldConfiguration()", function(){
