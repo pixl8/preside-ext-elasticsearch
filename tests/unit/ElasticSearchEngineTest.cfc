@@ -275,7 +275,7 @@ component extends="testbox.system.BaseSpec" {
 				for( var dt in docTypes ){
 					mockConfigReader.$( "getFields" ).$args( indexName, dt ).$results( docTypes[ dt ] );
 					for( var field in docTypes[ dt ] ) {
-						engine.$( "getElasticSearchMappingFromFieldConfiguration" ).$args( argumentCollection=docTypes[ dt ][ field ] ).$results( { test=field } );
+						engine.$( "getElasticSearchMappingFromFieldConfiguration" ).$args( argumentCollection=docTypes[ dt ][ field ], name=field ).$results( { test=field } );
 					}
 				}
 

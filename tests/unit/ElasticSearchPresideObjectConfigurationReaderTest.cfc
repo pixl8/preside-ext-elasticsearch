@@ -107,14 +107,14 @@ component extends="testbox.system.BaseSpec" {
 			it( "should return array of fields that are configured for the index, always including 'id'", function(){
 				var svc        = _getService();
 				var objectName = "some_object";
-				var props      = [];
+				var props      = {};
 
 				for( var i=1; i<=5; i++ ){
 					var prop = getMockBox().createStub();
 					prop.$( "getAttribute" ).$args( "name" ).$results( "prop_" & i );
 					mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, "prop_" & i, "searchEnabled" ).$results( i mod 2 );
 
-					props.append( prop );
+					props[ "prop_" & i ] = prop;
 				}
 
 				mockPresideObjectService.$( "getObjectProperties" ).$args( objectName ).$results( props );
@@ -122,7 +122,7 @@ component extends="testbox.system.BaseSpec" {
 				svc.$( "doesObjectHaveDataGetterMethod", false );
 
 				var configuration = svc.getObjectConfiguration( objectName );
-				expect( configuration.fields ?: [] ).toBe( [ "prop_1", "prop_3", "prop_5", "id" ] );
+				expect( ( configuration.fields ?: [] ).sort( "textnocase" ) ).toBe( [ "id", "prop_1", "prop_3", "prop_5" ] );
 			} );
 
 			it( "should set hasOwnDataGetter to true when the object supplies its own getDataForSearchEngine() method", function(){

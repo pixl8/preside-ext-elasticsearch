@@ -112,7 +112,9 @@ component output=false {
 				configuration.documentType = args.objectName;
 			}
 
-			for( var prop in poService.getObjectProperties( args.objectName ) ){
+			var props = poService.getObjectProperties( args.objectName );
+			for( var propName in props ){
+				var prop          = props[ propName ];
 				var searchEnabled = poService.getObjectPropertyAttribute( args.objectName, prop.getAttribute( "name" ), "searchEnabled" );
 
 				if ( IsBoolean( searchEnabled ) && searchEnabled ){

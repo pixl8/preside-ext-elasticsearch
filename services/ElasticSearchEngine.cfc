@@ -80,10 +80,9 @@ component output=false singleton=true {
 
 		for( var docType in docTypes ){
 			var fields = configWrapper.getFields( arguments.indexName, docType );
-
 			mappings[ docType ] = { properties={} };
 			for( var field in fields ){
-				mappings[ docType ].properties[ field ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ] );
+				mappings[ docType ].properties[ field ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=field );
 			}
 		}
 
@@ -290,17 +289,10 @@ component output=false singleton=true {
 		};
 
 		var analysis = settings.index.analysis = {};
-
-		analysis.filter = {
-			  preside_stemmer   = { type="stemmer", language="English"                 }
-			, preside_stopwords = { type="stop"   , stopwords=getConfiguredStopWords() }
-			, preside_synonyms  = { type="synonym", synonyms=getConfiguredSynonyms()   }
-		};
 		analysis.analyzer = {};
-
 		analysis.analyzer.preside_analyzer = {
 			  tokenizer   = "standard"
-			, filter      = [ "standard", "asciifolding", "lowercase", "preside_stopwords", "preside_synonyms", "preside_stemmer" ]
+			, filter      = [ "standard", "asciifolding", "lowercase" ]
 			, char_filter = [ "html_strip" ]
 		};
 		analysis.analyzer.preside_sortable = {
@@ -308,6 +300,19 @@ component output=false singleton=true {
 			, filter      = [ "lowercase" ]
 		};
 		analysis.analyzer[ "default" ] = analysis.analyzer.preside_analyzer;
+
+		analysis.filter = { preside_stemmer = { type="stemmer", language="English" } };
+		var stopwords = getConfiguredStopWords();
+		if ( stopwords.len() ) {
+			analysis.filter.preside_stopwords = { type="stop"   , stopwords=stopwords }
+			analysis.analyzer.preside_analyzer.filter.append( "preside_stopwords" );
+		}
+		var synonyms = getConfiguredSynonyms();
+		if ( synonyms.len() ) {
+			analysis.filter.preside_synonyms = { type="synonym", synonyms=synonyms }
+			analysis.analyzer.preside_analyzer.filter.append( "preside_synonyms" );
+		}
+		analysis.analyzer.preside_analyzer.filter.append( "preside_stemmer" );
 
 		return settings;
 	}
