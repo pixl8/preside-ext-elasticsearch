@@ -18,6 +18,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "listObjects", objNameArray );
 				for( objectname in objects ){
 					mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchEnabled", false ).$results( objects[ objectName ] );
+					mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "isPageType", false ).$results( false );
 				}
 
 				expect( svc.listSearchEnabledObjects() ).toBe( [ "object_a", "object_d", "object_e", "object_g" ] );
@@ -36,6 +37,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "listObjects", objNameArray );
 				for( objectname in objects ){
 					mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchEnabled", false ).$results( objects[ objectName ] );
+					mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "isPageType", false ).$results( false );
 				}
 
 				expect( svc.listSearchEnabledObjects() ).toBe( [ "object_a", "object_d" ] );

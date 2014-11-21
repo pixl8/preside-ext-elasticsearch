@@ -83,7 +83,8 @@ component output=false {
 			var poService = _getPresideObjectService();
 
 			return poService.listObjects().filter( function( objectName ){
-				var searchEnabled = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", false );
+				var isPageType    = poService.getObjectAttribute( objectName, "isPageType", false );
+				var searchEnabled = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", isPageType );
 
 				return IsBoolean( searchEnabled ) && searchEnabled;
 			} );
