@@ -7,6 +7,7 @@ component output=false singleton=true {
 	 * @presideObjectService.inject presideObjectService
 	 */
 	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService ) output=false {
+		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
 		_setPresideObjectService( arguments.presideObjectService );
@@ -169,6 +170,27 @@ component output=false singleton=true {
 		);
 	}
 
+	public array function calculateSelectFieldsForIndexing( required string objectName ) output=false {
+		var args = arguments;
+
+		return _simpleLocalCache( "calculateSelectFieldsForIndexing" & args.objectName, function(){
+			var objConfig        = _getConfigurationReader().getObjectConfiguration( args.objectName );
+			var configuredFields = objConfig.fields ?: [];
+			var selectFields     = [];
+			var poService        = _getPresideObjectService();
+
+			for( var field in configuredFields ){
+				if ( poService.isManyToManyProperty( args.objectName, field ) ) {
+					selectFields.append( "group_concat( distinct #field#.id ) as #field#" );
+				} else {
+					selectFields.append( args.objectName & "." & field );
+				}
+			}
+
+			return selectFields;
+		} );
+	}
+
 // PRIVATE HELPERS
 	/**
 	 * odd proxy to ensureIndexesExist() - this simply helps us to
@@ -218,6 +240,16 @@ component output=false singleton=true {
 		return []; // todo
 	}
 
+	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
+		var cache = _getLocalCache();
+
+		if ( !cache.keyExists( cacheKey ) ) {
+			cache[ cacheKey ] = generator();
+		}
+
+		return cache[ cacheKey ] ?: NullValue();
+	}
+
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
 		return _apiWrapper;
@@ -238,5 +270,12 @@ component output=false singleton=true {
 	}
 	private void function _setPresideObjectService( required any presideObjectService ) output=false {
 		_presideObjectService = arguments.presideObjectService;
+	}
+
+	private struct function _getLocalCache() output=false {
+		return _localCache;
+	}
+	private void function _setLocalCache( required struct localCache ) output=false {
+		_localCache = arguments.localCache;
 	}
 }

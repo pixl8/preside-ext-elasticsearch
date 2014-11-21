@@ -396,6 +396,32 @@ component extends="testbox.system.BaseSpec" {
 				} );
 			} );
 		} );
+
+		describe( "calculateSelectFieldsForIndexing()", function(){
+			it( "should return an array of field names that are configured for search on the object", function(){
+				var engine           = _getSearchEngine();
+				var objectName       = "myobj";
+				var configuredFields = [ "id", "field1", "field2" ];
+
+				mockPresideObjectService.$( "isManyToManyProperty", false );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ fields = configuredFields } );
+
+				expect( engine.calculateSelectFieldsForIndexing( objectName) ).toBe( [ "myobj.id", "myobj.field1", "myobj.field2" ] );
+			} );
+
+			it( "should return a group_concat call for fields that have a many-to-many relationship", function(){
+				var engine           = _getSearchEngine();
+				var objectName       = "myobj";
+				var configuredFields = [ "id", "field1", "field2", "field3", "field4" ];
+
+				mockPresideObjectService.$( "isManyToManyProperty" ).$args( objectName, "field1" ).$results( true );
+				mockPresideObjectService.$( "isManyToManyProperty" ).$args( objectName, "field3" ).$results( true );
+				mockPresideObjectService.$( "isManyToManyProperty", false );
+				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({ fields = configuredFields } );
+
+				expect( engine.calculateSelectFieldsForIndexing( objectName) ).toBe( [ "myobj.id", "group_concat( distinct field1.id ) as field1", "myobj.field2", "group_concat( distinct field3.id ) as field3", "myobj.field4" ] );
+			} );
+		} );
 	}
 
 // PRIVATE HELPERS
