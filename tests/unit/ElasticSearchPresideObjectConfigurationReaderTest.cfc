@@ -515,6 +515,32 @@ component extends="testbox.system.BaseSpec" {
 				expect(  svc.doesObjectHaveDataGetterMethod( objectName ) ).toBeTrue(  );
 			} );
 		} );
+
+		describe( "listObjectsForIndex()", function(){
+			it( "should return an array of object names who's object uses the given index", function(){
+				var svc        = _getService();
+				var indexName  = "myindex";
+				var allObjects = {
+					  obj1 = { indexName=CreateUUId() }
+					, obj2 = { indexName=indexName }
+					, obj3 = { indexName=indexName }
+					, obj4 = { indexName=CreateUUId() }
+					, obj5 = { indexName=CreateUUId() }
+					, obj6 = { indexName=indexName }
+				};
+
+				svc.$( "listSearchEnabledObjects", allObjects.keyArray() );
+
+				for( var objName in allObjects ) {
+					svc.$( "getObjectConfiguration" ).$args( objName ).$results( allObjects[ objName ] );
+				}
+
+				var objectsForIndex = svc.listObjectsForIndex( indexName ).sort( "textnocase" );
+
+				expect( objectsForIndex ).toBe( [ "obj2", "obj3", "obj6" ] );
+
+			} );
+		} );
 	}
 
 // HELPERS

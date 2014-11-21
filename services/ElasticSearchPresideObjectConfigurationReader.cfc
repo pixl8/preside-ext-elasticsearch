@@ -195,6 +195,18 @@ component output=false {
 		} );
 	}
 
+	public array function listObjectsForIndex( required string indexName ) output=false {
+		var args = arguments;
+
+		return _simpleLocalCache( "listObjectsForIndex" & args.indexName, function(){
+			return listSearchEnabledObjects().filter( function( objName ){
+				var objConfig = getObjectConfiguration( objName );
+
+				return ( objConfig.indexName ?: "" ) == args.indexName;
+			} );
+		} );
+	}
+
 // PRIVATE HELPERS
 	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
 		var cache = _getLocalCache();
