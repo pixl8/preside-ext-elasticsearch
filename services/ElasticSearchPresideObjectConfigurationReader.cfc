@@ -83,8 +83,9 @@ component output=false {
 			var poService = _getPresideObjectService();
 
 			return poService.listObjects().filter( function( objectName ){
-				var isPageType    = poService.getObjectAttribute( objectName, "isPageType", false );
-				var searchEnabled = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", isPageType );
+				var isPageType       = poService.getObjectAttribute( objectName, "isPageType", false );
+				var isSystemPageType = isPageType && poService.getObjectAttribute( objectName, "isSystemPageType", false );
+				var searchEnabled    = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", ( isPageType && !isSystemPageType ) );
 
 				return IsBoolean( searchEnabled ) && searchEnabled;
 			} );

@@ -30,6 +30,7 @@ component extends="testbox.system.BaseSpec" {
 				}
 
 				engine.$( "createIndex", CreateUUId() );
+				engine.$( "rebuildIndex" );
 
 				engine.ensureIndexesExist();
 
@@ -61,6 +62,7 @@ component extends="testbox.system.BaseSpec" {
 
 				uniqueIndexes = [ "ux1", "ux2", "ux3", "ux4" ];
 				engine.$( "createIndex" ).$results( uniqueIndexes[1], uniqueIndexes[2], uniqueIndexes[3], uniqueIndexes[4] );
+				engine.$( "rebuildIndex" );
 
 				engine.ensureIndexesExist();
 
@@ -678,15 +680,17 @@ component extends="testbox.system.BaseSpec" {
 		mockConfigReader         = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
 		mockApiWrapper           = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
 		mockPresideObjectService = getMockBox().createStub();
+		mockContentRenderer      = getMockBox().createStub();
 
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
 		engine.$( "_checkIndexesExist" );
 
 		return engine.init(
-			  configurationReader  = mockConfigReader
-			, apiWrapper           = mockApiWrapper
-			, presideObjectService = mockPresideObjectService
+			  configurationReader    = mockConfigReader
+			, apiWrapper             = mockApiWrapper
+			, presideObjectService   = mockPresideObjectService
+			, contentRendererService = mockContentRenderer
 		);
 	}
 

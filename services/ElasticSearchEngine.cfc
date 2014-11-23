@@ -2,15 +2,17 @@ component output=false singleton=true {
 
 // CONSTRUCTOR
 	/**
-	 * @apiWrapper.inject           elasticSearchApiWrapper
-	 * @configurationReader.inject  elasticSearchPresideObjectConfigurationReader
-	 * @presideObjectService.inject presideObjectService
+	 * @apiWrapper.inject             elasticSearchApiWrapper
+	 * @configurationReader.inject    elasticSearchPresideObjectConfigurationReader
+	 * @presideObjectService.inject   presideObjectService
+	 * @contentRendererService.inject contentRendererService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
 		_setPresideObjectService( arguments.presideObjectService );
+		_setContentRendererService( arguments.contentRendererService );
 
 		_checkIndexesExist();
 
@@ -26,6 +28,7 @@ component output=false singleton=true {
 			if ( !apiWrapper.getAliasIndexes( ix ).len() ) {
 				var ux = createIndex( ix );
 				apiWrapper.addAlias( index=ux, alias=ix );
+				rebuildIndex( ix );
 			}
 		}
 		return;
@@ -204,6 +207,29 @@ component output=false singleton=true {
 		return convertQueryToArrayOfDocs( arguments.objectName, records );
 	}
 
+	public array function convertQueryToArrayOfDocs( required string objectName, required query records ) output=false {
+		var docs = [];
+
+		for( var record in arguments.records ){
+			for( var key in record ){
+				if ( !Len( Trim( record[ key ] ) ) ) {
+					record.delete( key );
+					continue;
+				}
+
+				if ( _isManyToManyField( arguments.objectName, key ) ) {
+					record[ key ] = ListToArray( record[ key ] );
+					continue;
+				}
+
+				record[ key ] = _renderField( arguments.objectName, key, record[ key ] );
+			}
+			docs.append( record );
+		}
+
+		return docs;
+	}
+
 	public boolean function deleteRecord( required string objectName, required string id ) output=false {
 		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
@@ -335,6 +361,48 @@ component output=false singleton=true {
 		return cache[ cacheKey ] ?: NullValue();
 	}
 
+	private boolean function _isManyToManyField( required string objectName, required string fieldName ) output=false {
+		var args = arguments;
+		return _simpleLocalCache( "_isManyToManyField" & args.objectName & args.fieldName, function(){
+			var objConfig = _getConfigurationReader().getObjectConfiguration( args.objectName );
+
+			if ( objConfig.fields.find( args.fieldName ) ) {
+				return _getPresideObjectService().isManyToManyProperty( args.objectName, args.fieldName );
+			}
+
+			if ( _getPresideObjectService().getObjectAttribute( args.objectName, "isPageType", false ) ) {
+				return _isManyToManyField( "page", args.fieldName )
+			}
+
+			return false;
+		} );
+	}
+
+	private string function _renderField( required string objectName, required string fieldName, required any value ) output=false {
+		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+
+		if ( objConfig.fields.find( arguments.fieldName ) ) {
+				return _getContentRendererService().renderField(
+					  object   = arguments.objectName
+					, property = arguments.fieldName
+					, data     = arguments.value
+					, context  = [ "elasticsearchindex" ]
+				);
+			try {
+			} catch( any e ) {
+				// TODO log the error
+				return arguments.value;
+			}
+		}
+
+		if ( _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false ) ) {
+			return _renderField( "page", arguments.fieldName, arguments.value );
+		}
+
+		return arguments.value;
+	}
+
+
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
 		return _apiWrapper;
@@ -362,5 +430,12 @@ component output=false singleton=true {
 	}
 	private void function _setLocalCache( required struct localCache ) output=false {
 		_localCache = arguments.localCache;
+	}
+
+	private any function _getContentRendererService() output=false {
+		return _contentRendererService;
+	}
+	private void function _setContentRendererService( required any contentRendererService ) output=false {
+		_contentRendererService = arguments.contentRendererService;
 	}
 }
