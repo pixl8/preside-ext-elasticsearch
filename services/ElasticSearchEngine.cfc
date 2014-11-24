@@ -6,15 +6,17 @@ component output=false singleton=true {
 	 * @configurationReader.inject    elasticSearchPresideObjectConfigurationReader
 	 * @presideObjectService.inject   presideObjectService
 	 * @contentRendererService.inject contentRendererService
-	 * @interceptorService.inject     interceptorService
+	 * @interceptorService.inject     coldbox:InterceptorService
+	 * @pageDao.inject                presidecms:object:page
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
 		_setPresideObjectService( arguments.presideObjectService );
 		_setContentRendererService( arguments.contentRendererService );
 		_setInterceptorService( arguments.interceptorService );
+		_setPageDao( arguments.pageDao );
 
 		_checkIndexesExist();
 
@@ -157,7 +159,7 @@ component output=false singleton=true {
 			doc = getObjectDataForIndexing( arguments.objectName, arguments.id );
 		}
 
-		_announceInterception( "preElasticSearchIndexDoc", { doc = doc[1] ?: {} } );
+		_announceInterception( "preElasticSearchIndexDoc", { objectName=arguments.objectName, id=arguments.id, doc = doc } );
 
 		if ( !IsArray( doc ) || !doc.len() ) {
 			return _getApiWrapper().deleteDoc(
@@ -192,7 +194,10 @@ component output=false singleton=true {
 				, page       = ++page
 				, pageSize   = pageSize
 			);
-			_announceInterception( "preElasticSearchIndexDocs", { docs = records } );
+			var recordCount = records.len();
+
+			_announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
+
 			if ( records.len() ) {
 				esApi.addDocs(
 					  index   = arguments.indexName
@@ -202,7 +207,8 @@ component output=false singleton=true {
 				);
 			}
 			_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
-		} while( records.len() );
+
+		} while( recordCount );
 
 		return true;
 	}
@@ -326,6 +332,16 @@ component output=false singleton=true {
 		);
 	}
 
+	public void function filterPageTypeRecords( required string objectName, required array records ) output=false {
+		if ( _isPageType( arguments.objectName ) ) {
+			for( var i=arguments.records.len(); i > 0; i-- ){
+				if ( !_isPageRecordValidForSearch( arguments.records[i] ) ) {
+					arguments.records.deleteAt( i );
+				}
+			}
+		}
+	}
+
 // PRIVATE HELPERS
 	/**
 	 * odd proxy to ensureIndexesExist() - this simply helps us to
@@ -373,6 +389,50 @@ component output=false singleton=true {
 		return settings;
 	}
 
+	private boolean function _isPageRecordValidForSearch( required struct pagerecord ) output=false {
+		var cache      = request._isPageRecordValidForSearchCache = request._isPageRecordValidForSearchCache ?: {};
+		var pageId     = arguments.pageRecord.id ?: "";
+		var pageFields = [ "_hierarchy_id", "_hierarchy_lineage", "active", "internal_search_access", "embargo_date", "expiry_date" ];
+		var page       = _getPageDao().selectData( id=pageId, selectFields=pageFields );
+		var isActive   = function( required boolean active, required string embargo_date, required string expiry_date ) {
+			return arguments.active && ( !IsDate( arguments.embargo_date ) || Now() >= arguments.embargo_date ) && ( !IsDate( arguments.expiry_date ) || Now() <= arguments.expiry_date );
+		};
+
+		if ( !page.recordCount ) {
+			return false;
+		}
+
+		for( var p in page ) { cache[ p._hierarchy_id ] = p; }
+
+		if ( !isActive( page.active, page.embargo_date, page.expiry_date ) || page.internal_search_access == "block" ) {
+			return false;
+		}
+
+		var internalSearchAccess = page.internal_search_access;
+		var lineage              = ListToArray( page._hierarchy_lineage, "/" );
+
+		for( var i=lineage.len(); i>0; i-- ){
+			if ( !cache.keyExists( lineage[i] ) ){
+				var parentPage = _getPageDao().selectData( filter={ _hierarchy_id=lineage[i] }, selectFields=pageFields );
+				for( var p in parentPage ) { cache[ p._hierarchy_id ] = p; }
+			}
+
+			var parentPage = cache[ lineage[ i ] ];
+
+			if ( !isActive( parentPage.active, parentPage.embargo_date, parentPage.expiry_date ) ) {
+				return false;
+			}
+
+			if ( internalSearchAccess != "allow" && parentPage.internal_search_access == "block" ) {
+				return false;
+			}
+
+			internalSearchAccess = parentPage.internal_search_access;
+		}
+
+		return true;
+	}
+
 	public array function getConfiguredStopWords() output=false {
 		return []; // todo
 	}
@@ -412,13 +472,13 @@ component output=false singleton=true {
 		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
 		if ( objConfig.fields.find( arguments.fieldName ) ) {
+			try {
 				return _getContentRendererService().renderField(
 					  object   = arguments.objectName
 					, property = arguments.fieldName
 					, data     = arguments.value
 					, context  = [ "elasticsearchindex" ]
 				);
-			try {
 			} catch( any e ) {
 				// TODO log the error
 				return arguments.value;
@@ -437,6 +497,13 @@ component output=false singleton=true {
 
 		return interceptData.interceptorResult ?: {};
 	}
+
+	private boolean function _isPageType( required string objectName ) output=false {
+		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
+
+		return IsBoolean( isPageType ) && isPageType;
+	}
+
 
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
@@ -479,5 +546,12 @@ component output=false singleton=true {
 	}
 	private void function _setInterceptorService( required any interceptorService ) output=false {
 		_interceptorService = arguments.interceptorService;
+	}
+
+	private any function _getPageDao() output=false {
+		return _pageDao;
+	}
+	private void function _setPageDao( required any pageDao ) output=false {
+		_pageDao = arguments.pageDao;
 	}
 }

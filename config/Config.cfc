@@ -4,8 +4,12 @@ component output=false {
 		var settings = conf.settings ?: {};
 
 		settings.filters.elasticSearchPageFilter = {
-			filter = "page.internal_search_access != 'block'"
+			filter = "page.internal_search_access is null or page.internal_search_access != 'block'"
 		};
+
+		conf.interceptors.prepend(
+			{ class="app.extensions.preside-ext-elasticsearch.interceptors.SearchEngineInterceptor", properties={} }
+		);
 
 		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchCreateIndex"               );
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchCreateIndex"              );

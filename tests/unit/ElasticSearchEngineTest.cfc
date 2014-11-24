@@ -682,6 +682,7 @@ component extends="testbox.system.BaseSpec" {
 		mockPresideObjectService = getMockBox().createStub();
 		mockContentRenderer      = getMockBox().createStub();
 		mockInterceptorService   = getMockBox().createStub();
+		mockPageDao              = getMockBox().createStub();
 
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
@@ -694,6 +695,7 @@ component extends="testbox.system.BaseSpec" {
 			, presideObjectService   = mockPresideObjectService
 			, contentRendererService = mockContentRenderer
 			, interceptorService     = mockInterceptorService
+			, pageDao                = mockPageDao
 		);
 	}
 
