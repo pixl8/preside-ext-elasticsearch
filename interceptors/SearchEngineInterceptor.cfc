@@ -31,13 +31,16 @@ component extends="coldbox.system.Interceptor" output=false {
 	}
 
 	public void function postUpdateObjectData( event, interceptData ) output=false {
-		var id = interceptData.id ?: "";
+		var objectName = interceptData.objectName ?: "";
+		var id         = interceptData.id ?: "";
 
-		if ( Len( Trim( id ) ) ) {
+		if ( Len( Trim( objectName ) ) && Len( Trim( id ) ) ) {
 			_getSearchEngine().indexRecord(
-				  objectName = interceptData.objectName ?: ""
+				  objectName = objectName
 				, id         = id
 			);
+
+			_getSearchEngine().reindexChildPages( objectName, id, interceptData.data ?: {} );
 		}
 	}
 

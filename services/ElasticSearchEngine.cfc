@@ -8,8 +8,9 @@ component output=false singleton=true {
 	 * @contentRendererService.inject contentRendererService
 	 * @interceptorService.inject     coldbox:InterceptorService
 	 * @pageDao.inject                presidecms:object:page
+	 * @siteTreeService.inject        siteTreeService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -17,6 +18,7 @@ component output=false singleton=true {
 		_setContentRendererService( arguments.contentRendererService );
 		_setInterceptorService( arguments.interceptorService );
 		_setPageDao( arguments.pageDao );
+		_setSiteTreeService( arguments.siteTreeService );
 
 		_checkIndexesExist();
 
@@ -358,6 +360,23 @@ component output=false singleton=true {
 		}
 	}
 
+	public void function reindexChildPages( required string objectName, required string recordId, required struct updatedData  ) output=false {
+		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.recordId ) : arguments.objectName;
+
+		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) && _isPageType( objName ) ) {
+			var watchProps = [ "active", "embargo_date", "expiry_date", "internal_search_access" ];
+
+			for ( var prop in watchProps ) {
+				if ( arguments.updatedData.keyExists( prop ) ) {
+					var children = _getSiteTreeService().getDescendants( id=arguments.recordId, selectFields=[ "id" ] );
+					for( var child in children ) {
+						indexRecord( objName, child.id );
+					}
+				}
+			}
+		}
+	}
+
 // PRIVATE HELPERS
 	/**
 	 * odd proxy to ensureIndexesExist() - this simply helps us to
@@ -575,5 +594,12 @@ component output=false singleton=true {
 	}
 	private void function _setPageDao( required any pageDao ) output=false {
 		_pageDao = arguments.pageDao;
+	}
+
+	private any function _getSiteTreeService() output=false {
+		return _siteTreeService;
+	}
+	private void function _setSiteTreeService( required any siteTreeService ) output=false {
+		_siteTreeService = arguments.siteTreeService;
 	}
 }
