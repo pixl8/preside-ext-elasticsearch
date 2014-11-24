@@ -681,16 +681,19 @@ component extends="testbox.system.BaseSpec" {
 		mockApiWrapper           = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
 		mockPresideObjectService = getMockBox().createStub();
 		mockContentRenderer      = getMockBox().createStub();
+		mockInterceptorService   = getMockBox().createStub();
 
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
 		engine.$( "_checkIndexesExist" );
+		engine.$( "_announceInterception", {} );
 
 		return engine.init(
 			  configurationReader    = mockConfigReader
 			, apiWrapper             = mockApiWrapper
 			, presideObjectService   = mockPresideObjectService
 			, contentRendererService = mockContentRenderer
+			, interceptorService     = mockInterceptorService
 		);
 	}
 

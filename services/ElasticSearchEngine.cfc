@@ -6,13 +6,15 @@ component output=false singleton=true {
 	 * @configurationReader.inject    elasticSearchPresideObjectConfigurationReader
 	 * @presideObjectService.inject   presideObjectService
 	 * @contentRendererService.inject contentRendererService
+	 * @interceptorService.inject     interceptorService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
 		_setPresideObjectService( arguments.presideObjectService );
 		_setContentRendererService( arguments.contentRendererService );
+		_setInterceptorService( arguments.interceptorService );
 
 		_checkIndexesExist();
 
@@ -39,12 +41,18 @@ component output=false singleton=true {
 		var uniqueId   = createUniqueIndexName( arguments.indexName );
 		var apiWrapper = _getApiWrapper();
 
+		_announceInterception( "preElasticSearchCreateIndex", { indexName = uniqueId, settings  = settings } );
+
 		apiWrapper.createIndex( index=uniqueId, settings=settings );
+
+		_announceInterception( "postElasticSearchCreateIndex", { indexName = uniqueId, settings  = settings } );
 
 		return uniqueId;
 	}
 
 	public void function rebuildIndex( required string indexName ) output=false {
+		_announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
+
 		var uniqueIndexName = createIndex( arguments.indexName );
 		var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
 
@@ -55,6 +63,8 @@ component output=false singleton=true {
 		_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
 
 		cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
+
+		_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
 
 		return;
 	}
@@ -70,10 +80,14 @@ component output=false singleton=true {
 	}
 
 	public struct function getIndexSettings( required string indexName ) output=false {
-		return {
+		var settings = {
 			  settings = _getDefaultIndexSettings()
 			, mappings = getIndexMappings( arguments.indexName )
 		};
+
+		_announceInterception( "postElasticSearchGetIndexSettings", { settings = settings } );
+
+		return settings;
 	}
 
 	public struct function getIndexMappings( required string indexName ) output=false {
@@ -143,6 +157,8 @@ component output=false singleton=true {
 			doc = getObjectDataForIndexing( arguments.objectName, arguments.id );
 		}
 
+		_announceInterception( "preElasticSearchIndexDoc", { doc = doc[1] ?: {} } );
+
 		if ( !IsArray( doc ) || !doc.len() ) {
 			return _getApiWrapper().deleteDoc(
 				  index = objectConfig.indexName    ?: ""
@@ -157,6 +173,8 @@ component output=false singleton=true {
 			, doc   = doc[1]
 			, id    = arguments.id
 		);
+
+		_announceInterception( "postElasticSearchIndexDoc", { doc = doc[1], result=result } );
 
 		return true;
 	}
@@ -174,6 +192,7 @@ component output=false singleton=true {
 				, page       = ++page
 				, pageSize   = pageSize
 			);
+			_announceInterception( "preElasticSearchIndexDocs", { docs = records } );
 			if ( records.len() ) {
 				esApi.addDocs(
 					  index   = arguments.indexName
@@ -182,6 +201,7 @@ component output=false singleton=true {
 					, idField = "id"
 				);
 			}
+			_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
 		} while( records.len() );
 
 		return true;
@@ -202,7 +222,11 @@ component output=false singleton=true {
 			selectDataArgs.filter = { "#arguments.objectName#.id" = arguments.id };
 		}
 
+		_announceInterception( "preElasticSearchGetObjectDataForIndexing", selectDataArgs );
+
 		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
+
+		_announceInterception( "postElasticSearchGetObjectDataForIndexing", { records=records } );
 
 		return convertQueryToArrayOfDocs( arguments.objectName, records );
 	}
@@ -233,11 +257,17 @@ component output=false singleton=true {
 	public boolean function deleteRecord( required string objectName, required string id ) output=false {
 		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
-		return _getApiWrapper().deleteDoc(
+		_announceInterception( "preElasticSearchDeleteRecord", arguments );
+
+		var result = _getApiWrapper().deleteDoc(
 			  index = objectConfig.indexName    ?: ""
 			, type  = objectConfig.documentType ?: ""
 			, id    = arguments.id
 		);
+
+		_announceInterception( "postElasticSearchDeleteRecord", arguments );
+
+		return result;
 	}
 
 	public array function calculateSelectFieldsForIndexing( required string objectName ) output=false {
@@ -402,6 +432,11 @@ component output=false singleton=true {
 		return arguments.value;
 	}
 
+	private any function _announceInterception( required string state, struct interceptData={} ) output=false {
+		_getInterceptorService().processState( argumentCollection=arguments );
+
+		return interceptData.interceptorResult ?: {};
+	}
 
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
@@ -437,5 +472,12 @@ component output=false singleton=true {
 	}
 	private void function _setContentRendererService( required any contentRendererService ) output=false {
 		_contentRendererService = arguments.contentRendererService;
+	}
+
+	private any function _getInterceptorService() output=false {
+		return _interceptorService;
+	}
+	private void function _setInterceptorService( required any interceptorService ) output=false {
+		_interceptorService = arguments.interceptorService;
 	}
 }
