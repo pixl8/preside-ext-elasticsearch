@@ -149,68 +149,78 @@ component output=false singleton=true {
 	}
 
 	public boolean function indexRecord( required string objectName, required string id ) output=false {
-		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
-		var object       = _getPresideObjectService().getObject( arguments.objectName );
-		var doc          = "";
+		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.id ) : arguments.objectName;
 
-		if ( IsBoolean( objectConfig.hasOwnDataGetter ?: "" ) && objectConfig.hasOwnDataGetter ) {
-			doc = object.getDataForSearchEngine( arguments.id );
-		} else {
-			doc = getObjectDataForIndexing( arguments.objectName, arguments.id );
-		}
+		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) ) {
+			var objectConfig = _getConfigurationReader().getObjectConfiguration( objName );
+			var object       = _getPresideObjectService().getObject( objName );
+			var doc          = "";
 
-		_announceInterception( "preElasticSearchIndexDoc", { objectName=arguments.objectName, id=arguments.id, doc = doc } );
+			if ( IsBoolean( objectConfig.hasOwnDataGetter ?: "" ) && objectConfig.hasOwnDataGetter ) {
+				doc = object.getDataForSearchEngine( arguments.id );
+			} else {
+				doc = getObjectDataForIndexing( objName, arguments.id );
+			}
 
-		if ( !IsArray( doc ) || !doc.len() ) {
-			return _getApiWrapper().deleteDoc(
+			_announceInterception( "preElasticSearchIndexDoc", { objectName=objName, id=arguments.id, doc = doc } );
+
+			if ( !IsArray( doc ) || !doc.len() ) {
+				return _getApiWrapper().deleteDoc(
+					  index = objectConfig.indexName    ?: ""
+					, type  = objectConfig.documentType ?: ""
+					, id    = arguments.id
+				);
+			}
+
+			var result = _getApiWrapper().addDoc(
 				  index = objectConfig.indexName    ?: ""
 				, type  = objectConfig.documentType ?: ""
+				, doc   = doc[1]
 				, id    = arguments.id
 			);
+
+			_announceInterception( "postElasticSearchIndexDoc", { doc = doc[1], result=result } );
+
+			return true;
 		}
 
-		var result = _getApiWrapper().addDoc(
-			  index = objectConfig.indexName    ?: ""
-			, type  = objectConfig.documentType ?: ""
-			, doc   = doc[1]
-			, id    = arguments.id
-		);
-
-		_announceInterception( "postElasticSearchIndexDoc", { doc = doc[1], result=result } );
-
-		return true;
+		return false;
 	}
 
 	public boolean function indexAllRecords( required string objectName, required string indexName ) output=false {
-		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
-		var esApi     = _getApiWrapper();
-		var records   = [];
-		var page      = 0;
-		var pageSize  = 100;
+		if ( _getConfigurationReader().isObjectSearchEnabled( arguments.objectName ) ) {
+			var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+			var esApi     = _getApiWrapper();
+			var records   = [];
+			var page      = 0;
+			var pageSize  = 100;
 
-		do{
-			var records = getPaginatedRecordsForObject(
-				  objectName = objectName
-				, page       = ++page
-				, pageSize   = pageSize
-			);
-			var recordCount = records.len();
-
-			_announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
-
-			if ( records.len() ) {
-				esApi.addDocs(
-					  index   = arguments.indexName
-					, type    = objConfig.documentType ?: ""
-					, docs    = records
-					, idField = "id"
+			do{
+				var records = getPaginatedRecordsForObject(
+					  objectName = objectName
+					, page       = ++page
+					, pageSize   = pageSize
 				);
-			}
-			_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
+				var recordCount = records.len();
 
-		} while( recordCount );
+				_announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
 
-		return true;
+				if ( records.len() ) {
+					esApi.addDocs(
+						  index   = arguments.indexName
+						, type    = objConfig.documentType ?: ""
+						, docs    = records
+						, idField = "id"
+					);
+				}
+				_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
+
+			} while( recordCount );
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) output=false {
@@ -261,19 +271,25 @@ component output=false singleton=true {
 	}
 
 	public boolean function deleteRecord( required string objectName, required string id ) output=false {
-		var objectConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.id ) : arguments.objectName;
 
-		_announceInterception( "preElasticSearchDeleteRecord", arguments );
+		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) ) {
+			var objectConfig = _getConfigurationReader().getObjectConfiguration( objName );
 
-		var result = _getApiWrapper().deleteDoc(
-			  index = objectConfig.indexName    ?: ""
-			, type  = objectConfig.documentType ?: ""
-			, id    = arguments.id
-		);
+			_announceInterception( "preElasticSearchDeleteRecord", arguments );
 
-		_announceInterception( "postElasticSearchDeleteRecord", arguments );
+			var result = _getApiWrapper().deleteDoc(
+				  index = objectConfig.indexName    ?: ""
+				, type  = objectConfig.documentType ?: ""
+				, id    = arguments.id
+			);
 
-		return result;
+			_announceInterception( "postElasticSearchDeleteRecord", arguments );
+
+			return result;
+		}
+
+		return false;
 	}
 
 	public array function calculateSelectFieldsForIndexing( required string objectName ) output=false {
@@ -502,6 +518,12 @@ component output=false singleton=true {
 		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
 
 		return IsBoolean( isPageType ) && isPageType;
+	}
+
+	private string function _getPageTypeForRecord( required string pageId ) output=false {
+		var page = _getPageDao().selectData( id=arguments.pageId, selectFields=[ "page_type" ] );
+
+		return page.page_type ?: "";
 	}
 
 

@@ -214,6 +214,14 @@ component output=false {
 		} );
 	}
 
+	public boolean function isObjectSearchEnabled( required string objectName ) output=false {
+		var args = arguments;
+
+		return _simpleLocalCache( "isObjectSearchEnabled" & args.objectName, function(){
+			return listSearchEnabledObjects().findNoCase( args.objectName );
+		} );
+	}
+
 // PRIVATE HELPERS
 	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
 		var cache = _getLocalCache();

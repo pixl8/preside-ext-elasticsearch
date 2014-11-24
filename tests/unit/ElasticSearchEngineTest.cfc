@@ -351,6 +351,7 @@ component extends="testbox.system.BaseSpec" {
 				var indexName    = "myindex";
 				var documentType = "somedoctype";
 
+				mockConfigReader.$( "isObjectSearchEnabled" ).$args( object ).$results( true );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( object ).$results({
 					  indexName    = indexName
 					, documentType = documentType
@@ -382,6 +383,7 @@ component extends="testbox.system.BaseSpec" {
 				object.$( "getDataForSearchEngine" ).$args( recordId ).$results( [ data ] );
 				mockApiWrapper.$( "addDoc", {} );
 				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
 					  indexName        = indexName
 					, documentType     = documentType
@@ -411,6 +413,7 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "addDoc", {} );
 				mockApiWrapper.$( "deleteDoc", true );
 				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
 					  indexName        = indexName
 					, documentType     = documentType
@@ -439,6 +442,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "addDoc", {} );
 				mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+				mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
 					  indexName        = indexName
 					, documentType     = documentType
@@ -466,6 +470,7 @@ component extends="testbox.system.BaseSpec" {
 				var indexName         = "someindex" & CreateUUId();
 				var documentType      = "somedoctype";
 
+				mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
 					documentType = documentType
 				} );
