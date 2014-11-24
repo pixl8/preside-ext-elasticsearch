@@ -166,6 +166,21 @@ component extends="testbox.system.BaseSpec" {
 				var configuration = svc.getObjectConfiguration( objectName );
 				expect( configuration.indexFilters ?:[] ).toBe( ListToArray( filters ) );
 			} );
+
+			it( "should return the default site search page filter when object is a page type and no filters set", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var expected   = [ "elasticSearchPageFilter", "livepages" ];
+
+				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchIndexFilters" ).$results( "" );
+				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectProperties", [] );
+				svc.$( "doesObjectHaveDataGetterMethod", false );
+				svc.$( "_isPageType" ).$args( objectname ).$results( true );
+
+				var configuration = svc.getObjectConfiguration( objectName );
+				expect( configuration.indexFilters ?: [] ).toBe( expected );
+			} );
 		} );
 
 		describe( "getFieldConfiguration()", function(){
@@ -484,7 +499,7 @@ component extends="testbox.system.BaseSpec" {
 					svc.$( "getObjectConfiguration" ).$args( obj ).$results( objects[obj] );
 				}
 
-				mockPresideObjectService.$( "getObjectAttribute" ).$args( "object_1", "isPageType" ).$results( true );
+				svc.$( "_isPageType" ).$args( "object_1" ).$results( true );
 				svc.$( "getObjectConfiguration" ).$args( "page" ).$results( pageObject );
 
 				svc.$( "getFieldConfiguration" ).$args( "object_1", "title"     ).$results( { title     = "title"     } );

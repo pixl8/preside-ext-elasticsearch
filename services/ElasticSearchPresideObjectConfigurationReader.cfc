@@ -57,8 +57,7 @@ component output=false {
 			var objects = listSearchEnabledObjects();
 
 			for( var object in objects ){
-				var isPageType = _getPresideObjectService().getObjectAttribute( object, "isPageType" );
-				if ( IsBoolean( isPageType ) && isPageType ) {
+				if ( _isPageType( object ) ) {
 					var conf = getObjectConfiguration( "page" );
 
 					for( var field in conf.fields ){
@@ -83,7 +82,7 @@ component output=false {
 			var poService = _getPresideObjectService();
 
 			return poService.listObjects().filter( function( objectName ){
-				var isPageType       = poService.getObjectAttribute( objectName, "isPageType", false );
+				var isPageType       = _isPageType( objectName );
 				var isSystemPageType = isPageType && poService.getObjectAttribute( objectName, "isSystemPageType", false );
 				var searchEnabled    = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", ( isPageType && !isSystemPageType ) );
 
@@ -124,6 +123,10 @@ component output=false {
 			}
 			if ( !configuration.fields.find( "id" ) ) {
 				configuration.fields.append( "id" );
+			}
+
+			if ( !configuration.indexFilters.len() && _isPageType( args.objectName ) ) {
+				configuration.indexFilters = [ "elasticSearchPageFilter", "livePages" ];
 			}
 
 			return configuration;
@@ -220,6 +223,12 @@ component output=false {
 		}
 
 		return cache[ cacheKey ] ?: NullValue();
+	}
+
+	private boolean function _isPageType( required string objectName ) output=false {
+		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
+
+		return IsBoolean( isPageType ) && isPageType;
 	}
 
 
