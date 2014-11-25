@@ -40,13 +40,17 @@ component output=false singleton=true {
 		, struct  basicFilter     = {}
 		, struct  fullDsl
 	) output=false {
-		var configReader  = _getConfigurationReader();
-		var searchArgs    = Duplicate( arguments );
+		var configReader = _getConfigurationReader();
+		var dslPresent   = ( arguments.fullDsl ?: {} ).count() > 0;
+		var searchArgs   = dslPresent ? { fullDsl = arguments.fullDsl } : Duplicate( arguments );
 
 		searchArgs.index = "";
 		searchArgs.type  = "";
-		searchArgs.delete( "objects" );
-		searchArgs.q     = sanitizeSearchQuery( searchArgs.q );
+
+		if ( !dslPresent ) {
+			searchArgs.delete( "objects" );
+			searchArgs.delete( "fullDsl" );
+		}
 
 		for( var objName in arguments.objects ){
 			var conf = configReader.getObjectConfiguration( objName );
@@ -412,10 +416,6 @@ component output=false singleton=true {
 				}
 			}
 		}
-	}
-
-	public string function sanitizeSearchQuery( required string q ) output=false {
-		return q;
 	}
 
 // PRIVATE HELPERS

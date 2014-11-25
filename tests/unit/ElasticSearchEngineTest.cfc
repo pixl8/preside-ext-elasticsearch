@@ -703,7 +703,6 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockApiWrapper.$( "search", {} );
-				engine.$( "sanitizeSearchQuery", "*" );
 				for( var objectName in objects ){
 					mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results( objects[ objectName ] );
 				}
@@ -733,7 +732,6 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockApiWrapper.$( "search", {} );
-				engine.$( "sanitizeSearchQuery" ).$args( defaults.q ).$results( defaults.q );
 
 				engine.search();
 
@@ -762,7 +760,6 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockApiWrapper.$( "search", {} );
-				engine.$( "sanitizeSearchQuery" ).$args( args.q ).$results( args.q );
 
 				engine.search( argumentCollection=args );
 
@@ -775,19 +772,23 @@ component extends="testbox.system.BaseSpec" {
 				}
 			} );
 
-			it( "should sanitize incoming query parameter", function(){
-				var engine    = _getSearchEngine();
-				var q         = "my search query";
-				var sanitized = "my sanitized search query";
+			it( "should only pass through supplied custom DSL, when a custom DSL is supplied", function(){
+				var engine             = _getSearchEngine();
+				var simpleSearchParams = [ "q", "fieldList", "queryFields", "sortOrder", "page", "pageSize", "defaultOperator", "highlightFields", "minimumScore", "basicFilter" ];
+				var customDsl          = { some="struct" };
 
 				mockApiWrapper.$( "search", {} );
-				engine.$( "sanitizeSearchQuery" ).$args( q ).$results( sanitized );
-				engine.search( q=q );
+
+				engine.search( fullDsl=customDsl );
 
 				var callLog = mockApiWrapper.$callLog().search;
 
 				expect( callLog.len() ).toBe( 1 );
-				expect( callLog[1].q ?: "" ).toBe( sanitized );
+				expect( callLog[1].fullDsl ?: "" ).toBe( customDsl );
+
+				for( var param in simpleSearchParams ){
+					expect( callLog[1].keyExists( param ) ).toBeFalse();
+				}
 			} );
 		} );
 	}
