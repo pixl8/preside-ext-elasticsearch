@@ -422,11 +422,11 @@ component output=false singleton=true {
 	private string function _getIndexAndTypeUri( required struct args, boolean typeAllowed=true ) output=false {
 		var uri = "";
 
-		if ( StructKeyExists( args, 'index' ) ) {
+		if ( Len( Trim( args.index ?: "" ) ) ) {
 			uri = "/#_safeIndexName( args.index )#";
 		}
 
-		if ( typeAllowed and StructKeyExists( args, 'type' ) ) {
+		if ( typeAllowed and Len( Trim( args.type ?: "" ) ) ) {
 			if ( uri EQ "" ) {
 				uri = "/_all";
 			}

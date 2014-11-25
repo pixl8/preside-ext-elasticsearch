@@ -26,6 +26,43 @@ component output=false singleton=true {
 	}
 
 // PUBLIC API METHODS
+	public any function search(
+		  array   objects         = []
+		, string  q               = "*"
+		, string  fieldList       = ""
+		, string  queryFields     = ""
+		, string  sortOrder       = ""
+		, numeric page            = 1
+		, numeric pageSize        = 10
+		, string  defaultOperator = "OR"
+		, string  highlightFields = ""
+		, numeric minimumScore    = 0
+		, struct  basicFilter     = {}
+		, struct  fullDsl
+	) output=false {
+		var configReader  = _getConfigurationReader();
+		var searchArgs    = Duplicate( arguments );
+
+		searchArgs.index = "";
+		searchArgs.type  = "";
+		searchArgs.delete( "objects" );
+		searchArgs.q     = sanitizeSearchQuery( searchArgs.q );
+
+		for( var objName in arguments.objects ){
+			var conf = configReader.getObjectConfiguration( objName );
+			if ( !ListFindNoCase( searchArgs.index, conf.indexName ) ) {
+				searchArgs.index = ListAppend( searchArgs.index, conf.indexName );
+			}
+			if ( !ListFindNoCase( searchArgs.type, conf.documentType ) ) {
+				searchArgs.type = ListAppend( searchArgs.type, conf.documentType );
+			}
+		}
+
+ 		var apiCallResult = _getApiWrapper().search( argumentCollection=searchArgs );
+
+		return apiCallResult;
+	}
+
 	public void function ensureIndexesExist() output=false {
 		var indexes    = _getConfigurationReader().listIndexes();
 		var apiWrapper = _getApiWrapper();
@@ -375,6 +412,10 @@ component output=false singleton=true {
 				}
 			}
 		}
+	}
+
+	public string function sanitizeSearchQuery( required string q ) output=false {
+		return q;
 	}
 
 // PRIVATE HELPERS

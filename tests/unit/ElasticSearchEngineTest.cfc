@@ -678,6 +678,118 @@ component extends="testbox.system.BaseSpec" {
 				} );
 			} );
 		} );
+
+		describe( "search()", function(){
+			it( "should search with no specified indexes or document types when no objects specified", function(){
+				var engine = _getSearchEngine();
+
+				mockApiWrapper.$( "search", {} );
+
+				engine.search();
+
+				var callLog = mockApiWrapper.$callLog().search;
+
+				expect( callLog.len() ).toBe( 1 );
+				expect( callLog[1].index ?: "" ).toBe( "" );
+				expect( callLog[1].type ?: "" ).toBe( "" );
+			} );
+
+			it( "should calculate the indexes and document types to search against based on the passed in object names", function(){
+				var engine = _getSearchEngine();
+				var objects = {
+					  object1 = { indexName="index1", documentType="obj1" }
+					, object2 = { indexName="index1", documentType="obj2" }
+					, object3 = { indexName="index2", documentType="obj3" }
+				};
+
+				mockApiWrapper.$( "search", {} );
+				engine.$( "sanitizeSearchQuery", "*" );
+				for( var objectName in objects ){
+					mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results( objects[ objectName ] );
+				}
+
+				engine.search( objects=objects.keyArray().sort( "text" ) );
+
+				var callLog = mockApiWrapper.$callLog().search;
+
+				expect( callLog.len() ).toBe( 1 );
+				expect( callLog[1].index ?: "" ).toBe( "index1,index2" );
+				expect( callLog[1].type ?: "" ).toBe( "obj1,obj2,obj3" );
+			} );
+
+			it( "should pass default search options through to the API", function(){
+				var engine = _getSearchEngine();
+				var defaults = {
+					  q               = "*"
+					, fieldList       = ""
+					, queryFields     = ""
+					, sortOrder       = ""
+					, page            = 1
+					, pageSize        = 10
+					, defaultOperator = "OR"
+					, highlightFields = ""
+					, minimumScore    = 0
+					, basicFilter     = {}
+				};
+
+				mockApiWrapper.$( "search", {} );
+				engine.$( "sanitizeSearchQuery" ).$args( defaults.q ).$results( defaults.q );
+
+				engine.search();
+
+				var callLog = mockApiWrapper.$callLog().search;
+
+				expect( callLog.len() ).toBe( 1 );
+
+				for( var def in defaults ){
+					expect( callLog[1][def] ?: "" ).toBe( defaults[def] );
+				}
+			} );
+
+			it( "should pass supplied search options through to the API", function(){
+				var engine = _getSearchEngine();
+				var args = {
+					  q               = "my query"
+					, fieldList       = "fiel1,field2"
+					, queryFields     = "field1,field2"
+					, sortOrder       = "somesort order"
+					, page            = 2
+					, pageSize        = 11
+					, defaultOperator = "AND"
+					, highlightFields = "field1,field2"
+					, minimumScore    = 0.002
+					, basicFilter     = { x="y" }
+				};
+
+				mockApiWrapper.$( "search", {} );
+				engine.$( "sanitizeSearchQuery" ).$args( args.q ).$results( args.q );
+
+				engine.search( argumentCollection=args );
+
+				var callLog = mockApiWrapper.$callLog().search;
+
+				expect( callLog.len() ).toBe( 1 );
+
+				for( var arg in args ){
+					expect( callLog[1][arg] ?: "" ).toBe( args[arg] );
+				}
+			} );
+
+			it( "should sanitize incoming query parameter", function(){
+				var engine    = _getSearchEngine();
+				var q         = "my search query";
+				var sanitized = "my sanitized search query";
+
+				mockApiWrapper.$( "search", {} );
+				engine.$( "sanitizeSearchQuery" ).$args( q ).$results( sanitized );
+				engine.search( q=q );
+
+				var callLog = mockApiWrapper.$callLog().search;
+
+				expect( callLog.len() ).toBe( 1 );
+				expect( callLog[1].q ?: "" ).toBe( sanitized );
+			} );
+		} );
 	}
 
 // PRIVATE HELPERS
