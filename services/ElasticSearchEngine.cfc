@@ -9,8 +9,9 @@ component output=false singleton=true {
 	 * @interceptorService.inject     coldbox:InterceptorService
 	 * @pageDao.inject                presidecms:object:page
 	 * @siteTreeService.inject        siteTreeService
+	 * @resultsFactory.inject         elasticSearchResultsFactory
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -19,6 +20,7 @@ component output=false singleton=true {
 		_setInterceptorService( arguments.interceptorService );
 		_setPageDao( arguments.pageDao );
 		_setSiteTreeService( arguments.siteTreeService );
+		_setResultsFactory( arguments.resultsFactory );
 
 		_checkIndexesExist();
 
@@ -41,16 +43,11 @@ component output=false singleton=true {
 		, struct  fullDsl
 	) output=false {
 		var configReader = _getConfigurationReader();
-		var dslPresent   = ( arguments.fullDsl ?: {} ).count() > 0;
-		var searchArgs   = dslPresent ? { fullDsl = arguments.fullDsl } : Duplicate( arguments );
+		var searchArgs   = duplicate( arguments );
 
 		searchArgs.index = "";
 		searchArgs.type  = "";
-
-		if ( !dslPresent ) {
-			searchArgs.delete( "objects" );
-			searchArgs.delete( "fullDsl" );
-		}
+		searchArgs.delete( "objects" );
 
 		for( var objName in arguments.objects ){
 			var conf = configReader.getObjectConfiguration( objName );
@@ -64,7 +61,14 @@ component output=false singleton=true {
 
  		var apiCallResult = _getApiWrapper().search( argumentCollection=searchArgs );
 
-		return apiCallResult;
+		return _getResultsFactory().newSearchResult(
+			  rawResult       = apiCallResult
+			, page            = arguments.page
+			, pageSize        = arguments.pageSize
+			, returnFields    = arguments.fieldList
+			, highlightFields = arguments.highlightFields
+			, q               = arguments.q
+		);
 	}
 
 	public void function ensureIndexesExist() output=false {
@@ -586,7 +590,6 @@ component output=false singleton=true {
 		return page.page_type ?: "";
 	}
 
-
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
 		return _apiWrapper;
@@ -642,5 +645,12 @@ component output=false singleton=true {
 	}
 	private void function _setSiteTreeService( required any siteTreeService ) output=false {
 		_siteTreeService = arguments.siteTreeService;
+	}
+
+	private any function _getResultsFactory() output=false {
+		return _resultsFactory;
+	}
+	private void function _setResultsFactory( required any resultsFactory ) output=false {
+		_resultsFactory = arguments.resultsFactory;
 	}
 }

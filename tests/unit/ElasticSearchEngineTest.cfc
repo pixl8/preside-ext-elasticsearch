@@ -684,6 +684,7 @@ component extends="testbox.system.BaseSpec" {
 				var engine = _getSearchEngine();
 
 				mockApiWrapper.$( "search", {} );
+				mockResultsFactory.$( "newSearchResult", {} );
 
 				engine.search();
 
@@ -703,6 +704,7 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockApiWrapper.$( "search", {} );
+				mockResultsFactory.$( "newSearchResult", {} );
 				for( var objectName in objects ){
 					mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results( objects[ objectName ] );
 				}
@@ -732,6 +734,7 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockApiWrapper.$( "search", {} );
+				mockResultsFactory.$( "newSearchResult", {} );
 
 				engine.search();
 
@@ -760,6 +763,7 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockApiWrapper.$( "search", {} );
+				mockResultsFactory.$( "newSearchResult", {} );
 
 				engine.search( argumentCollection=args );
 
@@ -772,23 +776,30 @@ component extends="testbox.system.BaseSpec" {
 				}
 			} );
 
-			it( "should only pass through supplied custom DSL, when a custom DSL is supplied", function(){
-				var engine             = _getSearchEngine();
-				var simpleSearchParams = [ "q", "fieldList", "queryFields", "sortOrder", "page", "pageSize", "defaultOperator", "highlightFields", "minimumScore", "basicFilter" ];
-				var customDsl          = { some="struct" };
+			it( "should return a search results object translated from the raw response", function(){
+				var engine      = _getSearchEngine();
+				var rawResponse = { test="response" };
+				var converted   = { converted="response", is=true, it="is" };
+				var args        = {
+					  q               = "test q"
+					, fieldList       = "fiel1,field2"
+					, queryFields     = "field1,field2"
+					, page            = 2
+					, pageSize        = 11
+					, highlightFields = "field1,field2"
+				};
 
-				mockApiWrapper.$( "search", {} );
+				mockApiWrapper.$( "search", rawResponse );
+				mockResultsFactory.$( "newSearchResult" ).$args(
+					  rawResult       = rawResponse
+					, page            = args.page
+					, pageSize        = args.pageSize
+					, returnFields    = args.fieldList
+					, highlightFields = args.highlightFields
+					, q               = args.q
+				).$results( converted );
 
-				engine.search( fullDsl=customDsl );
-
-				var callLog = mockApiWrapper.$callLog().search;
-
-				expect( callLog.len() ).toBe( 1 );
-				expect( callLog[1].fullDsl ?: "" ).toBe( customDsl );
-
-				for( var param in simpleSearchParams ){
-					expect( callLog[1].keyExists( param ) ).toBeFalse();
-				}
+				expect( engine.search( argumentCollection=args ) ).toBe( converted );
 			} );
 		} );
 	}
@@ -797,6 +808,7 @@ component extends="testbox.system.BaseSpec" {
 	private function _getSearchEngine() output=false {
 		mockConfigReader         = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
 		mockApiWrapper           = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
+		mockResultsFactory       = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchResultsFactory" );
 		mockPresideObjectService = getMockBox().createStub();
 		mockContentRenderer      = getMockBox().createStub();
 		mockInterceptorService   = getMockBox().createStub();
@@ -816,6 +828,7 @@ component extends="testbox.system.BaseSpec" {
 			, interceptorService     = mockInterceptorService
 			, pageDao                = mockPageDao
 			, siteTreeService        = mockSiteTreeService
+			, resultsFactory         = mockResultsFactory
 		);
 	}
 
