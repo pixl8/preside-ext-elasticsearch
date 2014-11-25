@@ -422,6 +422,24 @@ component output=false singleton=true {
 		}
 	}
 
+	public struct function getStats() output=false {
+		var stats = {};
+		var indexes = _getConfigurationReader().listIndexes();
+		var wrapper = _getApiWrapper();
+
+		for( var index in indexes ){
+			var indexStats = wrapper.stats( index );
+
+			// todo, steal more statistics
+			stats[ index ] = {
+				  totalDocs = indexStats._all.total.docs.count          ?: ""
+				, diskSize  = indexStats._all.total.store.size_in_bytes ?: ""
+			};
+		}
+
+		return stats;
+	}
+
 // PRIVATE HELPERS
 	/**
 	 * odd proxy to ensureIndexesExist() - this simply helps us to

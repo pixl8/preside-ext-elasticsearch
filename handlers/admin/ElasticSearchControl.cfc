@@ -1,5 +1,7 @@
 component output="false" extends="preside.system.base.AdminHandler" {
 
+	property name="elasticSearchEngine" inject="elasticSearchEngine";
+
 	function prehandler( event, rc, prc ) output=false {
 		super.preHandler( argumentCollection = arguments );
 
@@ -15,6 +17,8 @@ component output="false" extends="preside.system.base.AdminHandler" {
 		prc.pageTitle    = translateResource( "cms:elasticSearchControl.page.title"    );
 		prc.pageSubTitle = translateResource( "cms:elasticSearchControl.page.subtitle" );
 		prc.pageIcon     = "search";
+
+		prc.stats = elasticSearchEngine.getStats();
 	}
 
 // PRIVATE HELPERS

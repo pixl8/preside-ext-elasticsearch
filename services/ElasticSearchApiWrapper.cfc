@@ -17,6 +17,13 @@ component output=false singleton=true {
 		return _call( uri="/", method="GET" );
 	}
 
+	public struct function stats( string index="" ) output=false {
+		return _call(
+			  uri    = _getIndexAndTypeUri( args=arguments, typeAllowed=false ) & "/_stats"
+			, method = "GET"
+		);
+	}
+
 	public struct function createIndex( required string index, struct settings ) output=false {
 		var args = StructNew();
 		args.uri =_getIndexAndTypeUri( args=arguments, typeAllowed=false );
