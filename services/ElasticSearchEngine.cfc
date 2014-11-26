@@ -10,8 +10,9 @@ component output=false singleton=true {
 	 * @pageDao.inject                presidecms:object:page
 	 * @siteTreeService.inject        siteTreeService
 	 * @resultsFactory.inject         elasticSearchResultsFactory
+	 * @statusDao.inject              presidecms:object:elasticsearch_indexing_status
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -21,6 +22,7 @@ component output=false singleton=true {
 		_setPageDao( arguments.pageDao );
 		_setSiteTreeService( arguments.siteTreeService );
 		_setResultsFactory( arguments.resultsFactory );
+		_setStatusDao( arguments.statusDao );
 
 		_checkIndexesExist();
 
@@ -104,16 +106,25 @@ component output=false singleton=true {
 
 		var uniqueIndexName = createIndex( arguments.indexName );
 		var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
+		var indexingSuccess = true;
 
 		for( var objectName in objects ){
-			indexAllRecords( objectName, uniqueIndexName );
+			indexingSuccess = indexAllRecords( objectName, uniqueIndexName );
+			if ( !indexingSuccess ) {
+				break;
+			}
 		}
 
-		_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
+		if ( indexingSuccess ) {
+			_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
 
-		cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
+			cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
 
-		_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
+			_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
+		} else {
+			_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
+			_getApiWrapper().deleteIndex( uniqueIndexName );
+		}
 
 		return;
 	}
@@ -234,7 +245,7 @@ component output=false singleton=true {
 		return false;
 	}
 
-	public boolean function indexAllRecords( required string objectName, required string indexName ) output=false {
+	public boolean function indexAllRecords( required string objectName, required string indexName, required string indexAlias ) output=false {
 		if ( _getConfigurationReader().isObjectSearchEnabled( arguments.objectName ) ) {
 			var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 			var esApi     = _getApiWrapper();
@@ -243,6 +254,12 @@ component output=false singleton=true {
 			var pageSize  = 100;
 
 			do{
+				if ( _isIndexingTerminated( arguments.indexAlias ) ) {
+					_announceInterception( "onElasticSearchIndexDocsTermination", { objectName = arguments.objectName } );
+					_clearTerminateIndexingFlag( arguments.indexAlias );
+					return false;
+				}
+
 				var records = getPaginatedRecordsForObject(
 					  objectName = objectName
 					, page       = ++page
@@ -440,6 +457,79 @@ component output=false singleton=true {
 		return stats;
 	}
 
+	public boolean function isIndexReindexing( required string indexName ) output=false {
+		var statusRecord = _getStatusDao().selectData(
+			  selectFields = [ "indexing_expiry" ]
+			, filter       = { index_name=arguments.indexName, is_indexing=true }
+		);
+
+		if ( statusRecord.recordCount ) {
+			if ( IsDate( statusRecord.indexing_expiry ) && Now() < statusRecord.indexing_expiry ) {
+				return true;
+			}
+
+			terminateIndexing( arguments.indexName );
+			setIndexingStatus(
+				  indexName               = arguments.indexName
+				, isIndexing              = false
+				, lastIndexingSuccess     = false
+				, indexingStartedAt       = ""
+				, indexingExpiry          = ""
+				, lastIndexingCompletedAt = ""
+				, lastIndexingTimetaken   = ""
+			);
+		}
+		return false;
+	}
+
+	public void function setIndexingStatus(
+		  required boolean indexName
+		, required boolean isIndexing
+		,          boolean lastIndexingSuccess
+		,          any     indexingStartedAt
+		,          any     indexingExpiry
+		,          any     lastIndexingCompletedAt
+		,          any     lastIndexingTimetaken
+	) output=false {
+		var data = {
+			is_indexing = arguments.isIndexing
+		};
+		if ( arguments.keyExists( "lastIndexingSuccess" ) ) {
+			data.last_indexing_success = arguments.lastIndexingSuccess;
+		}
+		if ( arguments.keyExists( "indexingStartedAt" ) ) {
+			data.indexing_started_at = arguments.indexingStartedAt;
+		}
+		if ( arguments.keyExists( "indexingExpiry" ) ) {
+			data.indexing_expiry = arguments.indexingExpiry;
+		}
+		if ( arguments.keyExists( "lastIndexingCompletedAt" ) ) {
+			data.last_indexing_completed_at = arguments.lastIndexingCompletedAt;
+		}
+		if ( arguments.keyExists( "lastIndexingTimetaken" ) ) {
+			data.last_indexing_timetaken = arguments.lastIndexingTimetaken;
+		}
+
+		if ( !_getStatusDao().updateData( filter={ index_name=arguments.indexName, data=data } ) ) {
+			data.index_name = arguments.indexName;
+			_getStatusDao().insertData( data );
+		}
+	}
+
+	public void function terminateIndexing( required string indexName ) output=false {
+		variables._indexingTerminationInstructions = variables._indexingTerminationInstructions ?: {};
+
+		variables._indexingTerminationInstructions[ arguments.indexName ] = true;
+	}
+
+	public array function getConfiguredStopWords() output=false {
+		return []; // todo
+	}
+
+	public array function getConfiguredSynonyms() output=false {
+		return []; // todo
+	}
+
 // PRIVATE HELPERS
 	/**
 	 * odd proxy to ensureIndexesExist() - this simply helps us to
@@ -531,14 +621,6 @@ component output=false singleton=true {
 		return true;
 	}
 
-	public array function getConfiguredStopWords() output=false {
-		return []; // todo
-	}
-
-	public array function getConfiguredSynonyms() output=false {
-		return []; // todo
-	}
-
 	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
 		var cache = _getLocalCache();
 
@@ -608,6 +690,15 @@ component output=false singleton=true {
 		return page.page_type ?: "";
 	}
 
+	private boolean function _isIndexingTerminated( required string indexName ) output=false {
+		return ( variables._indexingTerminationInstructions ?: {} ).keyExists( arguments.indexName );
+	}
+
+	private void function _clearTerminateIndexingFlag( required string indexName ) output=false {
+		variables._indexingTerminationInstructions = variables._indexingTerminationInstructions ?: {};
+		variables._indexingTerminationInstructions.delete( arguments.indexName );
+	}
+
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
 		return _apiWrapper;
@@ -670,5 +761,12 @@ component output=false singleton=true {
 	}
 	private void function _setResultsFactory( required any resultsFactory ) output=false {
 		_resultsFactory = arguments.resultsFactory;
+	}
+
+	private any function _getStatusDao() output=false {
+		return _statusDao;
+	}
+	private void function _setStatusDao( required any statusDao ) output=false {
+		_statusDao = arguments.statusDao;
 	}
 }

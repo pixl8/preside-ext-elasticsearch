@@ -114,6 +114,7 @@ component extends="testbox.system.BaseSpec" {
 				var uniqueIndexName = CreateUUId();
 
 				mockApiWrapper.$( "addAlias", {} );
+				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
 				mockConfigReader.$( "listObjectsForIndex", [] );
 				engine.$( "indexAllRecords", true );
@@ -132,6 +133,7 @@ component extends="testbox.system.BaseSpec" {
 				var objects         = [ "obj1", "obj2", "obj3", "obj4" ];
 
 				mockApiWrapper.$( "addAlias", {} );
+				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
 				mockConfigReader.$( "listObjectsForIndex" ).$args( indexName ).$results( objects );
 				for( var objName in objects ){
@@ -154,8 +156,9 @@ component extends="testbox.system.BaseSpec" {
 				var uniqueIndexName = CreateUUId();
 
 				mockApiWrapper.$( "addAlias", {} );
+				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
-				mockConfigReader.$( "listObjectsForIndex", [] );
+				mockConfigReader.$( "listObjectsForIndex", [ "someobject "] );
 				engine.$( "indexAllRecords", true );
 				engine.$( "cleanupOldIndexes" );
 
@@ -171,8 +174,9 @@ component extends="testbox.system.BaseSpec" {
 				var uniqueIndexName = CreateUUId();
 
 				mockApiWrapper.$( "addAlias", {} );
+				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
-				mockConfigReader.$( "listObjectsForIndex", [] );
+				mockConfigReader.$( "listObjectsForIndex", [ "someobject" ] );
 				engine.$( "indexAllRecords", true );
 				engine.$( "cleanupOldIndexes" );
 
@@ -468,6 +472,7 @@ component extends="testbox.system.BaseSpec" {
 				var oneHundredRecords = [];
 				var objectName        = "testObject";
 				var indexName         = "someindex" & CreateUUId();
+				var indexAlias        = "someindex";
 				var documentType      = "somedoctype";
 
 				mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
@@ -487,7 +492,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "addDocs", {} );
 
-				engine.indexAllRecords( objectName, indexName );
+				engine.indexAllRecords( objectName, indexName, indexAlias );
 
 				expect( mockApiWrapper.$callLog().addDocs.len() ).toBe( 3 );
 				for( var i=1; i < 4; i++ ){
@@ -802,6 +807,102 @@ component extends="testbox.system.BaseSpec" {
 				expect( engine.search( argumentCollection=args ) ).toBe( converted );
 			} );
 		} );
+
+		describe( "isIndexReindexing()", function(){
+			it( "should return false when no status db record exists for the index that is flagged as currently indexing", function(){
+				var engine    = _getSearchEngine();
+				var indexName = "myIndex";
+
+				mockStatusDao.$( "selectData" ).$args(
+					  selectFields = [ "indexing_expiry" ]
+					, filter       = { index_name=indexName, is_indexing=true }
+				).$results( QueryNew( "indexing_expiry" ) );
+
+				expect( engine.isIndexReindexing( indexName ) ).toBeFalse();
+			} );
+
+			it( "should return true when record exists and expiry date has not passed", function(){
+				var engine       = _getSearchEngine();
+				var indexName    = "myIndex";
+				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", 1, Now() ) ] ] );
+
+				mockStatusDao.$( "selectData" ).$args(
+					  selectFields = [ "indexing_expiry" ]
+					, filter       = { index_name=indexName, is_indexing=true }
+				).$results( statusRecord );
+
+				expect( engine.isIndexReindexing( indexName ) ).toBeTrue();
+			} );
+
+			it( "should return false when indexing status record exists but expiry date has expired", function(){
+				var engine       = _getSearchEngine();
+				var indexName    = "myIndex";
+				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", -1, Now() ) ] ] );
+
+				engine.$( "setIndexingStatus" );
+				engine.$( "terminateIndexing" );
+
+				mockStatusDao.$( "selectData" ).$args(
+					  selectFields = [ "indexing_expiry" ]
+					, filter       = { index_name=indexName, is_indexing=true }
+				).$results( statusRecord );
+
+				expect( engine.isIndexReindexing( indexName ) ).toBeFalse();
+			} );
+
+			it( "should clear the indexing status when indexing status record exists but expiry date has expired", function(){
+				var engine       = _getSearchEngine();
+				var indexName    = "myIndex";
+				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", -1, Now() ) ] ] );
+
+				engine.$( "setIndexingStatus" );
+				engine.$( "terminateIndexing" );
+
+				mockStatusDao.$( "selectData" ).$args(
+					  selectFields = [ "indexing_expiry" ]
+					, filter       = { index_name=indexName, is_indexing=true }
+				).$results( statusRecord );
+
+				engine.isIndexReindexing( indexName );
+
+				expect( engine.$callLog().setIndexingStatus.len() ).toBe( 1 );
+				expect( engine.$callLog().setIndexingStatus[1] ).toBe( {
+					  indexName               = indexName
+					, isIndexing              = false
+					, lastIndexingSuccess     = false
+					, indexingStartedAt       = ""
+					, indexingExpiry          = ""
+					, lastIndexingCompletedAt = ""
+					, lastIndexingTimetaken   = ""
+				} );
+			} );
+
+			it( "should send terminate indexing instruction when indexing status record exists but expiry date has expired", function(){
+				var engine       = _getSearchEngine();
+				var indexName    = "myIndex";
+				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", -1, Now() ) ] ] );
+
+				engine.$( "setIndexingStatus" );
+				engine.$( "terminateIndexing" );
+
+				mockStatusDao.$( "selectData" ).$args(
+					  selectFields = [ "indexing_expiry" ]
+					, filter       = { index_name=indexName, is_indexing=true }
+				).$results( statusRecord );
+
+				engine.isIndexReindexing( indexName );
+
+				expect( engine.$calllog().terminateIndexing.len() ).toBe( 1 );
+				expect( engine.$calllog().terminateIndexing[1] ).toBe( [ indexName ] );
+
+			} );
+		} );
+
+		describe( "getIndexReindexingStatus()", function(){
+			it( "should fetch record from db indicating the indexes current status", function(){
+				fail( "not yet implemented" );
+			} );
+		} );
 	}
 
 // PRIVATE HELPERS
@@ -814,6 +915,7 @@ component extends="testbox.system.BaseSpec" {
 		mockInterceptorService   = getMockBox().createStub();
 		mockPageDao              = getMockBox().createStub();
 		mockSiteTreeService      = getMockBox().createStub();
+		mockStatusDao            = getMockBox().createStub();
 
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
@@ -829,6 +931,7 @@ component extends="testbox.system.BaseSpec" {
 			, pageDao                = mockPageDao
 			, siteTreeService        = mockSiteTreeService
 			, resultsFactory         = mockResultsFactory
+			, statusDao              = mockStatusDao
 		);
 	}
 
