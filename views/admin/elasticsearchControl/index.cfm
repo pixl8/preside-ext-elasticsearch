@@ -21,7 +21,7 @@
 		</thead>
 		<tbody data-nav-list="1" data-nav-list-child-selector="> tr">
 			<cfloop collection="#stats#" index="index">
-				<tr class="clickable" data-context-container="1">
+				<tr data-context-container="1">
 					<td>#index#</td>
 					<td>
 						<cfif IsNumeric( stats[ index ].totalDocs ?: "" )>
@@ -59,9 +59,15 @@
 						<td>
 							<div class="action-buttons btn-group">
 								<cfif canRebuild>
-									<a href="#event.buildAdminLink( linkTo='elasticSearchControl.rebuildAction', queryString='index=' & index )#" data-context-key="r" class="confirmation-prompt" title="#translateResource( uri='cms:elasticsearchcontrol.rebuildIndex.prompt', data=[index] )#">
-										<i class="fa fa-rotate-right blue"></i>
-									</a>
+									<cfif IsTrue( stats[index].is_indexing )>
+										<a href="#event.buildAdminLink( linkTo='elasticSearchControl.terminateRebuildAction', queryString='index=' & index )#" data-context-key="t" class="confirmation-prompt" title="#translateResource( uri='cms:elasticsearchcontrol.terminateRebuildIndex.prompt', data=[index] )#">
+											<i class="fa fa-stop red"></i>
+										</a>
+									<cfelse>
+										<a href="#event.buildAdminLink( linkTo='elasticSearchControl.rebuildAction', queryString='index=' & index )#" data-context-key="r" class="confirmation-prompt" title="#translateResource( uri='cms:elasticsearchcontrol.rebuildIndex.prompt', data=[index] )#">
+											<i class="fa fa-rotate-right blue"></i>
+										</a>
+									</cfif>
 								</cfif>
 							</div>
 						</td>
