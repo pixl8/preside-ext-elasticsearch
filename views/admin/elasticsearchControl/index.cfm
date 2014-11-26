@@ -30,7 +30,31 @@
 							<em>#errorStatus#</em>
 						</cfif>
 					</td>
-					<td>#renderContent( "boolean", true, [ "admin", "admindatatable" ] )#</td>
+					<td>
+						<cfif IsTrue( stats[index].is_indexing )>
+							<i class="fa fa-fw grey fa-rotate-right"></i>
+							#translateResource(
+								  uri  = "cms:elasticSearchControl.statstable.indexingStatus"
+								, data = [ RenderContent( "datetime", stats[index].indexing_started_at, [ "admin", "admindatatable" ] ) ]
+							)#
+						<cfelseif IsTrue( stats[index].last_indexing_success )>
+							#renderContent( "boolean", true, [ "admindatatable", "admin" ] )#
+							#translateResource(
+								  uri  = "cms:elasticSearchControl.statstable.completeStatus"
+								, data = [ RenderContent( "datetime", stats[index].last_indexing_completed_at, [ "admin", "admindatatable" ] ) ]
+							)#
+						<cfelseif IsBoolean( stats[index].last_indexing_success )>
+							#renderContent( "boolean", true, [ "admindatatable", "admin" ] )#
+							#translateResource(
+								  uri  = "cms:elasticSearchControl.statstable.lastIndexFailed"
+							)#
+						<cfelse>
+							<i class="fa fa-fw grey fa-question"></i>
+							#translateResource(
+								  uri  = "cms:elasticSearchControl.statstable.unknown"
+							)#
+						</cfif>
+					</td>
 					<cfif showActionsColumn>
 						<td>
 							<div class="action-buttons btn-group">
