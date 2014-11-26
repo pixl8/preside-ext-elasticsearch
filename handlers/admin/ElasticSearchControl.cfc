@@ -13,12 +13,25 @@ component output="false" extends="preside.system.base.AdminHandler" {
 		);
 	}
 
-	public void function index() output=false {
+	public void function index( event, rc, prc ) output=false {
 		prc.pageTitle    = translateResource( "cms:elasticSearchControl.page.title"    );
 		prc.pageSubTitle = translateResource( "cms:elasticSearchControl.page.subtitle" );
 		prc.pageIcon     = "search";
 
 		prc.stats = elasticSearchEngine.getStats();
+	}
+
+	public void function rebuildAction( event, rc, prc ) output=false {
+		var indexName = rc.index ?: "";
+
+		_checkPermissions( event, "rebuild" );
+
+		thread name="rebuildSearchIndex#indexName##CreateUUId()#" timeout=1200 engine=elasticSearchEngine indexName=indexName {
+			attributes.engine.rebuildIndex( attributes.indexName );
+		}
+
+		setNextEvent( url=event.buildAdminLink( linkTo="elasticSearchControl" ) );
+
 	}
 
 // PRIVATE HELPERS

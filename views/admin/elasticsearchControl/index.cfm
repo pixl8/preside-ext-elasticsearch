@@ -2,6 +2,9 @@
 	stats = prc.stats ?: {};
 
 	errorStatus = translateResource( "cms:elasticSearchControl.statstable.stats.error" );
+
+	canRebuild        = hasCmsPermission( "elasticsearchcontrol.rebuild" );
+	showActionsColumn = canRebuild;
 </cfscript>
 
 <cfoutput>
@@ -11,7 +14,9 @@
 				<th>#translateResource( "cms:elasticSearchControl.statstable.header.index" )#</th>
 				<th>#translateResource( "cms:elasticSearchControl.statstable.header.doccount" )#</th>
 				<th>#translateResource( "cms:elasticSearchControl.statstable.header.state" )#</th>
-				<th>#translateResource( "cms:elasticSearchControl.statstable.header.actions" )#</th>
+				<cfif showActionsColumn>
+					<th>#translateResource( "cms:elasticSearchControl.statstable.header.actions" )#</th>
+				</cfif>
 			</tr>
 		</thead>
 		<tbody data-nav-list="1" data-nav-list-child-selector="> tr">
@@ -26,13 +31,17 @@
 						</cfif>
 					</td>
 					<td>#renderContent( "boolean", true, [ "admin", "admindatatable" ] )#</td>
-					<td>
-						<div class="action-buttons btn-group">
-							<a href="##" data-context-key="r">
-								<i class="fa fa-rotate-right blue"></i>
-							</a>
-						</div>
-					</td>
+					<cfif showActionsColumn>
+						<td>
+							<div class="action-buttons btn-group">
+								<cfif canRebuild>
+									<a href="#event.buildAdminLink( linkTo='elasticSearchControl.rebuildAction', queryString='index=' & index )#" data-context-key="r" class="confirmation-prompt" title="#translateResource( uri='cms:elasticsearchcontrol.rebuildIndex.prompt', data=[index] )#">
+										<i class="fa fa-rotate-right blue"></i>
+									</a>
+								</cfif>
+							</div>
+						</td>
+					</cfif>
 				</tr>
 			</cfloop>
 		</tbody>
