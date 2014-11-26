@@ -113,8 +113,11 @@ component extends="testbox.system.BaseSpec" {
 				var indexName       = "myindex";
 				var uniqueIndexName = CreateUUId();
 
+
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
+				engine.$( "isIndexReindexing", false );
+				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
 				mockConfigReader.$( "listObjectsForIndex", [] );
 				engine.$( "indexAllRecords", true );
@@ -134,10 +137,12 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
+				engine.$( "isIndexReindexing", false );
+				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
 				mockConfigReader.$( "listObjectsForIndex" ).$args( indexName ).$results( objects );
 				for( var objName in objects ){
-					engine.$( "indexAllRecords" ).$args( objName, uniqueIndexName ).$results( true );
+					engine.$( "indexAllRecords" ).$args( objName, uniqueIndexName, indexName ).$results( true );
 				}
 				engine.$( "cleanupOldIndexes" );
 
@@ -146,7 +151,7 @@ component extends="testbox.system.BaseSpec" {
 				expect( engine.$callLog().indexAllRecords.len() ).toBe( objects.len() );
 				var i=0;
 				for( var objName in objects ){
-					expect( engine.$callLog().indexAllRecords[++i] ).toBe( [ objName, uniqueIndexName ] );
+					expect( engine.$callLog().indexAllRecords[++i] ).toBe( [ objName, uniqueIndexName, indexName ] );
 				}
 			} );
 
@@ -157,6 +162,8 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
+				engine.$( "isIndexReindexing", false );
+				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
 				mockConfigReader.$( "listObjectsForIndex", [ "someobject "] );
 				engine.$( "indexAllRecords", true );
@@ -175,6 +182,8 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
+				engine.$( "isIndexReindexing", false );
+				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
 				mockConfigReader.$( "listObjectsForIndex", [ "someobject" ] );
 				engine.$( "indexAllRecords", true );
@@ -475,6 +484,7 @@ component extends="testbox.system.BaseSpec" {
 				var indexAlias        = "someindex";
 				var documentType      = "somedoctype";
 
+				engine.$( "isIndexReindexing" ).$args( indexAlias ).$results( true );
 				mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
 				mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
 					documentType = documentType
@@ -840,7 +850,6 @@ component extends="testbox.system.BaseSpec" {
 				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", -1, Now() ) ] ] );
 
 				engine.$( "setIndexingStatus" );
-				engine.$( "terminateIndexing" );
 
 				mockStatusDao.$( "selectData" ).$args(
 					  selectFields = [ "indexing_expiry" ]
@@ -856,7 +865,6 @@ component extends="testbox.system.BaseSpec" {
 				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", -1, Now() ) ] ] );
 
 				engine.$( "setIndexingStatus" );
-				engine.$( "terminateIndexing" );
 
 				mockStatusDao.$( "selectData" ).$args(
 					  selectFields = [ "indexing_expiry" ]
@@ -875,32 +883,6 @@ component extends="testbox.system.BaseSpec" {
 					, lastIndexingCompletedAt = ""
 					, lastIndexingTimetaken   = ""
 				} );
-			} );
-
-			it( "should send terminate indexing instruction when indexing status record exists but expiry date has expired", function(){
-				var engine       = _getSearchEngine();
-				var indexName    = "myIndex";
-				var statusRecord = QueryNew( "indexing_expiry", "varchar", [ [ DateAdd( "d", -1, Now() ) ] ] );
-
-				engine.$( "setIndexingStatus" );
-				engine.$( "terminateIndexing" );
-
-				mockStatusDao.$( "selectData" ).$args(
-					  selectFields = [ "indexing_expiry" ]
-					, filter       = { index_name=indexName, is_indexing=true }
-				).$results( statusRecord );
-
-				engine.isIndexReindexing( indexName );
-
-				expect( engine.$calllog().terminateIndexing.len() ).toBe( 1 );
-				expect( engine.$calllog().terminateIndexing[1] ).toBe( [ indexName ] );
-
-			} );
-		} );
-
-		describe( "getIndexReindexingStatus()", function(){
-			it( "should fetch record from db indicating the indexes current status", function(){
-				fail( "not yet implemented" );
 			} );
 		} );
 	}

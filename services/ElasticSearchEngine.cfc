@@ -102,28 +102,67 @@ component output=false singleton=true {
 	}
 
 	public void function rebuildIndex( required string indexName ) output=false {
+		var start = getTickCount();
+
 		_announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
 
-		var uniqueIndexName = createIndex( arguments.indexName );
-		var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
-		var indexingSuccess = true;
-
-		for( var objectName in objects ){
-			indexingSuccess = indexAllRecords( objectName, uniqueIndexName );
-			if ( !indexingSuccess ) {
-				break;
+		transaction {
+			if ( isIndexReindexing( arguments.indexName ) ) {
+				throw( type="ElasticSearchEngine.indexing.in.progress", message="The index, [#indexName#], is currently being rebuilt. You cannot rebuild an index that is already being built." );
 			}
+
+			setIndexingStatus(
+				  indexName         = arguments.indexName
+				, isIndexing        = true
+				, indexingStartedAt = Now()
+				, indexingExpiry    = DateAdd( "h", 1, Now() )
+			);
 		}
 
-		if ( indexingSuccess ) {
-			_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
+		try {
 
-			cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
+			var uniqueIndexName = createIndex( arguments.indexName );
+			var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
+			var indexingSuccess = true;
 
-			_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
-		} else {
-			_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
-			_getApiWrapper().deleteIndex( uniqueIndexName );
+			for( var objectName in objects ){
+				indexingSuccess = indexAllRecords( objectName, uniqueIndexName, indexName );
+				if ( !indexingSuccess ) {
+					break;
+				}
+			}
+
+
+			if ( indexingSuccess ) {
+				_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
+
+				setIndexingStatus(
+					  indexName               = arguments.indexName
+					, isIndexing              = false
+					, indexingExpiry          = ""
+					, lastIndexingSuccess     = true
+					, lastIndexingCompletedAt = Now()
+					, lastIndexingTimetaken   = GetTickCount() - start
+				);
+
+
+				cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
+
+				_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
+			} else {
+				terminateIndexing( arguments.indexName );
+				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
+				_getApiWrapper().deleteIndex( uniqueIndexName );
+			}
+
+		} catch ( any e ) {
+			try {
+				terminateIndexing( arguments.indexName );
+				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName, error = e } );
+				_getApiWrapper().deleteIndex( uniqueIndexName );
+			} catch ( any e ) {}
+
+			rethrow;
 		}
 
 		return;
@@ -254,9 +293,8 @@ component output=false singleton=true {
 			var pageSize  = 100;
 
 			do{
-				if ( _isIndexingTerminated( arguments.indexAlias ) ) {
+				if ( !isIndexReindexing( arguments.indexAlias ) ) {
 					_announceInterception( "onElasticSearchIndexDocsTermination", { objectName = arguments.objectName } );
-					_clearTerminateIndexingFlag( arguments.indexAlias );
 					return false;
 				}
 
@@ -445,12 +483,23 @@ component output=false singleton=true {
 		var wrapper = _getApiWrapper();
 
 		for( var index in indexes ){
-			var indexStats = wrapper.stats( index );
+			var indexStats = "";
+			var indexingStats = _getStatusDao().selectData( filter={ index_name=index } );
 
-			// todo, steal more statistics
+			try {
+				indexStats = wrapper.stats( index );
+			} catch( "cfelasticsearch.IndexMissingException" e ) {
+			}
+
 			stats[ index ] = {
-				  totalDocs = indexStats._all.total.docs.count          ?: ""
-				, diskSize  = indexStats._all.total.store.size_in_bytes ?: ""
+				  totalDocs                  = indexStats._all.total.docs.count          ?: ""
+				, diskSize                   = indexStats._all.total.store.size_in_bytes ?: ""
+				, is_indexing                = indexingStats.is_indexing                 ?: ""
+				, indexing_started_at        = indexingStats.indexing_started_at         ?: ""
+				, indexing_expiry            = indexingStats.indexing_expiry             ?: ""
+				, last_indexing_success      = indexingStats.last_indexing_success       ?: ""
+				, last_indexing_completed_at = indexingStats.last_indexing_completed_at  ?: ""
+				, last_indexing_timetaken    = indexingStats.last_indexing_timetaken     ?: ""
 			};
 		}
 
@@ -461,6 +510,7 @@ component output=false singleton=true {
 		var statusRecord = _getStatusDao().selectData(
 			  selectFields = [ "indexing_expiry" ]
 			, filter       = { index_name=arguments.indexName, is_indexing=true }
+			, useCache     = false
 		);
 
 		if ( statusRecord.recordCount ) {
@@ -468,22 +518,29 @@ component output=false singleton=true {
 				return true;
 			}
 
-			terminateIndexing( arguments.indexName );
-			setIndexingStatus(
-				  indexName               = arguments.indexName
-				, isIndexing              = false
-				, lastIndexingSuccess     = false
-				, indexingStartedAt       = ""
-				, indexingExpiry          = ""
-				, lastIndexingCompletedAt = ""
-				, lastIndexingTimetaken   = ""
-			);
+			terminateIndexing( arguments.indexName, false );
 		}
 		return false;
 	}
 
+	public void function terminateIndexing( required string indexName, boolean checkRunningFirst=true ) output=false {
+		transaction {
+			if ( !checkRunningFirst || isIndexReindexing( arguments.indexName ) ) {
+				setIndexingStatus(
+					  indexName               = arguments.indexName
+					, isIndexing              = false
+					, lastIndexingSuccess     = false
+					, indexingStartedAt       = ""
+					, indexingExpiry          = ""
+					, lastIndexingCompletedAt = ""
+					, lastIndexingTimetaken   = ""
+				);
+			}
+		}
+	}
+
 	public void function setIndexingStatus(
-		  required boolean indexName
+		  required string  indexName
 		, required boolean isIndexing
 		,          boolean lastIndexingSuccess
 		,          any     indexingStartedAt
@@ -510,16 +567,10 @@ component output=false singleton=true {
 			data.last_indexing_timetaken = arguments.lastIndexingTimetaken;
 		}
 
-		if ( !_getStatusDao().updateData( filter={ index_name=arguments.indexName, data=data } ) ) {
+		if ( !_getStatusDao().updateData( filter={ index_name=arguments.indexName }, data=data ) ) {
 			data.index_name = arguments.indexName;
 			_getStatusDao().insertData( data );
 		}
-	}
-
-	public void function terminateIndexing( required string indexName ) output=false {
-		variables._indexingTerminationInstructions = variables._indexingTerminationInstructions ?: {};
-
-		variables._indexingTerminationInstructions[ arguments.indexName ] = true;
 	}
 
 	public array function getConfiguredStopWords() output=false {
@@ -688,15 +739,6 @@ component output=false singleton=true {
 		var page = _getPageDao().selectData( id=arguments.pageId, selectFields=[ "page_type" ] );
 
 		return page.page_type ?: "";
-	}
-
-	private boolean function _isIndexingTerminated( required string indexName ) output=false {
-		return ( variables._indexingTerminationInstructions ?: {} ).keyExists( arguments.indexName );
-	}
-
-	private void function _clearTerminateIndexingFlag( required string indexName ) output=false {
-		variables._indexingTerminationInstructions = variables._indexingTerminationInstructions ?: {};
-		variables._indexingTerminationInstructions.delete( arguments.indexName );
 	}
 
 // GETTERS AND SETTERS
