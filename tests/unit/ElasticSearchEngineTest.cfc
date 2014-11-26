@@ -826,6 +826,7 @@ component extends="testbox.system.BaseSpec" {
 				mockStatusDao.$( "selectData" ).$args(
 					  selectFields = [ "indexing_expiry" ]
 					, filter       = { index_name=indexName, is_indexing=true }
+					, useCache     = false
 				).$results( QueryNew( "indexing_expiry" ) );
 
 				expect( engine.isIndexReindexing( indexName ) ).toBeFalse();
@@ -839,6 +840,7 @@ component extends="testbox.system.BaseSpec" {
 				mockStatusDao.$( "selectData" ).$args(
 					  selectFields = [ "indexing_expiry" ]
 					, filter       = { index_name=indexName, is_indexing=true }
+					, useCache     = false
 				).$results( statusRecord );
 
 				expect( engine.isIndexReindexing( indexName ) ).toBeTrue();
@@ -854,6 +856,7 @@ component extends="testbox.system.BaseSpec" {
 				mockStatusDao.$( "selectData" ).$args(
 					  selectFields = [ "indexing_expiry" ]
 					, filter       = { index_name=indexName, is_indexing=true }
+					, useCache     = false
 				).$results( statusRecord );
 
 				expect( engine.isIndexReindexing( indexName ) ).toBeFalse();
@@ -869,6 +872,7 @@ component extends="testbox.system.BaseSpec" {
 				mockStatusDao.$( "selectData" ).$args(
 					  selectFields = [ "indexing_expiry" ]
 					, filter       = { index_name=indexName, is_indexing=true }
+					, useCache     = false
 				).$results( statusRecord );
 
 				engine.isIndexReindexing( indexName );
@@ -889,15 +893,16 @@ component extends="testbox.system.BaseSpec" {
 
 // PRIVATE HELPERS
 	private function _getSearchEngine() output=false {
-		mockConfigReader         = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
-		mockApiWrapper           = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
-		mockResultsFactory       = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchResultsFactory" );
-		mockPresideObjectService = getMockBox().createStub();
-		mockContentRenderer      = getMockBox().createStub();
-		mockInterceptorService   = getMockBox().createStub();
-		mockPageDao              = getMockBox().createStub();
-		mockSiteTreeService      = getMockBox().createStub();
-		mockStatusDao            = getMockBox().createStub();
+		mockConfigReader               = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
+		mockApiWrapper                 = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
+		mockResultsFactory             = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchResultsFactory" );
+		mockPresideObjectService       = getMockBox().createStub();
+		mockContentRenderer            = getMockBox().createStub();
+		mockInterceptorService         = getMockBox().createStub();
+		mockPageDao                    = getMockBox().createStub();
+		mockSiteTreeService            = getMockBox().createStub();
+		mockStatusDao                  = getMockBox().createStub();
+		mockSystemConfigurationService = getMockBox().createStub();
 
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
@@ -905,15 +910,16 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "_announceInterception", {} );
 
 		return engine.init(
-			  configurationReader    = mockConfigReader
-			, apiWrapper             = mockApiWrapper
-			, presideObjectService   = mockPresideObjectService
-			, contentRendererService = mockContentRenderer
-			, interceptorService     = mockInterceptorService
-			, pageDao                = mockPageDao
-			, siteTreeService        = mockSiteTreeService
-			, resultsFactory         = mockResultsFactory
-			, statusDao              = mockStatusDao
+			  configurationReader        = mockConfigReader
+			, apiWrapper                 = mockApiWrapper
+			, presideObjectService       = mockPresideObjectService
+			, contentRendererService     = mockContentRenderer
+			, interceptorService         = mockInterceptorService
+			, pageDao                    = mockPageDao
+			, siteTreeService            = mockSiteTreeService
+			, resultsFactory             = mockResultsFactory
+			, statusDao                  = mockStatusDao
+			, systemConfigurationService = mockSystemConfigurationService
 		);
 	}
 
