@@ -1,7 +1,8 @@
 component output="false" extends="preside.system.base.AdminHandler" {
 
-	property name="elasticSearchEngine" inject="elasticSearchEngine";
-	property name="messagebox"          inject="coldbox:plugin:messagebox";
+	property name="elasticSearchEngine"        inject="elasticSearchEngine";
+	property name="systemConfigurationService" inject="systemConfigurationService";
+	property name="messagebox"                 inject="coldbox:plugin:messagebox";
 
 	function prehandler( event, rc, prc ) output=false {
 		super.preHandler( argumentCollection = arguments );
@@ -48,6 +49,39 @@ component output="false" extends="preside.system.base.AdminHandler" {
 
 		setNextEvent( url=event.buildAdminLink( linkTo="elasticSearchControl" ) );
 	}
+
+	public void function configure( event, rc, prc ) output=false {
+		_checkPermissions( event, "configure" );
+
+		prc.configuration = systemConfigurationService.getCategorySettings( "elasticsearch" );
+
+		prc.pageTitle    = translateResource( "cms:elasticSearchControl.configure.page.title"    );
+		prc.pageSubTitle = translateResource( "cms:elasticSearchControl.configure.page.subtitle" );
+
+		event.addAdminBreadCrumb(
+			  title = translateResource( uri="cms:elasticSearchControl.configure.page.crumbtrail" )
+			, link  = event.buildAdminLink( linkTo="elasticSearchControl.configure" )
+		);
+	}
+
+	public void function saveConfigurationAction( event, rc, prc ) output=false {
+		_checkPermissions( event, "configure" );
+
+		var formData = event.getCollectionForForm( "elasticsearch.config" );
+
+		for( var setting in formData ){
+			systemConfigurationService.saveSetting(
+				  category = "elasticsearch"
+				, setting  = setting
+				, value    = formData[ setting ]
+			);
+		}
+
+		messageBox.info( translateResource( uri="cms:elasticSearchControl.configuration.saved" ) );
+
+		setNextEvent( url=event.buildAdminLink( linkTo="elasticSearchControl" ) );
+	}
+
 
 // PRIVATE HELPERS
 	private void function _checkPermissions( required any event, required string key ) output=false {

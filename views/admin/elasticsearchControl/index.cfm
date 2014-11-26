@@ -8,6 +8,18 @@
 </cfscript>
 
 <cfoutput>
+	<div class="top-right-button-group">
+		<cfif hasCmsPermission( "elasticsearchcontrol.configure" )>
+			<a class="pull-right inline" href="#event.buildAdminLink( linkTo="elasticsearchcontrol.configure" )#" data-global-key="c">
+				<button class="btn btn-default btn-sm">
+					<i class="fa fa-cogs"></i>
+					#translateResource( uri="cms:elasticsearchcontrol.configure.btn" )#
+				</button>
+			</a>
+		</cfif>
+	</div>
+
+
 	<table class="table table-striped table-hover">
 		<thead>
 			<tr>
