@@ -2,17 +2,18 @@ component output=false singleton=true {
 
 // CONSTRUCTOR
 	/**
-	 * @apiWrapper.inject             elasticSearchApiWrapper
-	 * @configurationReader.inject    elasticSearchPresideObjectConfigurationReader
-	 * @presideObjectService.inject   presideObjectService
-	 * @contentRendererService.inject contentRendererService
-	 * @interceptorService.inject     coldbox:InterceptorService
-	 * @pageDao.inject                presidecms:object:page
-	 * @siteTreeService.inject        siteTreeService
-	 * @resultsFactory.inject         elasticSearchResultsFactory
-	 * @statusDao.inject              presidecms:object:elasticsearch_indexing_status
+	 * @apiWrapper.inject                 elasticSearchApiWrapper
+	 * @configurationReader.inject        elasticSearchPresideObjectConfigurationReader
+	 * @presideObjectService.inject       presideObjectService
+	 * @contentRendererService.inject     contentRendererService
+	 * @interceptorService.inject         coldbox:InterceptorService
+	 * @pageDao.inject                    presidecms:object:page
+	 * @siteTreeService.inject            siteTreeService
+	 * @resultsFactory.inject             elasticSearchResultsFactory
+	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
+	 * @systemConfigurationService.inject systemConfigurationService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) output=false {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -23,6 +24,7 @@ component output=false singleton=true {
 		_setSiteTreeService( arguments.siteTreeService );
 		_setResultsFactory( arguments.resultsFactory );
 		_setStatusDao( arguments.statusDao );
+		_setSystemConfigurationService( arguments.systemConfigurationService );
 
 		_checkIndexesExist();
 
@@ -574,11 +576,15 @@ component output=false singleton=true {
 	}
 
 	public array function getConfiguredStopWords() output=false {
-		return []; // todo
+		var stopWords = _getSystemConfigurationService().getSetting( "elasticsearch", "stopwords" );
+
+		return ListToArray( stopWords, " ," & Chr(10) & Chr(13) );
 	}
 
 	public array function getConfiguredSynonyms() output=false {
-		return []; // todo
+		var synonyms = _getSystemConfigurationService().getSetting( "elasticsearch", "synonyms" );
+
+		return ListToArray( synonyms, Chr(10) & Chr(13) );
 	}
 
 // PRIVATE HELPERS
@@ -810,5 +816,12 @@ component output=false singleton=true {
 	}
 	private void function _setStatusDao( required any statusDao ) output=false {
 		_statusDao = arguments.statusDao;
+	}
+
+	private any function _getSystemConfigurationService() output=false {
+		return _systemConfigurationService;
+	}
+	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
+		_systemConfigurationService = arguments.systemConfigurationService;
 	}
 }

@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form>
-	<tab id="default">
-		<fieldset id="default">
+	<tab id="indexsettings" title="cms:elasticSearchControl.config.indexsettings.tab">
+		<fieldset id="indexsettings">
+			<field name="default_index" control="textinput" required="false" label="cms:elasticSearchControl.config.default_index.label" help="cms:elasticSearchControl.config.default_index.help" placeholder="cms:elasticSearchControl.config.default_index.placeholder" />
+			<field name="stopwords"     control="textarea"  required="false" label="cms:elasticSearchControl.config.stopwords.label" help="cms:elasticSearchControl.config.stopwords.help" />
+			<field name="synonyms"      control="textarea"  required="false" label="cms:elasticSearchControl.config.synonyms.label"  help="cms:elasticSearchControl.config.synonyms.help" />
+		</fieldset>
+	</tab>
+	<tab id="serversettings" title="cms:elasticSearchControl.config.serversettings.tab">
+		<fieldset id="serversettings">
 			<field name="endpoint"         control="textinput" required="true"                               label="cms:elasticSearchControl.config.endpoint.label"         help="cms:elasticSearchControl.config.endpoint.help"        placeholder="cms:elasticSearchControl.config.endpoint.placeholder" />
-			<field name="default_index"    control="textinput" required="false"                              label="cms:elasticSearchControl.config.default_index.label"    help="cms:elasticSearchControl.config.default_index.help"   placeholder="cms:elasticSearchControl.config.default_index.placeholder" />
 			<field name="charset"          control="textinput" required="false" defaultValue="UTF-8"         label="cms:elasticSearchControl.config.charset.label"          help="cms:elasticSearchControl.config.charset.help"         placeholder="cms:elasticSearchControl.config.charset.placeholder" />
 			<field name="api_call_timeout" control="spinner"   required="true" minValue="30" maxValue="1000" label="cms:elasticSearchControl.config.api_call_timeout.label" help="cms:elasticSearchControl.config.api_call_timeout.help"/>
 			<field name="retry_attempts"   control="spinner"   required="true" minValue="1"  maxValue="10"   label="cms:elasticSearchControl.config.retry_attempts.label"   help="cms:elasticSearchControl.config.retry_attempts.help"/>
