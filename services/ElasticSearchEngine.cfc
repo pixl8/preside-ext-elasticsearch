@@ -594,7 +594,11 @@ component output=false singleton=true {
 	 *
 	 */
 	private void function _checkIndexesExist() output=false {
-		return ensureIndexesExist();
+		try {
+			return ensureIndexesExist();
+		} catch ( any e ) {
+			// TODO, log this
+		}
 	}
 
 	private struct function _getDefaultIndexSettings() output=false {
