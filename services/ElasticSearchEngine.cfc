@@ -490,7 +490,7 @@ component output=false singleton=true {
 
 			try {
 				indexStats = wrapper.stats( index );
-			} catch( "cfelasticsearch.IndexMissingException" e ) {
+			} catch( any e ) {
 			}
 
 			stats[ index ] = {
