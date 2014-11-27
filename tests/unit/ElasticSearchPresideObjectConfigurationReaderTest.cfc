@@ -191,7 +191,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( false );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -205,7 +205,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( "" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -219,7 +219,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( true );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -233,7 +233,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSortable" ).$results( "" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -247,7 +247,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSortable" ).$results( true );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -263,7 +263,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( "" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchAnalyzer" ).$results( analyzer );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -279,7 +279,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( "" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchAnalyzer" ).$results( analyzer );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -294,7 +294,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchDateFormat" ).$results( dateFormat );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -309,7 +309,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchDateFormat" ).$results( dateFormat );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -323,7 +323,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchIgnoreMalformed" ).$results( false );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -337,7 +337,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchIgnoreMalformed" ).$results( "" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -350,7 +350,7 @@ component extends="testbox.system.BaseSpec" {
 				var fieldName  = "somefield";
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -363,7 +363,7 @@ component extends="testbox.system.BaseSpec" {
 				var fieldName  = "somefield";
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "boolean" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
@@ -376,24 +376,24 @@ component extends="testbox.system.BaseSpec" {
 				var fieldName  = "somefield";
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "date" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
 				expect( configuration.type ?: "" ).toBe( "date" );
 			} );
 
-			it( "it should return 'number' type when property is numeric", function(){
+			it( "it should return 'integer' type when property is numeric", function(){
 				var svc        = _getService();
 				var objectName = "someobject";
 				var fieldName  = "somefield";
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "numeric" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
-				expect( configuration.type ?: "" ).toBe( "number" );
+				expect( configuration.type ?: "" ).toBe( "integer" );
 			} );
 
 			it( "should return string for types other tyan date, boolean, string and numeric", function(){
@@ -402,7 +402,7 @@ component extends="testbox.system.BaseSpec" {
 				var fieldName  = "somefield";
 
 				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "jazz" );
-				mockPresideObjectService.$( "getObjectPropertyAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
