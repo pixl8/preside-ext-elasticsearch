@@ -144,18 +144,45 @@ component output=false {
 			configuration.searchable = false;
 			configuration.sortable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
 			configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
+			configuration.type     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchType", "" );
 
-			switch( fieldType ){
-				case "numeric":
-					configuration.type = "number";
-				break;
-				case "string":
-				case "date":
-				case "boolean":
-					configuration.type = fieldType;
-				break;
-				default:
-					configuration.type = "string";
+			if ( !Len( Trim( configuration.type ?: "" ) ) ) {
+				switch( fieldType ){
+					case "string":
+					case "date":
+					case "boolean":
+						configuration.type = fieldType;
+					break;
+
+					case "numeric":
+						var dbtype = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "dbtype", "" );
+
+						switch( dbType ) {
+							case "bigint signed":
+							case "int unsigned":
+							case "bigint":
+								configuration.type = "long";
+							break;
+
+							case "float":
+							case "decimal":
+								configuration.type = "float";
+							break;
+
+							case "double":
+							case "double precision":
+							case "real":
+								configuration.type = "double";
+							break;
+
+							default:
+								configuration.type = "integer";
+						}
+					break;
+
+					default:
+						configuration.type = "string";
+				}
 			}
 
 			switch( configuration.type ){
