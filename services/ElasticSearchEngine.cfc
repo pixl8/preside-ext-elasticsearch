@@ -2,16 +2,16 @@ component output=false singleton=true {
 
 // CONSTRUCTOR
 	/**
-	 * @apiWrapper.inject                 elasticSearchApiWrapper
-	 * @configurationReader.inject        elasticSearchPresideObjectConfigurationReader
-	 * @presideObjectService.inject       presideObjectService
-	 * @contentRendererService.inject     contentRendererService
+	 * @apiWrapper.inject                 provider:elasticSearchApiWrapper
+	 * @configurationReader.inject        provider:elasticSearchPresideObjectConfigurationReader
+	 * @presideObjectService.inject       provider:presideObjectService
+	 * @contentRendererService.inject     provider:contentRendererService
 	 * @interceptorService.inject         coldbox:InterceptorService
 	 * @pageDao.inject                    presidecms:object:page
-	 * @siteTreeService.inject            siteTreeService
-	 * @resultsFactory.inject             elasticSearchResultsFactory
+	 * @siteTreeService.inject            provider:siteTreeService
+	 * @resultsFactory.inject             provider:elasticSearchResultsFactory
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
-	 * @systemConfigurationService.inject systemConfigurationService
+	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 */
 	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) output=false {
 		_setLocalCache( {} );
@@ -753,21 +753,21 @@ component output=false singleton=true {
 
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() output=false {
-		return _apiWrapper;
+		return _apiWrapper.get();
 	}
 	private void function _setApiWrapper( required any apiWrapper ) output=false {
 		_apiWrapper = arguments.apiWrapper;
 	}
 
 	private any function _getConfigurationReader() output=false {
-		return _configurationReader;
+		return _configurationReader.get();
 	}
 	private void function _setConfigurationReader( required any configurationReader ) output=false {
 		_configurationReader = arguments.configurationReader;
 	}
 
 	private any function _getPresideObjectService() output=false {
-		return _presideObjectService;
+		return _presideObjectService.get();
 	}
 	private void function _setPresideObjectService( required any presideObjectService ) output=false {
 		_presideObjectService = arguments.presideObjectService;
@@ -781,7 +781,7 @@ component output=false singleton=true {
 	}
 
 	private any function _getContentRendererService() output=false {
-		return _contentRendererService;
+		return _contentRendererService.get();
 	}
 	private void function _setContentRendererService( required any contentRendererService ) output=false {
 		_contentRendererService = arguments.contentRendererService;
@@ -802,14 +802,14 @@ component output=false singleton=true {
 	}
 
 	private any function _getSiteTreeService() output=false {
-		return _siteTreeService;
+		return _siteTreeService.get();
 	}
 	private void function _setSiteTreeService( required any siteTreeService ) output=false {
 		_siteTreeService = arguments.siteTreeService;
 	}
 
 	private any function _getResultsFactory() output=false {
-		return _resultsFactory;
+		return _resultsFactory.get();
 	}
 	private void function _setResultsFactory( required any resultsFactory ) output=false {
 		_resultsFactory = arguments.resultsFactory;
@@ -823,7 +823,7 @@ component output=false singleton=true {
 	}
 
 	private any function _getSystemConfigurationService() output=false {
-		return _systemConfigurationService;
+		return _systemConfigurationService.get();
 	}
 	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
 		_systemConfigurationService = arguments.systemConfigurationService;
