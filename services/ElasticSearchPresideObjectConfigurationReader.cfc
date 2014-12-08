@@ -141,7 +141,7 @@ component output=false {
 			var configuration = {};
 			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
 
-			configuration.fieldName = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchFieldName", args.fieldName );
+			configuration.fieldName = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchField", args.fieldName );
 			configuration.searchable = false;
 			configuration.sortable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
 			configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;

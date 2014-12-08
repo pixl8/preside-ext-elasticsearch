@@ -189,7 +189,7 @@ component extends="testbox.system.BaseSpec" {
 				var objectName = "someobject";
 				var fieldName  = "somefield";
 
-				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchFieldName", fieldName ).$results( fieldName );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchField", fieldName ).$results( fieldName );
 				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
@@ -197,13 +197,13 @@ component extends="testbox.system.BaseSpec" {
 				expect( configuration.fieldName ?: "" ).toBe( fieldName );
 			} );
 
-			it( "should return configured search field name when property has a defined 'searchFieldName' attribute that differs from the name of the property", function(){
+			it( "should return configured search field name when property has a defined 'searchField' attribute that differs from the name of the property", function(){
 				var svc           = _getService();
 				var objectName    = "someobject";
 				var fieldName     = "somefield";
 				var diffFieldName = "aDifferentFieldName";
 
-				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchFieldName", fieldName ).$results( diffFieldName );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchField", fieldName ).$results( diffFieldName );
 				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
