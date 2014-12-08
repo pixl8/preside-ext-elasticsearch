@@ -184,6 +184,33 @@ component extends="testbox.system.BaseSpec" {
 		} );
 
 		describe( "getFieldConfiguration()", function(){
+			it( "should return the property name as the name of the field by default", function(){
+				var svc        = _getService();
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchFieldName", fieldName ).$results( fieldName );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.fieldName ?: "" ).toBe( fieldName );
+			} );
+
+			it( "should return configured search field name when property has a defined 'searchFieldName' attribute that differs from the name of the property", function(){
+				var svc           = _getService();
+				var objectName    = "someobject";
+				var fieldName     = "somefield";
+				var diffFieldName = "aDifferentFieldName";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchFieldName", fieldName ).$results( diffFieldName );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.fieldName ?: "" ).toBe( diffFieldName );
+			} );
+
 			it( "should return searchable flag that has been set on the field", function(){
 				var svc        = _getService();
 				var objectName = "someobject";
