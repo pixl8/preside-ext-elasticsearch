@@ -908,6 +908,16 @@ component extends="testbox.system.BaseSpec" {
 
 		engine.$( "_checkIndexesExist" );
 		engine.$( "_announceInterception", {} );
+		engine.$( "_getConfigurationReader"       , mockConfigReader               );
+		engine.$( "_getApiWrapper"                , mockApiWrapper                 );
+		engine.$( "_getPresideObjectService"      , mockPresideObjectService       );
+		engine.$( "_getContentRendererService"    , mockContentRenderer            );
+		engine.$( "_getInterceptorService"        , mockInterceptorService         );
+		engine.$( "_getPageDao"                   , mockPageDao                    );
+		engine.$( "_getSiteTreeService"           , mockSiteTreeService            );
+		engine.$( "_getResultsFactory"            , mockResultsFactory             );
+		engine.$( "_getStatusDao"                 , mockStatusDao                  );
+		engine.$( "_getSystemConfigurationService", mockSystemConfigurationService );
 
 		return engine.init(
 			  configurationReader        = mockConfigReader
