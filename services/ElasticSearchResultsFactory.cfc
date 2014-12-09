@@ -29,6 +29,9 @@ component output=false singleton=true {
 			if ( StructKeyExists( arguments.rawResult, 'facets' ) ) {
 				args.facets = _transformFacets( arguments.rawResult.facets );
 			}
+			if ( StructKeyExists( arguments.rawResult, 'aggregations' ) ) {
+				args.facets = _transformAggregationStyleFacets( arguments.rawResult.aggregations );
+			}
 		}
 
 		return new ElasticSearchResult( argumentCollection = args );
@@ -123,6 +126,22 @@ component output=false singleton=true {
 				QueryAddRow( transformed[ facet ] );
 				QuerySetCell(transformed[ facet ] , 'count', arguments.facets[ facet ].terms[n].count );
 				QuerySetCell(transformed[ facet ] , 'label', arguments.facets[ facet ].terms[n].term  );
+			}
+		}
+
+		return transformed;
+	}
+
+	private struct function _transformAggregationStyleFacets( required struct facets ) output=false {
+		var transformed = {};
+
+		for( var key in arguments.facets ) {
+			transformed[ key ] = QueryNew('label,count');
+
+			for( var bucket in arguments.facets[ key ].buckets ) {
+				QueryAddRow( transformed[ key ] );
+				QuerySetCell( transformed[ key ] , 'count', bucket.doc_count );
+				QuerySetCell( transformed[ key ] , 'label', bucket.key       );
 			}
 		}
 

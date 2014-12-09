@@ -347,9 +347,11 @@ component output=false singleton=true {
 
 		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
 
+		records = convertQueryToArrayOfDocs( arguments.objectName, records );
+
 		_announceInterception( "postElasticSearchGetObjectDataForIndexing", { records=records } );
 
-		return convertQueryToArrayOfDocs( arguments.objectName, records );
+		return records;
 	}
 
 	public array function convertQueryToArrayOfDocs( required string objectName, required query records ) output=false {
