@@ -9,6 +9,7 @@ component output=false {
 	variables._result.success      = true;
 	variables._result.error        = "";
 	variables._result.facets       = {};
+	variables._result.aggregations = {};
 	variables._result.sortBy       = "RELEVANCE";
 
 // CONSTRUCTOR
@@ -22,6 +23,7 @@ component output=false {
 		, string  error        = ""
 		, string  sortBy       = ""
 		, struct  facets       = {}
+		, struct  aggregations = {}
 	) output=false {
 		_result.append( arguments );
 
@@ -67,6 +69,10 @@ component output=false {
 
 	public struct function getFacets() output=false {
 		return _result.facets;
+	}
+
+	public struct function getAggregations() output=false {
+		return _result.aggregations;
 	}
 
 	public numeric function getTotalPages() output=false {

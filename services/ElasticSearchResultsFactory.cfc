@@ -30,7 +30,7 @@ component output=false singleton=true {
 				args.facets = _transformFacets( arguments.rawResult.facets );
 			}
 			if ( StructKeyExists( arguments.rawResult, 'aggregations' ) ) {
-				args.facets = _transformAggregationStyleFacets( arguments.rawResult.aggregations );
+				args.aggregations = arguments.rawResult.aggregations;
 			}
 		}
 
@@ -127,23 +127,6 @@ component output=false singleton=true {
 				QuerySetCell(transformed[ facet ] , 'id'   , arguments.facets[ facet ].terms[n].term  );
 				QuerySetCell(transformed[ facet ] , 'label', arguments.facets[ facet ].terms[n].term  );
 				QuerySetCell(transformed[ facet ] , 'count', arguments.facets[ facet ].terms[n].count );
-			}
-		}
-
-		return transformed;
-	}
-
-	private struct function _transformAggregationStyleFacets( required struct facets ) output=false {
-		var transformed = {};
-
-		for( var key in arguments.facets ) {
-			transformed[ key ] = QueryNew('id,label,count');
-
-			for( var bucket in arguments.facets[ key ].buckets ) {
-				QueryAddRow( transformed[ key ] );
-				QuerySetCell( transformed[ key ] , 'id'   , bucket.key       );
-				QuerySetCell( transformed[ key ] , 'label', bucket.key       );
-				QuerySetCell( transformed[ key ] , 'count', bucket.doc_count );
 			}
 		}
 
