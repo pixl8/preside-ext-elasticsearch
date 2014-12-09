@@ -120,12 +120,13 @@ component output=false singleton=true {
 		for( i=1; i lte ArrayLen( facetKeys ); i=i+1 ){
 			facet = facetKeys[i];
 
-			transformed[ facet ] = QueryNew('label,count');
+			transformed[ facet ] = QueryNew('id,label,count');
 
 			for( n=1; n lte ArrayLen( arguments.facets[ facet ].terms ); n=n+1 ){
 				QueryAddRow( transformed[ facet ] );
-				QuerySetCell(transformed[ facet ] , 'count', arguments.facets[ facet ].terms[n].count );
+				QuerySetCell(transformed[ facet ] , 'id'   , arguments.facets[ facet ].terms[n].term  );
 				QuerySetCell(transformed[ facet ] , 'label', arguments.facets[ facet ].terms[n].term  );
+				QuerySetCell(transformed[ facet ] , 'count', arguments.facets[ facet ].terms[n].count );
 			}
 		}
 
@@ -136,12 +137,13 @@ component output=false singleton=true {
 		var transformed = {};
 
 		for( var key in arguments.facets ) {
-			transformed[ key ] = QueryNew('label,count');
+			transformed[ key ] = QueryNew('id,label,count');
 
 			for( var bucket in arguments.facets[ key ].buckets ) {
 				QueryAddRow( transformed[ key ] );
-				QuerySetCell( transformed[ key ] , 'count', bucket.doc_count );
+				QuerySetCell( transformed[ key ] , 'id'   , bucket.key       );
 				QuerySetCell( transformed[ key ] , 'label', bucket.key       );
+				QuerySetCell( transformed[ key ] , 'count', bucket.doc_count );
 			}
 		}
 
