@@ -29,6 +29,9 @@ component output=false singleton=true {
 			if ( StructKeyExists( arguments.rawResult, 'facets' ) ) {
 				args.facets = _transformFacets( arguments.rawResult.facets );
 			}
+			if ( StructKeyExists( arguments.rawResult, 'aggregations' ) ) {
+				args.aggregations = arguments.rawResult.aggregations;
+			}
 		}
 
 		return new ElasticSearchResult( argumentCollection = args );
@@ -117,12 +120,13 @@ component output=false singleton=true {
 		for( i=1; i lte ArrayLen( facetKeys ); i=i+1 ){
 			facet = facetKeys[i];
 
-			transformed[ facet ] = QueryNew('label,count');
+			transformed[ facet ] = QueryNew('id,label,count');
 
 			for( n=1; n lte ArrayLen( arguments.facets[ facet ].terms ); n=n+1 ){
 				QueryAddRow( transformed[ facet ] );
-				QuerySetCell(transformed[ facet ] , 'count', arguments.facets[ facet ].terms[n].count );
+				QuerySetCell(transformed[ facet ] , 'id'   , arguments.facets[ facet ].terms[n].term  );
 				QuerySetCell(transformed[ facet ] , 'label', arguments.facets[ facet ].terms[n].term  );
+				QuerySetCell(transformed[ facet ] , 'count', arguments.facets[ facet ].terms[n].count );
 			}
 		}
 

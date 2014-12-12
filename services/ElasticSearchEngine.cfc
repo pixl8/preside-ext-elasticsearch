@@ -200,7 +200,8 @@ component output=false singleton=true {
 			var fields = configWrapper.getFields( arguments.indexName, docType );
 			mappings[ docType ] = { properties={} };
 			for( var field in fields ){
-				mappings[ docType ].properties[ field ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=field );
+				var fieldName = fields[ field ].fieldName;
+				mappings[ docType ].properties[ fieldName ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName );
 			}
 		}
 
@@ -346,9 +347,11 @@ component output=false singleton=true {
 
 		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
 
+		records = convertQueryToArrayOfDocs( arguments.objectName, records );
+
 		_announceInterception( "postElasticSearchGetObjectDataForIndexing", { records=records } );
 
-		return convertQueryToArrayOfDocs( arguments.objectName, records );
+		return records;
 	}
 
 	public array function convertQueryToArrayOfDocs( required string objectName, required query records ) output=false {
@@ -368,7 +371,7 @@ component output=false singleton=true {
 
 				record[ key ] = _renderField( arguments.objectName, key, record[ key ] );
 			}
-			docs.append( record );
+			docs.append( _convertFieldNames( objectName, record ) );
 		}
 
 		return docs;
@@ -749,6 +752,40 @@ component output=false singleton=true {
 		var page = _getPageDao().selectData( id=arguments.pageId, selectFields=[ "page_type" ] );
 
 		return page.page_type ?: "";
+	}
+
+	private struct function _convertFieldNames( required string objectName, required struct data ) output=false {
+		var mappings  = _getFieldNameMappings( arguments.objectName );
+		var converted = arguments.data;
+
+		for( var sourceField in mappings ) {
+			if ( converted.keyExists( sourceField ) ) {
+				var destinationField = mappings[ sourceField ];
+
+				converted[ destinationField ] = converted[ sourceField ];
+				converted.delete( sourceField );
+			}
+		}
+
+		return converted;
+	}
+
+	private struct function _getFieldNameMappings( required string objectName ) output=false {
+		var args = arguments;
+
+		return _simpleLocalCache( "_getFieldNameMappings" & args.objectName, function(){
+			var objectConfig = _getConfigurationReader().getObjectConfiguration( args.objectName );
+			var mappings     = {};
+
+			for( var field in objectConfig.fields ){
+				var fieldConfig = _getConfigurationReader().getFieldConfiguration( args.objectName, field );
+				if ( fieldConfig.fieldName != field ) {
+					mappings[ field ] = fieldConfig.fieldName;
+				}
+			}
+
+			return mappings;
+		} );
 	}
 
 // GETTERS AND SETTERS

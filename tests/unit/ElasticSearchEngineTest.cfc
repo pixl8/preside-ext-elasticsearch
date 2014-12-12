@@ -269,8 +269,8 @@ component extends="testbox.system.BaseSpec" {
 				var engine    = _getSearchEngine();
 				var indexName = "some_index";
 				var docTypes  = {
-					  type_a = { field_1={ type="string", searchable=true, sortable=true }, field_2={ type="date", searchable=false, ignoreMalformedDates=true, dateFormat="yyyy-mm-dd", sortable=true }, field_3={ type="boolean", searchable=false, sortable=true } }
-					, type_b = { field_4={ type="string", searchable=false, sortable=true }, field_5={ type="number", sortable=true }, field_6={ type="string", analyzer="test", searchable=true, sortable=false } }
+					  type_a = { field_x={ fieldName="field_1", type="string", searchable=true, sortable=true }, field_2={ fieldName="field_2", type="date", searchable=false, ignoreMalformedDates=true, dateFormat="yyyy-mm-dd", sortable=true }, field_3={ fieldName="field_3", type="boolean", searchable=false, sortable=true } }
+					, type_b = { field_x={ fieldName="field_4", type="string", searchable=false, sortable=true }, field_5={ fieldName="field_5", type="number", sortable=true }, field_6={ fieldName="field_6", type="string", analyzer="test", searchable=true, sortable=false } }
 				};
 				var expectedMappings = {
 					type_a = { properties={
@@ -285,12 +285,11 @@ component extends="testbox.system.BaseSpec" {
 					} }
 				};
 
-
 				mockConfigReader.$( "listDocumentTypes" ).$args( indexName ).$results( docTypes.keyArray() );
 				for( var dt in docTypes ){
 					mockConfigReader.$( "getFields" ).$args( indexName, dt ).$results( docTypes[ dt ] );
 					for( var field in docTypes[ dt ] ) {
-						engine.$( "getElasticSearchMappingFromFieldConfiguration" ).$args( argumentCollection=docTypes[ dt ][ field ], name=field ).$results( { test=field } );
+						engine.$( "getElasticSearchMappingFromFieldConfiguration" ).$args( argumentCollection=docTypes[ dt ][ field ], name=docTypes[ dt ][ field ].fieldName ).$results( { test=docTypes[ dt ][ field ].fieldName } );
 					}
 				}
 
@@ -908,6 +907,16 @@ component extends="testbox.system.BaseSpec" {
 
 		engine.$( "_checkIndexesExist" );
 		engine.$( "_announceInterception", {} );
+		engine.$( "_getConfigurationReader"       , mockConfigReader               );
+		engine.$( "_getApiWrapper"                , mockApiWrapper                 );
+		engine.$( "_getPresideObjectService"      , mockPresideObjectService       );
+		engine.$( "_getContentRendererService"    , mockContentRenderer            );
+		engine.$( "_getInterceptorService"        , mockInterceptorService         );
+		engine.$( "_getPageDao"                   , mockPageDao                    );
+		engine.$( "_getSiteTreeService"           , mockSiteTreeService            );
+		engine.$( "_getResultsFactory"            , mockResultsFactory             );
+		engine.$( "_getStatusDao"                 , mockStatusDao                  );
+		engine.$( "_getSystemConfigurationService", mockSystemConfigurationService );
 
 		return engine.init(
 			  configurationReader        = mockConfigReader
