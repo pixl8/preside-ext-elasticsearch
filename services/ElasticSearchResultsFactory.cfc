@@ -72,8 +72,10 @@ component output=false singleton=true {
 			for( n=1; n lte ArrayLen( fields ); n=n+1 ){
 				field = fields[ n ];
 				if ( StructKeyExists( hit.fields, field ) ) {
-					if(IsArray(hit.fields[field])) { hit.fields[field] = ArrayToList(hit.fields[field]) }
-					QuerySetCell( results, field, hit.fields[field] );
+					if ( IsArray( hit.fields[ field ] ) && hit.fields[ field ].len() < 2 ) {
+						hit.fields[ field ] = hit.fields[ field ].toList();
+					}
+					QuerySetCell( results, field, hit.fields[ field ] );
 				}
 			}
 		}
