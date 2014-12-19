@@ -45,10 +45,21 @@ component extends="coldbox.system.Interceptor" output=false {
 	}
 
 	public void function preDeleteObjectData( event, interceptData ) output=false {
-		_getSearchEngine().deleteRecord(
-			  objectName = interceptData.objectName ?: ""
-			, id         = interceptData.id ?: ""
-		);
+		var objectName = interceptData.objectName ?: "";
+		var id         = interceptData.id ?: "";
+		if ( !Len( Trim( id ) ) ) {
+			id = interceptData.filter.id ?: ( interceptData.filterParams.id ?: "" );
+		}
+		if ( IsArray( id ) ) {
+			id = id.toList();
+		}
+
+		if ( IsSimpleValue( id ) && Len( Trim( id ) ) ) {
+			_getSearchEngine().deleteRecord(
+				  objectName = objectName
+				, id         = id
+			);
+		}
 	}
 
 

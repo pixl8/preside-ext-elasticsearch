@@ -10,7 +10,7 @@ component output=false {
 		};
 
 		conf.interceptors.prepend(
-			{ class="app.extensions.preside-ext-elasticsearch.interceptors.SearchEngineInterceptor", properties={} }
+			{ class="app.extensions.preside-ext-elasticsearch.interceptors.PresideExtensionElasticSearchEngineInterceptor", properties={} }
 		);
 
 		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchCreateIndex"               );
