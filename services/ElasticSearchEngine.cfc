@@ -349,7 +349,9 @@ component output=false singleton=true {
 
 		records = convertQueryToArrayOfDocs( arguments.objectName, records );
 
-		_announceInterception( "postElasticSearchGetObjectDataForIndexing", { records=records } );
+		var interceptArgs = Duplicate( arguments );
+		interceptArgs.records=records
+		_announceInterception( "postElasticSearchGetObjectDataForIndexing", interceptArgs );
 
 		return records;
 	}
