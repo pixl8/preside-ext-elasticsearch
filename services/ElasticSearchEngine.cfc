@@ -345,6 +345,10 @@ component output=false singleton=true {
 			selectDataArgs.filter = { "#arguments.objectName#.id" = arguments.id };
 		}
 
+		if ( _isPageType( arguments.objectName ) ) {
+			selectDataArgs.extraFilters = [ { filter={ "page.trashed" = false } } ];
+		}
+
 		_announceInterception( "preElasticSearchGetObjectDataForIndexing", selectDataArgs );
 
 		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
@@ -662,6 +666,7 @@ component output=false singleton=true {
 		}
 
 		for( var p in page ) { cache[ p._hierarchy_id ] = p; }
+
 
 		if ( !isActive( page.active, page.embargo_date, page.expiry_date ) || page.internal_search_access == "block" ) {
 			return false;

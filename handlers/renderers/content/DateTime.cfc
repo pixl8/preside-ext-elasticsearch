@@ -4,7 +4,7 @@ component output=false {
 		var data = args.data ?: "";
 
 		if ( IsDate( data ) ) {
-			return DateFormat( data, "yyyy-mm-dd" ) & TimeFormat( data, "HH:mm:ss" );
+			return DateFormat( data, "yyyy-mm-dd" ) & "T" & TimeFormat( data, "HH:mm:ss" );
 		}
 
 		return data;

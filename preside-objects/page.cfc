@@ -10,4 +10,5 @@ component output=false {
 	property name="main_content"       searchEnabled=true;
 	property name="meta_description"   searchEnabled=true;
 	property name="site"               searchEnabled=true searchSearchable=false searchSortable=true;
+	property name="datecreated"        searchEnabled=true;
 }
