@@ -203,6 +203,8 @@ component output=false singleton=true {
 				var fieldName = fields[ field ].fieldName;
 				mappings[ docType ].properties[ fieldName ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName );
 			}
+
+			mappings[ docType ].properties.append( _getCommonPropertyMappings(), false );
 		}
 
 		return mappings;
@@ -457,12 +459,15 @@ component output=false singleton=true {
 		);
 	}
 
-	public void function filterPageTypeRecords( required string objectName, required array records ) output=false {
+	public void function processPageTypeRecordsBeforeIndexing( required string objectName, required array records ) output=false {
 		if ( _isPageType( arguments.objectName ) ) {
 			for( var i=arguments.records.len(); i > 0; i-- ){
 				if ( !_isPageRecordValidForSearch( arguments.records[i] ) ) {
 					arguments.records.deleteAt( i );
 				}
+
+				var restrictionRules = _getSiteTreeService().getAccessRestrictionRulesForPage( arguments.records[i].id );
+				arguments.records[i].access_restricted = restrictionRules.access_restriction != "none";
 			}
 		}
 	}
@@ -788,6 +793,12 @@ component output=false singleton=true {
 
 			return mappings;
 		} );
+	}
+
+	private struct function _getCommonPropertyMappings() output=false {
+		return {
+			access_restricted = { type="boolean" }
+		};
 	}
 
 // GETTERS AND SETTERS
