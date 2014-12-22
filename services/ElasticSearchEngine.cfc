@@ -480,14 +480,15 @@ component output=false singleton=true {
 		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.recordId ) : arguments.objectName;
 
 		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) && _isPageType( objName ) ) {
-			var watchProps = [ "active", "embargo_date", "expiry_date", "internal_search_access" ];
+			var watchProps = [ "active", "embargo_date", "expiry_date", "internal_search_access", "access_restriction" ];
 
 			for ( var prop in watchProps ) {
 				if ( arguments.updatedData.keyExists( prop ) ) {
-					var children = _getSiteTreeService().getDescendants( id=arguments.recordId, selectFields=[ "id" ] );
+					var children = _getSiteTreeService().getDescendants( id=arguments.recordId, selectFields=[ "id", "page_type" ] );
 					for( var child in children ) {
-						indexRecord( objName, child.id );
+						indexRecord( child.page_type, child.id );
 					}
+					break;
 				}
 			}
 		}
