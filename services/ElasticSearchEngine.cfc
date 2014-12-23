@@ -63,6 +63,10 @@ component output=false singleton=true {
 			}
 		}
 
+		if ( !Len( Trim( searchArgs.index ) ) ) {
+			searchArgs.index = configReader.listIndexes().toList();
+		}
+
  		var apiCallResult = _getApiWrapper().search( argumentCollection=searchArgs );
 
 		return _getResultsFactory().newSearchResult(
