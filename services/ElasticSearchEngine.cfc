@@ -472,6 +472,7 @@ component output=false singleton=true {
 			for( var i=arguments.records.len(); i > 0; i-- ){
 				if ( !_isPageRecordValidForSearch( arguments.records[i] ) ) {
 					arguments.records.deleteAt( i );
+					continue;
 				}
 
 				var restrictionRules = _getSiteTreeService().getAccessRestrictionRulesForPage( arguments.records[i].id );
