@@ -3,7 +3,7 @@ component output=false {
 		var conf     = arguments.config;
 		var settings = conf.settings ?: {};
 
-		settings.adminSideBarItems.append( "elasticsearchControl" );
+		settings.adminConfigurationMenuItems.append( "elasticsearchControl" );
 
 		settings.filters.elasticSearchPageFilter = {
 			filter = "page.internal_search_access is null or page.internal_search_access != 'block'"
