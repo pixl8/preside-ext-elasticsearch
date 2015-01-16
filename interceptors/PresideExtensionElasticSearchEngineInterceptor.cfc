@@ -20,6 +20,9 @@ component extends="coldbox.system.Interceptor" output=false {
 	}
 
 	public void function postInsertObjectData( event, interceptData ) output=false {
+		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && !interceptData.skipTrivialInterceptors ) {
+			return;
+		}
 		var id = Len( Trim( interceptData.newId ?: "" ) ) ? interceptData.newId : ( interceptData.data.id ?: "" );
 
 		if ( Len( Trim( id ) ) ) {
@@ -31,6 +34,10 @@ component extends="coldbox.system.Interceptor" output=false {
 	}
 
 	public void function postUpdateObjectData( event, interceptData ) output=false {
+		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && !interceptData.skipTrivialInterceptors ) {
+			return;
+		}
+
 		var objectName = interceptData.objectName ?: "";
 		var id         = interceptData.id ?: "";
 
@@ -45,6 +52,10 @@ component extends="coldbox.system.Interceptor" output=false {
 	}
 
 	public void function preDeleteObjectData( event, interceptData ) output=false {
+		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && !interceptData.skipTrivialInterceptors ) {
+			return;
+		}
+
 		var objectName = interceptData.objectName ?: "";
 		var id         = interceptData.id ?: "";
 		if ( !Len( Trim( id ) ) ) {
