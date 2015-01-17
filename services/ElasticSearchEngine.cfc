@@ -107,8 +107,26 @@ component output=false singleton=true {
 		return uniqueId;
 	}
 
-	public void function rebuildIndex( required string indexName ) output=false {
-		var start = getTickCount();
+	public boolean function rebuildIndexes( any logger ) output=false {
+		var haveLogger = StructKeyExists( arguments, "logger" );
+		var canInfo    = haveLogger && arguments.logger.canInfo();
+		var success    = true;
+
+		for( var index in _getConfigurationReader().listIndexes() ) {
+			if ( canInfo ) { arguments.logger.info( "Starting to rebuild ElasticSearch index [#index#]" ); }
+			success = success && rebuildIndex( index, logger );
+			if ( canInfo ) { arguments.logger.info( "Finished rebuilding ElasticSearch index [#index#]" ); }
+		}
+
+		return success;
+	}
+
+	public boolean function rebuildIndex( required string indexName, any logger  ) output=false {
+		var start      = getTickCount();
+		var haveLogger = StructKeyExists( arguments, "logger" );
+		var canInfo    = haveLogger && arguments.logger.canInfo();
+		var canWarn    = haveLogger && arguments.logger.canWarn();
+		var canError   = haveLogger && arguments.logger.canError();
 
 		_announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
 
@@ -132,8 +150,11 @@ component output=false singleton=true {
 			var indexingSuccess = true;
 
 			for( var objectName in objects ){
-				indexingSuccess = indexAllRecords( objectName, uniqueIndexName, indexName );
+				if ( canInfo ) { arguments.logger.info( "Starting to index [#objectName#] records" ); }
+				indexingSuccess = indexAllRecords( objectName, uniqueIndexName, indexName, arguments.logger ?: NullValue() );
+				if ( canInfo ) { arguments.logger.info( "Finished indexing [#objectName#] records" ); }
 				if ( !indexingSuccess ) {
+					if ( canWarn ) { arguments.logger.warn( "Indexing of [#objectName#] records returned unsuccessful, aborting index job." ); }
 					break;
 				}
 			}
@@ -156,22 +177,24 @@ component output=false singleton=true {
 
 				_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
 			} else {
+				if ( canError ) { arguments.logger.error( "An error occurred during indexing, aborting the job. Existing search indexes will be left untouched." ); }
 				terminateIndexing( arguments.indexName );
 				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
 				_getApiWrapper().deleteIndex( uniqueIndexName );
 			}
+
+			return indexingSuccess;
 
 		} catch ( any e ) {
 			try {
 				terminateIndexing( arguments.indexName );
 				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName, error = e } );
 				_getApiWrapper().deleteIndex( uniqueIndexName );
+				if ( canError ) { arguments.logger.error( "An error occurred during indexing, aborting the job. Existing search indexes will be left untouched." ); }
 			} catch ( any e ) {}
 
 			rethrow;
 		}
-
-		return;
 	}
 
 	public void function cleanupOldIndexes( required string keepIndex, required string alias ) output=false {
@@ -293,16 +316,23 @@ component output=false singleton=true {
 		return false;
 	}
 
-	public boolean function indexAllRecords( required string objectName, required string indexName, required string indexAlias ) output=false {
+	public boolean function indexAllRecords( required string objectName, required string indexName, required string indexAlias, any logger ) output=false {
 		if ( _getConfigurationReader().isObjectSearchEnabled( arguments.objectName ) ) {
 			var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
 			var pageSize  = 100;
+			var total     = 0;
+			var haveLogger = StructKeyExists( arguments, "logger" );
+			var canDebug   = haveLogger && arguments.logger.canDebug();
+			var canInfo    = haveLogger && arguments.logger.canInfo();
+			var canWarn    = haveLogger && arguments.logger.canWarn();
+			var canError   = haveLogger && arguments.logger.canError();
 
 			do{
 				if ( !isIndexReindexing( arguments.indexAlias ) ) {
+					if ( canWarn ) { arguments.logger.warn( "Aborting index of [#objectName#] records - rebuild not running." ); }
 					_announceInterception( "onElasticSearchIndexDocsTermination", { objectName = arguments.objectName } );
 					return false;
 				}
@@ -314,19 +344,28 @@ component output=false singleton=true {
 				);
 				var recordCount = records.len();
 
+				if ( canDebug ) { arguments.logger.debug( "Fetched #recordCount# #objectName# records ready for indexing." ); }
+
 				_announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
 
+				if ( canDebug ) { arguments.logger.debug( "preElasticSearchIndexDocs() interception announced. #records.len()# #objectName# records ready for indexing." ); }
+
 				if ( records.len() ) {
+					total += records.len();
 					esApi.addDocs(
 						  index   = arguments.indexName
 						, type    = objConfig.documentType ?: ""
 						, docs    = records
 						, idField = "id"
 					);
+					if ( canDebug ) { arguments.logger.debug( "#records.len()# #objectName# records added to the index." ); }
 				}
 				_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
+				if ( canDebug ) { arguments.logger.debug( "postElasticSearchIndexDocs() interception announced." ); }
 
 			} while( recordCount );
+
+			if ( canInfo ) { arguments.logger.info( "Indexed #NumberFormat( total )# #objectName# records." ); }
 
 			return true;
 		}
