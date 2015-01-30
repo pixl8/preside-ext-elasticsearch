@@ -57,20 +57,22 @@ component output=false singleton=true {
 			var objects = listSearchEnabledObjects();
 
 			for( var object in objects ){
-				if ( _isPageType( object ) ) {
-					var conf = getObjectConfiguration( "page" );
-
-					for( var field in conf.fields ){
-						fields[ field ] = getFieldConfiguration( "page", field );
-					}
-				}
 
 				var conf = getObjectConfiguration( object );
 				if ( ( conf.indexName ?: "" ) == args.indexName && ( conf.documentType ?: "" ) == args.documentType ) {
+					if ( _isPageType( object ) ) {
+						var conf = getObjectConfiguration( "page" );
+
+						for( var field in conf.fields ){
+							fields[ field ] = getFieldConfiguration( "page", field );
+						}
+					}
+
 					for( var field in conf.fields ){
 						fields[ field ] = getFieldConfiguration( object, field );
 					}
 				}
+
 			}
 
 			return fields;
