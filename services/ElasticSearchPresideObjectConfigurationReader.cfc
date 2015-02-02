@@ -61,9 +61,9 @@ component output=false singleton=true {
 				var conf = getObjectConfiguration( object );
 				if ( ( conf.indexName ?: "" ) == args.indexName && ( conf.documentType ?: "" ) == args.documentType ) {
 					if ( _isPageType( object ) ) {
-						var conf = getObjectConfiguration( "page" );
+						var pageConf = getObjectConfiguration( "page" );
 
-						for( var field in conf.fields ){
+						for( var field in pageConf.fields ){
 							fields[ field ] = getFieldConfiguration( "page", field );
 						}
 					}
