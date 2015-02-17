@@ -56,6 +56,7 @@ component extends="coldbox.system.Interceptor" output=false {
 				       id           = id
 				       data         = ( interceptData.data ?: {} )
 				{
+					setting requesttimeout=300;
 					attributes.searchEngine.reindexChildPages( attributes.objectName, attributes.id, attributes.data );
 				}
 			}
