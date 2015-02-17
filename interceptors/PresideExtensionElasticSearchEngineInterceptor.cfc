@@ -47,7 +47,18 @@ component extends="coldbox.system.Interceptor" output=false {
 				, id         = id
 			);
 
-			_getSearchEngine().reindexChildPages( objectName, id, interceptData.data ?: {} );
+			if ( _inThread() ) {
+				_getSearchEngine().reindexChildPages( objectName, id, interceptData.data ?: {} );
+			} else {
+				thread name         = CreateUUId()
+				       searchEngine = _getSearchEngine()
+				       objectName   = objectName
+				       id           = id
+				       data         = ( interceptData.data ?: {} )
+				{
+					attributes.searchEngine.reindexChildPages( attributes.objectName, attributes.id, attributes.data );
+				}
+			}
 		}
 	}
 
@@ -83,5 +94,8 @@ component extends="coldbox.system.Interceptor" output=false {
 	}
 	private any function _getElasticSearchConfig() output=false {
 		return elasticSearchConfig.get();
+	}
+	private boolean function _inThread() output=false {
+		return getPageContext().hasFamily();
 	}
 }
