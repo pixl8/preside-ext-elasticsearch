@@ -53,26 +53,34 @@ component output=false singleton=true {
 		var args = arguments;
 
 		return _simpleLocalCache( "listFieldsForDocumentType" & args.indexName & args.documentType, function(){
-			var fields = {};
+			var fields  = {};
 			var objects = listSearchEnabledObjects();
+			var conf    = {};
+			var field   = "";
 
 			for( var object in objects ){
 
-				var conf = getObjectConfiguration( object );
+				conf = getObjectConfiguration( object );
 				if ( ( conf.indexName ?: "" ) == args.indexName && ( conf.documentType ?: "" ) == args.documentType ) {
+
 					if ( _isPageType( object ) ) {
 						var pageConf = getObjectConfiguration( "page" );
 
-						for( var field in pageConf.fields ){
+						for( field in pageConf.fields ){
 							fields[ field ] = getFieldConfiguration( "page", field );
+						}
+					} else if ( _isAssetObject( object ) ) {
+						var assetConf = getObjectConfiguration( "asset" );
+
+						for( field in assetConf.fields ){
+							fields[ field ] = getFieldConfiguration( "asset", field );
 						}
 					}
 
-					for( var field in conf.fields ){
+					for( field in conf.fields ){
 						fields[ field ] = getFieldConfiguration( object, field );
 					}
 				}
-
 			}
 
 			return fields;
@@ -85,8 +93,11 @@ component output=false singleton=true {
 
 			return poService.listObjects().filter( function( objectName ){
 				var isPageType       = _isPageType( objectName );
+				var isAssetObject    = _isAssetObject( objectName );
 				var isSystemPageType = isPageType && poService.getObjectAttribute( objectName, "isSystemPageType", false );
 				var searchEnabled    = objectName != "page" && poService.getObjectAttribute( objectName, "searchEnabled", ( isPageType && !isSystemPageType ) );
+
+				searchEnabled = searchEnabled || isAssetObject;
 
 				return IsBoolean( searchEnabled ) && searchEnabled;
 			} );
@@ -130,6 +141,9 @@ component output=false singleton=true {
 			if ( !configuration.indexFilters.len() && _isPageType( args.objectName ) ) {
 				configuration.indexFilters = [ "elasticSearchPageFilter", "livePages" ];
 			}
+			if ( !configuration.indexFilters.len() && _isAssetObject( args.objectName ) ) {
+				configuration.indexFilters = [ "elasticSearchAssetFilter" ];
+			}
 
 			return configuration;
 		} );
@@ -143,11 +157,11 @@ component output=false singleton=true {
 			var configuration = {};
 			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
 
-			configuration.fieldName = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchField", args.fieldName );
+			configuration.fieldName  = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchField", args.fieldName );
 			configuration.searchable = false;
-			configuration.sortable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
-			configuration.sortable = IsBoolean( configuration.sortable ) && configuration.sortable;
-			configuration.type     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchType", "" );
+			configuration.sortable   = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSortable" );
+			configuration.sortable   = IsBoolean( configuration.sortable ) && configuration.sortable;
+			configuration.type       = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchType", "" );
 
 			if ( !Len( Trim( configuration.type ?: "" ) ) ) {
 				switch( fieldType ){
@@ -267,6 +281,10 @@ component output=false singleton=true {
 		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
 
 		return IsBoolean( isPageType ) && isPageType;
+	}
+
+	private boolean function _isAssetObject( required string objectName ) output=false {
+		return arguments.objectName == "asset";
 	}
 
 

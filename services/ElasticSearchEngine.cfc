@@ -392,6 +392,11 @@ component output=false singleton=true {
 			selectDataArgs.extraFilters = [ { filter={ "page.trashed" = false } } ];
 		}
 
+		if ( _isAssetObject( arguments.objectName ) ) {
+			selectDataArgs.extraFilters     = [ { filter={ "asset_folder.is_system_folder" = false } } ];
+			selectDataArgs.extraFilters.append( { filter="asset_folder.hidden is null or asset_folder.hidden = 0" } );
+		}
+
 		_announceInterception( "preElasticSearchGetObjectDataForIndexing", selectDataArgs );
 
 		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
@@ -458,7 +463,8 @@ component output=false singleton=true {
 			var configuredFields = objConfig.fields ?: [];
 			var selectFields     = [];
 			var poService        = _getPresideObjectService();
-			var isPageType       = poService.getObjectAttribute( args.objectName, "isPageType", false );
+			var isPageType       = poService.getObjectAttribute( args.objectName, "isPageType" , false );
+			var isAssetObject    = _isAssetObject( args.objectName );
 
 			for( var field in configuredFields ){
 				if ( poService.isManyToManyProperty( args.objectName, field ) ) {
@@ -480,7 +486,20 @@ component output=false singleton=true {
 						}
 					}
 				}
+			}
 
+			if ( isAssetObject ) {
+				var assetConfiguredFields = _getConfigurationReader().getObjectConfiguration( "asset" ).fields ?: [];
+
+				for( var field in assetConfiguredFields ){
+					if ( !configuredFields.find( field ) ) {
+						selectFields.append( "asset." & field );
+					}
+				}
+
+				selectFields.append( "asset_folder.internal_search_access" );
+				selectFields.append( "asset_folder.is_system_folder"       );
+				selectFields.append( "asset_folder.hidden"                 );
 			}
 
 			return selectFields;
@@ -803,6 +822,10 @@ component output=false singleton=true {
 		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
 
 		return IsBoolean( isPageType ) && isPageType;
+	}
+
+	private boolean function _isAssetObject( required string objectName ) output=false {
+		return arguments.objectName == "asset";
 	}
 
 	private string function _getPageTypeForRecord( required string pageId ) output=false {

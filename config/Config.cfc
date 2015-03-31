@@ -9,6 +9,10 @@ component output=false {
 			filter = "page.internal_search_access is null or page.internal_search_access != 'block'"
 		};
 
+		settings.filters.elasticSearchAssetFilter = {
+			filter = "asset_folder.internal_search_access = 'allow' and asset.trashed_path is null"
+		};
+
 		conf.interceptors.prepend(
 			{ class="app.extensions.preside-ext-elasticsearch.interceptors.PresideExtensionElasticSearchEngineInterceptor", properties={} }
 		);
