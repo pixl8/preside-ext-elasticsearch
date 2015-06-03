@@ -114,7 +114,7 @@ component output=false singleton=true {
 
 		for( var index in _getConfigurationReader().listIndexes() ) {
 			if ( canInfo ) { arguments.logger.info( "Starting to rebuild ElasticSearch index [#index#]" ); }
-			success = success && rebuildIndex( index, logger );
+			success = success && rebuildIndex( index, logger ?: NulLValue() );
 			if ( canInfo ) { arguments.logger.info( "Finished rebuilding ElasticSearch index [#index#]" ); }
 		}
 
@@ -393,7 +393,8 @@ component output=false singleton=true {
 		}
 
 		if ( _isAssetObject( arguments.objectName ) ) {
-			selectDataArgs.extraFilters     = [ { filter={ "asset_folder.is_system_folder" = false } } ];
+			selectDataArgs.extraFilters = [];
+			selectDataArgs.extraFilters.append( { filter="asset_folder.is_system_folder is null or asset_folder.is_system_folder = 0" } );
 			selectDataArgs.extraFilters.append( { filter="asset_folder.hidden is null or asset_folder.hidden = 0" } );
 		}
 
