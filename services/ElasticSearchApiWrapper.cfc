@@ -329,7 +329,7 @@ component output=false singleton=true {
 	}
 
 	public string function escapeSpecialChars( required string q ) output=false {
-		var specialCharsRegex = '([\+\-!\(\)\{\}\[\]\^\"~\?:\\])';
+		var specialCharsRegex = '([\+\-!\(\)\{\}\[\]\^\"~\?:\/\\])';
 
 		return ReReplace( arguments.q, specialCharsRegex, "\\1", "all" );
 	}
