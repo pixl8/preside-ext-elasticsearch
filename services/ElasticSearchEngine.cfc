@@ -745,18 +745,21 @@ component output=false singleton=true {
 				var parentPage = _getPageDao().selectData( filter={ _hierarchy_id=lineage[i] }, selectFields=pageFields );
 				for( var p in parentPage ) { cache[ p._hierarchy_id ] = p; }
 			}
+			cache[ lineage[ i ] ] = cache[ lineage[ i ] ] ?: {};
 
-			var parentPage = cache[ lineage[ i ] ];
+			if ( cache[ lineage[ i ] ].count() ) {
+				var parentPage = cache[ lineage[ i ] ];
 
-			if ( !isActive( parentPage.active, parentPage.embargo_date, parentPage.expiry_date ) ) {
-				return false;
+				if ( !isActive( parentPage.active, parentPage.embargo_date, parentPage.expiry_date ) ) {
+					return false;
+				}
+
+				if ( internalSearchAccess != "allow" && parentPage.internal_search_access == "block" ) {
+					return false;
+				}
+
+				internalSearchAccess = parentPage.internal_search_access;
 			}
-
-			if ( internalSearchAccess != "allow" && parentPage.internal_search_access == "block" ) {
-				return false;
-			}
-
-			internalSearchAccess = parentPage.internal_search_access;
 		}
 
 		return true;
