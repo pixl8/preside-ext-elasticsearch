@@ -198,7 +198,11 @@ component output=false singleton=true {
 	}
 
 	public void function cleanupOldIndexes( required string keepIndex, required string alias ) output=false {
-		var indexes = _getApiWrapper().getAliasIndexes( arguments.alias );
+		var args    = arguments;
+		var indexes = _getApiWrapper().getIndexes( filter=function( indexName ){
+			var uuidRegex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{16}";
+			return arguments.indexName.startsWith( alias ) && ReFind( "_#uuidRegex#$", arguments.indexName );
+		} );
 
 		for( var indexName in indexes ){
 			if ( indexName != arguments.keepIndex ) {

@@ -100,6 +100,23 @@ component {
 		return indexes;
 	}
 
+	public array function getIndexes( any filter ) {
+		var callResult    = _call( uri = "/_aliases", method = "GET" );
+		var indexes       = [];
+
+		for( var indexName in callResult ) {
+			if ( arguments.keyExists( "filter" ) ) {
+				if ( arguments.filter( indexName ) ) {
+					indexes.append( indexName );
+				}
+			} else {
+				indexes.append( indexName );
+			}
+		}
+
+		return indexes;
+	}
+
 	public struct function addDoc( required string index, required string type, required struct doc, string id ) {
 		var uri    = _getIndexAndTypeUri( args=arguments );
 		var method = "POST";
