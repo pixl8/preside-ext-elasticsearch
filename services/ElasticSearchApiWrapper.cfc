@@ -1,4 +1,8 @@
-component output=false singleton=true {
+/**
+ * @singleton
+ *
+ */
+component {
 
 // CONSTRUCTOR
 	/**
@@ -7,24 +11,24 @@ component output=false singleton=true {
 	 */
 	public any function init(
 		required any  systemConfigurationService
-	) output=false {
+	) {
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 
 		return this;
 	}
 
-	public struct function ping() output=false {
+	public struct function ping() {
 		return _call( uri="/", method="GET" );
 	}
 
-	public struct function stats( string index="" ) output=false {
+	public struct function stats( string index="" ) {
 		return _call(
 			  uri    = _getIndexAndTypeUri( args=arguments, typeAllowed=false ) & "/_stats"
 			, method = "GET"
 		);
 	}
 
-	public struct function createIndex( required string index, struct settings ) output=false {
+	public struct function createIndex( required string index, struct settings ) {
 		var args = StructNew();
 		args.uri =_getIndexAndTypeUri( args=arguments, typeAllowed=false );
 		args.method = "PUT";
@@ -36,14 +40,14 @@ component output=false singleton=true {
 		return _call( argumentCollection = args );
 	}
 
-	public struct function deleteIndex( required string index ) output=false {
+	public struct function deleteIndex( required string index ) {
 		return _call(
 			  uri    = _getIndexAndTypeUri( args=arguments, typeAllowed=false )
 			, method = "DELETE"
 		);
 	}
 
-	public struct function addAlias( required string index, required string alias ) output=false {
+	public struct function addAlias( required string index, required string alias ) {
 		var body = StructNew();
 		var add  = StructNew();
 
@@ -62,7 +66,7 @@ component output=false singleton=true {
 		);
 	}
 
-	public struct function removeAlias( required string index, required string alias ) output=false {
+	public struct function removeAlias( required string index, required string alias ) {
 		var body   = StructNew();
 		var remove = StructNew();
 
@@ -81,7 +85,7 @@ component output=false singleton=true {
 		);
 	}
 
-	public array function getAliasIndexes( required string alias ) output=false {
+	public array function getAliasIndexes( required string alias ) {
 		var callResult    = _call( uri = "/_aliases", method = "GET" );
 		var indexes       = [];
 
@@ -96,7 +100,24 @@ component output=false singleton=true {
 		return indexes;
 	}
 
-	public struct function addDoc( required string index, required string type, required struct doc, string id ) output=false {
+	public array function getIndexes( any filter ) {
+		var callResult    = _call( uri = "/_aliases", method = "GET" );
+		var indexes       = [];
+
+		for( var indexName in callResult ) {
+			if ( arguments.keyExists( "filter" ) ) {
+				if ( arguments.filter( indexName ) ) {
+					indexes.append( indexName );
+				}
+			} else {
+				indexes.append( indexName );
+			}
+		}
+
+		return indexes;
+	}
+
+	public struct function addDoc( required string index, required string type, required struct doc, string id ) {
 		var uri    = _getIndexAndTypeUri( args=arguments );
 		var method = "POST";
 
@@ -148,7 +169,7 @@ component output=false singleton=true {
 		);
 	}
 
-	public boolean function deleteDoc( required string index, required string type, required string id ) output=false {
+	public boolean function deleteDoc( required string index, required string type, required string id ) {
 		var uri = _getIndexAndTypeUri( args=arguments ) & "/#arguments.id#";
 		var result = "";
 
@@ -182,7 +203,7 @@ component output=false singleton=true {
 		, string  highlightFields    = ""
 		, numeric minimumScore       = 0
 		, struct  basicFilter        = {}
-	) output=false {
+	) {
 		var uri  = _getIndexAndTypeUri( args=arguments ) & "/_search";
 		var body = "";
 
@@ -209,7 +230,7 @@ component output=false singleton=true {
 		,          numeric pageSize    = 10
 		,          struct  basicFilter = {}
 		,          struct  fullDsl
-	) output=false {
+	) {
 		var uri  = _getIndexAndTypeUri( args=arguments ) & "/#arguments.documentId#/_mlt";
 		var body = "";
 
@@ -241,7 +262,7 @@ component output=false singleton=true {
 		, struct  basicFilter      = {}
 		, string  idList           = ""
 		, string  excludeIdList    = ""
-	) output=false {
+	) {
 		var body = StructNew();
 		var idList = "";
 
@@ -301,7 +322,7 @@ component output=false singleton=true {
 		return body;
 	}
 
-	public struct function refresh( required string index ) output=false {
+	public struct function refresh( required string index ) {
 		var uri = _getIndexAndTypeUri( args=arguments, typeAllowed=false ) & "/_refresh";
 
 		return _call(
@@ -310,7 +331,7 @@ component output=false singleton=true {
 		);
 	}
 
-	public boolean function indexExists( required string index ) output=false {
+	public boolean function indexExists( required string index ) {
 		try {
 			_call(
 				  uri = _getIndexAndTypeUri( args=arguments, typeAllowed=false )
@@ -328,14 +349,14 @@ component output=false singleton=true {
 		}
 	}
 
-	public string function escapeSpecialChars( required string q ) output=false {
+	public string function escapeSpecialChars( required string q ) {
 		var specialCharsRegex = '([\+\-!\(\)\{\}\[\]\^\"~\?:\/\\])';
 
 		return ReReplace( arguments.q, specialCharsRegex, "\\1", "all" );
 	}
 
 // PRIVATE HELPERS
-	private any function _call( required string uri, required string method, string body ) output=false {
+	private any function _call( required string uri, required string method, string body ) {
 		var result        = "";
 		var success       = false;
 		var attempts      = 0;
@@ -374,7 +395,7 @@ component output=false singleton=true {
 		return _processResult( result );
 	}
 
-	private any function _processResult( required struct result ) output=false {
+	private any function _processResult( required struct result ) {
 		var deserialized = "";
 		var errorMessage = "";
 		var jsonResponse = "";;
@@ -401,7 +422,7 @@ component output=false singleton=true {
 		_throwErrorResult( deserialized, result.responseHeader.status_code ?: 500 );
 	}
 
-	private void function _throwErrorResult( required any result, required numeric statusCode ) output=false {
+	private void function _throwErrorResult( required any result, required numeric statusCode ) {
 		var errorMessage = "An unexpected error occurred";
 		var errorType    = "UnknownError";
 		var errorDetail  = SerializeJson( result );
@@ -422,11 +443,11 @@ component output=false singleton=true {
 		);
 	}
 
-	private string function _safeIndexName( required string indexName ) output=false {
+	private string function _safeIndexName( required string indexName ) {
 		return Trim( LCase( indexName ) );
 	}
 
-	private string function _getIndexAndTypeUri( required struct args, boolean typeAllowed=true ) output=false {
+	private string function _getIndexAndTypeUri( required struct args, boolean typeAllowed=true ) {
 		var uri = "";
 
 		if ( Len( Trim( args.index ?: "" ) ) ) {
@@ -443,7 +464,7 @@ component output=false singleton=true {
 		return uri;
 	}
 
-	private numeric function _calculateStartRecordFromPageInfo( required numeric page, required numeric pageOffset, required numeric pageSize ) output=false {
+	private numeric function _calculateStartRecordFromPageInfo( required numeric page, required numeric pageOffset, required numeric pageSize ) {
 		if ( page lte 0 ) {
 			_throw(
 				  type    = "cfelasticsearch.search.invalidPage"
@@ -459,12 +480,12 @@ component output=false singleton=true {
 		, string message   = ""
 		, string detail    = ""
 		, string errorCode = ""
-	) output=false {
+	) {
 
 		throw( type=arguments.type, message=arguments.message, detail=arguments.detail, errorcode=arguments.errorCode );
 	}
 
-	private struct function _generateHighlightsDsl( required string highlightFields ) output=false {
+	private struct function _generateHighlightsDsl( required string highlightFields ) {
 		var highlights = StructNew();
 		var i = "";
 		var field = "";
@@ -481,7 +502,7 @@ component output=false singleton=true {
 		return highlights;
 	}
 
-	private struct function _generateBasicFilter ( required struct filters ) output=false {
+	private struct function _generateBasicFilter ( required struct filters ) {
 		var filter     = StructNew();
 		var fields     = StructKeyArray( arguments.filters );
 		var i          = 0;
@@ -509,7 +530,7 @@ component output=false singleton=true {
 		return filter;
 	}
 
-	private array function _generateSortOrder( required string sortorder ) output=false {
+	private array function _generateSortOrder( required string sortorder ) {
 		var so = ListToArray( arguments.sortOrder );
 		var field = "";
 		var fieldName = "";
@@ -535,26 +556,26 @@ component output=false singleton=true {
 	}
 
 // GETTERS AND SETTERS
-	private any function _getSystemConfigurationService() output=false {
+	private any function _getSystemConfigurationService() {
 		return _systemConfigurationService;
 	}
-	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
+	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
 	}
 
-	private array function _getEndpoint() output=false {
+	private array function _getEndpoint() {
 		return ListToArray( _getSystemConfigurationService().getSetting( "elasticsearch", "endpoint", "http://localhost:9200" ) );
 	}
 
-	private string function _getCharset() output=false {
+	private string function _getCharset() {
 		return _getSystemConfigurationService().getSetting( "elasticsearch", "charset", "UTF-8" );
 	}
 
-	private numeric function _getRequestTimeoutInSeconds() output=false {
+	private numeric function _getRequestTimeoutInSeconds() {
 		return _getSystemConfigurationService().getSetting( "elasticsearch", "api_call_timeout", 30 );
 	}
 
-	private numeric function _getNullResponseRetryAttempts() output=false {
+	private numeric function _getNullResponseRetryAttempts() {
 		return _getSystemConfigurationService().getSetting( "elasticsearch", "retry_attempts", 3 );
 	}
 }
