@@ -128,10 +128,10 @@ component output=false singleton=true {
 			var props = poService.getObjectProperties( args.objectName );
 			for( var propName in props ){
 				var prop          = props[ propName ];
-				var searchEnabled = poService.getObjectPropertyAttribute( args.objectName, prop.getAttribute( "name" ), "searchEnabled" );
+				var searchEnabled = prop.searchEnabled ?: "";
 
 				if ( IsBoolean( searchEnabled ) && searchEnabled ){
-					configuration.fields.append( prop.getAttribute( "name" ) );
+					configuration.fields.append( propName );
 				}
 			}
 			if ( !configuration.fields.find( "id" ) ) {
