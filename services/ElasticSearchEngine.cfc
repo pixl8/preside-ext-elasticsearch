@@ -44,6 +44,7 @@ component output=false singleton=true {
 		, string  highlightFields = ""
 		, numeric minimumScore    = 0
 		, struct  basicFilter     = {}
+		, struct  directFilter    = {}
 		, struct  fullDsl
 	) output=false {
 		var configReader = _getConfigurationReader();

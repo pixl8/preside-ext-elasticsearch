@@ -260,6 +260,7 @@ component {
 		, string  highlightFields  = ""
 		, numeric minimumScore     = 0
 		, struct  basicFilter      = {}
+		, struct  directFilter     = {}
 		, string  idList           = ""
 		, string  excludeIdList    = ""
 	) {
@@ -293,6 +294,11 @@ component {
 		if ( not StructIsEmpty( arguments.basicFilter ) ) {
 			body['filter'] = _generateBasicFilter( arguments.basicFilter );
 		}
+
+		if ( not StructIsEmpty( arguments.directFilter ) ) {
+			body['filter'] = _generateDirectFilter( arguments.directFilter );
+		}
+
 		if ( Len( Trim( arguments.idList ) ) ) {
 			if ( not StructKeyExists( body, 'filter' ) ) {
 				body['filter'] = StructNew();
@@ -525,6 +531,28 @@ component {
 				}
 			}
 			ArrayAppend( filter['and'], termFilter );
+		}
+
+		return filter;
+	}
+
+	private struct function _generateDirectFilter( required struct filters ) {
+		var filter     = StructNew();
+		var fields     = StructKeyArray( arguments.filters );
+		var i          = 0;
+		var directFilter = "";
+
+		filter['and'] = ArrayNew(1);
+
+		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
+			directFilter = StructNew();
+
+			if ( Len( Trim( arguments.filters[ fields[i] ] ) ) ) {
+				directFilter[fields[i]] = StructNew();
+				directFilter[fields[i]]['value'] = arguments.filters[ fields[i] ];
+			}
+
+			ArrayAppend( filter['and'], directFilter );
 		}
 
 		return filter;
