@@ -156,6 +156,7 @@ component output=false singleton=true {
 			var poService     = _getPresideObjectService();
 			var configuration = {};
 			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
+			var primaryKey    = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "pk" , false );
 
 			configuration.fieldName  = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchField", args.fieldName );
 			configuration.searchable = false;
@@ -205,6 +206,9 @@ component output=false singleton=true {
 			switch( configuration.type ){
 				case "string":
 					configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
+					if(primaryKey){
+						configuration.searchable=IsBoolean(configuration.searchable)?configuration.searchable:false; //default to false for primary key if setting is not found
+					}
 					if ( !Len( Trim( configuration.searchable ) ) ) {
 						configuration.searchable = true;
 					} else {
