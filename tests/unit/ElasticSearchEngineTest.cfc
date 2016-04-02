@@ -1,6 +1,6 @@
 component extends="testbox.system.BaseSpec" {
 
-	function run() output=false {
+	function run() {
 
 		describe( "init()", function(){
 			it( "should check all configured indexes exist", function(){
@@ -901,7 +901,7 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 // PRIVATE HELPERS
-	private function _getSearchEngine() output=false {
+	private function _getSearchEngine() {
 		mockConfigReader               = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
 		mockApiWrapper                 = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
 		mockResultsFactory             = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchResultsFactory" );

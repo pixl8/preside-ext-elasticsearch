@@ -1,6 +1,6 @@
 component extends="testbox.system.BaseSpec" {
 
-	function run() output=false {
+	function run() {
 		describe( "listSearchEnabledObjects()", function(){
 			it( "should return an array of objects who have 'searchEnabled' flag set to true", function(){
 				var svc = _getService();
@@ -593,7 +593,7 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 // HELPERS
-	private any function _getService() output=false {
+	private any function _getService() {
 		mockPresideObjectService = getMockBox().createStub();
 		mockConfigurationService = getMockBox().createStub();
 
