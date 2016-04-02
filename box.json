@@ -1,0 +1,27 @@
+{
+    "name":"PresideCMS Extension: ElasticSearch",
+    "version":"1.0.7.BUILD_NUMBER",
+    "author":"Pixl8 Interactive",
+    "createPackageDirectory":true,
+    "packageDirectory":"application/extensions/preside-ext-elasticsearch",
+    "homepage":"",
+    "documentation":"",
+    "repository":{
+        "type":"git",
+        "URL":"https://pixl8.beanstalkapp.com/preside-ext-elasticsearch"
+    },
+    "slug":"preside-ext-elasticsearch",
+    "projectURL":"",
+    "ignore":[
+        ".git/*",
+        ".gitignore",
+        ".twgit_features_subject",
+        "test.sh"
+    ],
+    "devDependencies":{
+        "testbox":"2.2.0"
+    },
+    "installPaths":{
+        "testbox":"tests/testbox"
+    }
+}

@@ -1,4 +1,8 @@
-component output=false singleton=true {
+/**
+ * @singleton
+ *
+ */
+component {
 
 // CONSTRUCTOR
 	/**
@@ -13,7 +17,7 @@ component output=false singleton=true {
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) output=false {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -46,7 +50,7 @@ component output=false singleton=true {
 		, struct  basicFilter     = {}
 		, struct  directFilter    = {}
 		, struct  fullDsl
-	) output=false {
+	) {
 		var configReader = _getConfigurationReader();
 		var searchArgs   = duplicate( arguments );
 
@@ -80,7 +84,7 @@ component output=false singleton=true {
 		);
 	}
 
-	public void function ensureIndexesExist() output=false {
+	public void function ensureIndexesExist() {
 		var indexes    = _getConfigurationReader().listIndexes();
 		var apiWrapper = _getApiWrapper();
 
@@ -94,7 +98,7 @@ component output=false singleton=true {
 		return;
 	}
 
-	public string function createIndex( required string indexName ) output=false {
+	public string function createIndex( required string indexName ) {
 		var settings   = getIndexSettings( arguments.indexName );
 		var uniqueId   = createUniqueIndexName( arguments.indexName );
 		var apiWrapper = _getApiWrapper();
@@ -108,7 +112,7 @@ component output=false singleton=true {
 		return uniqueId;
 	}
 
-	public boolean function rebuildIndexes( any logger ) output=false {
+	public boolean function rebuildIndexes( any logger ) {
 		var haveLogger = StructKeyExists( arguments, "logger" );
 		var canInfo    = haveLogger && arguments.logger.canInfo();
 		var success    = true;
@@ -122,7 +126,7 @@ component output=false singleton=true {
 		return success;
 	}
 
-	public boolean function rebuildIndex( required string indexName, any logger  ) output=false {
+	public boolean function rebuildIndex( required string indexName, any logger  ) {
 		var start      = getTickCount();
 		var haveLogger = StructKeyExists( arguments, "logger" );
 		var canInfo    = haveLogger && arguments.logger.canInfo();
@@ -198,7 +202,7 @@ component output=false singleton=true {
 		}
 	}
 
-	public void function cleanupOldIndexes( required string keepIndex, required string alias ) output=false {
+	public void function cleanupOldIndexes( required string keepIndex, required string alias ) {
 		var args    = arguments;
 		var indexes = _getApiWrapper().getIndexes( filter=function( indexName ){
 			var uuidRegex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{16}";
@@ -212,7 +216,7 @@ component output=false singleton=true {
 		}
 	}
 
-	public struct function getIndexSettings( required string indexName ) output=false {
+	public struct function getIndexSettings( required string indexName ) {
 		var settings = {
 			  settings = _getDefaultIndexSettings()
 			, mappings = getIndexMappings( arguments.indexName )
@@ -223,7 +227,7 @@ component output=false singleton=true {
 		return settings;
 	}
 
-	public struct function getIndexMappings( required string indexName ) output=false {
+	public struct function getIndexMappings( required string indexName ) {
 		var mappings      = {};
 		var configWrapper = _getConfigurationReader();
 		var docTypes      = configWrapper.listDocumentTypes( arguments.indexName );
@@ -242,7 +246,7 @@ component output=false singleton=true {
 		return mappings;
 	}
 
-	public struct function getElasticSearchMappingFromFieldConfiguration( required string name, required string type, boolean searchable=false, boolean sortable=false, string analyzer="", boolean ignoreMalformedDates=false ) output=false {
+	public struct function getElasticSearchMappingFromFieldConfiguration( required string name, required string type, boolean searchable=false, boolean sortable=false, string analyzer="", boolean ignoreMalformedDates=false ) {
 		var mapping = { type=arguments.type };
 
 		if ( arguments.searchable ) {
@@ -278,11 +282,11 @@ component output=false singleton=true {
 		return mapping;
 	}
 
-	public string function createUniqueIndexName( required string sourceIndexName ) output=false {
+	public string function createUniqueIndexName( required string sourceIndexName ) {
 		return sourceIndexName & "_" & LCase( CreateUUId() );
 	}
 
-	public boolean function indexRecord( required string objectName, required string id ) output=false {
+	public boolean function indexRecord( required string objectName, required string id ) {
 		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.id ) : arguments.objectName;
 
 		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) ) {
@@ -321,7 +325,7 @@ component output=false singleton=true {
 		return false;
 	}
 
-	public boolean function indexAllRecords( required string objectName, required string indexName, required string indexAlias, any logger ) output=false {
+	public boolean function indexAllRecords( required string objectName, required string indexName, required string indexAlias, any logger ) {
 		if ( _getConfigurationReader().isObjectSearchEnabled( arguments.objectName ) ) {
 			var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 			var esApi     = _getApiWrapper();
@@ -378,7 +382,7 @@ component output=false singleton=true {
 		return false;
 	}
 
-	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) output=false {
+	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) {
 		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 		var selectDataArgs = {
 			  objectName   = arguments.objectName
@@ -416,7 +420,7 @@ component output=false singleton=true {
 		return records;
 	}
 
-	public array function convertQueryToArrayOfDocs( required string objectName, required query records ) output=false {
+	public array function convertQueryToArrayOfDocs( required string objectName, required query records ) {
 		var docs = [];
 
 		for( var record in arguments.records ){
@@ -439,7 +443,7 @@ component output=false singleton=true {
 		return docs;
 	}
 
-	public boolean function deleteRecord( required string objectName, required string id ) output=false {
+	public boolean function deleteRecord( required string objectName, required string id ) {
 		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.id ) : arguments.objectName;
 
 		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) ) {
@@ -461,7 +465,7 @@ component output=false singleton=true {
 		return false;
 	}
 
-	public array function calculateSelectFieldsForIndexing( required string objectName ) output=false {
+	public array function calculateSelectFieldsForIndexing( required string objectName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "calculateSelectFieldsForIndexing" & args.objectName, function(){
@@ -512,7 +516,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public array function getPaginatedRecordsForObject( required string objectName, required numeric page, required numeric pageSize ) output=false {
+	public array function getPaginatedRecordsForObject( required string objectName, required numeric page, required numeric pageSize ) {
 		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 		var maxRows   = arguments.pageSize;
 		var startRow  = ( ( arguments.page - 1 ) * maxRows ) + 1;
@@ -531,7 +535,7 @@ component output=false singleton=true {
 		);
 	}
 
-	public void function processPageTypeRecordsBeforeIndexing( required string objectName, required array records ) output=false {
+	public void function processPageTypeRecordsBeforeIndexing( required string objectName, required array records ) {
 		if ( _isPageType( arguments.objectName ) ) {
 			for( var i=arguments.records.len(); i > 0; i-- ){
 				if ( !_isPageRecordValidForSearch( arguments.records[i] ) ) {
@@ -545,7 +549,7 @@ component output=false singleton=true {
 		}
 	}
 
-	public void function reindexChildPages( required string objectName, required string recordId, required struct updatedData  ) output=false {
+	public void function reindexChildPages( required string objectName, required string recordId, required struct updatedData  ) {
 		var objName = arguments.objectName == "page" ? _getPageTypeForRecord( arguments.recordId ) : arguments.objectName;
 
 		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) && _isPageType( objName ) ) {
@@ -563,7 +567,7 @@ component output=false singleton=true {
 		}
 	}
 
-	public struct function getStats() output=false {
+	public struct function getStats() {
 		var stats = {};
 		var indexes = _getConfigurationReader().listIndexes();
 		var wrapper = _getApiWrapper();
@@ -592,7 +596,7 @@ component output=false singleton=true {
 		return stats;
 	}
 
-	public boolean function isIndexReindexing( required string indexName ) output=false {
+	public boolean function isIndexReindexing( required string indexName ) {
 		var statusRecord = _getStatusDao().selectData(
 			  selectFields = [ "indexing_expiry" ]
 			, filter       = { index_name=arguments.indexName, is_indexing=true }
@@ -609,7 +613,7 @@ component output=false singleton=true {
 		return false;
 	}
 
-	public void function terminateIndexing( required string indexName, boolean checkRunningFirst=true ) output=false {
+	public void function terminateIndexing( required string indexName, boolean checkRunningFirst=true ) {
 		transaction {
 			if ( !checkRunningFirst || isIndexReindexing( arguments.indexName ) ) {
 				setIndexingStatus(
@@ -633,7 +637,7 @@ component output=false singleton=true {
 		,          any     indexingExpiry
 		,          any     lastIndexingCompletedAt
 		,          any     lastIndexingTimetaken
-	) output=false {
+	) {
 		var data = {
 			is_indexing = arguments.isIndexing
 		};
@@ -659,13 +663,13 @@ component output=false singleton=true {
 		}
 	}
 
-	public array function getConfiguredStopWords() output=false {
+	public array function getConfiguredStopWords() {
 		var stopWords = _getSystemConfigurationService().getSetting( "elasticsearch", "stopwords" );
 
 		return ListToArray( stopWords, " ," & Chr(10) & Chr(13) );
 	}
 
-	public array function getConfiguredSynonyms() output=false {
+	public array function getConfiguredSynonyms() {
 		var synonyms = _getSystemConfigurationService().getSetting( "elasticsearch", "synonyms" );
 
 		return ListToArray( synonyms, Chr(10) & Chr(13) );
@@ -677,7 +681,7 @@ component output=false singleton=true {
 	 * test the object and mock out this method
 	 *
 	 */
-	private void function _checkIndexesExist() output=false {
+	private void function _checkIndexesExist() {
 		try {
 			return ensureIndexesExist();
 		} catch ( any e ) {
@@ -685,7 +689,7 @@ component output=false singleton=true {
 		}
 	}
 
-	private struct function _getDefaultIndexSettings() output=false {
+	private struct function _getDefaultIndexSettings() {
 		var settings = {};
 
 		settings.index = {
@@ -722,7 +726,7 @@ component output=false singleton=true {
 		return settings;
 	}
 
-	private boolean function _isPageRecordValidForSearch( required struct pagerecord ) output=false {
+	private boolean function _isPageRecordValidForSearch( required struct pagerecord ) {
 		var cache      = request._isPageRecordValidForSearchCache = request._isPageRecordValidForSearchCache ?: {};
 		var pageId     = arguments.pageRecord.id ?: "";
 		var pageFields = [ "_hierarchy_id", "_hierarchy_lineage", "active", "internal_search_access", "embargo_date", "expiry_date" ];
@@ -770,7 +774,7 @@ component output=false singleton=true {
 		return true;
 	}
 
-	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
+	private any function _simpleLocalCache( required string cacheKey, required any generator ) {
 		var cache = _getLocalCache();
 
 		if ( !cache.keyExists( cacheKey ) ) {
@@ -780,7 +784,7 @@ component output=false singleton=true {
 		return cache[ cacheKey ] ?: NullValue();
 	}
 
-	private boolean function _isManyToManyField( required string objectName, required string fieldName ) output=false {
+	private boolean function _isManyToManyField( required string objectName, required string fieldName ) {
 		var args = arguments;
 		return _simpleLocalCache( "_isManyToManyField" & args.objectName & args.fieldName, function(){
 			var objConfig = _getConfigurationReader().getObjectConfiguration( args.objectName );
@@ -797,7 +801,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	private string function _renderField( required string objectName, required string fieldName, required any value ) output=false {
+	private string function _renderField( required string objectName, required string fieldName, required any value ) {
 		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
 		if ( objConfig.fields.find( arguments.fieldName ) ) {
@@ -821,29 +825,29 @@ component output=false singleton=true {
 		return arguments.value;
 	}
 
-	private any function _announceInterception( required string state, struct interceptData={} ) output=false {
+	private any function _announceInterception( required string state, struct interceptData={} ) {
 		_getInterceptorService().processState( argumentCollection=arguments );
 
 		return interceptData.interceptorResult ?: {};
 	}
 
-	private boolean function _isPageType( required string objectName ) output=false {
+	private boolean function _isPageType( required string objectName ) {
 		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
 
 		return IsBoolean( isPageType ) && isPageType;
 	}
 
-	private boolean function _isAssetObject( required string objectName ) output=false {
+	private boolean function _isAssetObject( required string objectName ) {
 		return arguments.objectName == "asset";
 	}
 
-	private string function _getPageTypeForRecord( required string pageId ) output=false {
+	private string function _getPageTypeForRecord( required string pageId ) {
 		var page = _getPageDao().selectData( id=arguments.pageId, selectFields=[ "page_type" ] );
 
 		return page.page_type ?: "";
 	}
 
-	private struct function _convertFieldNames( required string objectName, required struct data ) output=false {
+	private struct function _convertFieldNames( required string objectName, required struct data ) {
 		var mappings  = _getFieldNameMappings( arguments.objectName );
 		var converted = arguments.data;
 
@@ -859,7 +863,7 @@ component output=false singleton=true {
 		return converted;
 	}
 
-	private struct function _getFieldNameMappings( required string objectName ) output=false {
+	private struct function _getFieldNameMappings( required string objectName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "_getFieldNameMappings" & args.objectName, function(){
@@ -877,87 +881,87 @@ component output=false singleton=true {
 		} );
 	}
 
-	private struct function _getCommonPropertyMappings() output=false {
+	private struct function _getCommonPropertyMappings() {
 		return {
 			access_restricted = { type="boolean" }
 		};
 	}
 
 // GETTERS AND SETTERS
-	private any function _getApiWrapper() output=false {
+	private any function _getApiWrapper() {
 		return _apiWrapper.get();
 	}
-	private void function _setApiWrapper( required any apiWrapper ) output=false {
+	private void function _setApiWrapper( required any apiWrapper ) {
 		_apiWrapper = arguments.apiWrapper;
 	}
 
-	private any function _getConfigurationReader() output=false {
+	private any function _getConfigurationReader() {
 		return _configurationReader.get();
 	}
-	private void function _setConfigurationReader( required any configurationReader ) output=false {
+	private void function _setConfigurationReader( required any configurationReader ) {
 		_configurationReader = arguments.configurationReader;
 	}
 
-	private any function _getPresideObjectService() output=false {
+	private any function _getPresideObjectService() {
 		return _presideObjectService.get();
 	}
-	private void function _setPresideObjectService( required any presideObjectService ) output=false {
+	private void function _setPresideObjectService( required any presideObjectService ) {
 		_presideObjectService = arguments.presideObjectService;
 	}
 
-	private struct function _getLocalCache() output=false {
+	private struct function _getLocalCache() {
 		return _localCache;
 	}
-	private void function _setLocalCache( required struct localCache ) output=false {
+	private void function _setLocalCache( required struct localCache ) {
 		_localCache = arguments.localCache;
 	}
 
-	private any function _getContentRendererService() output=false {
+	private any function _getContentRendererService() {
 		return _contentRendererService.get();
 	}
-	private void function _setContentRendererService( required any contentRendererService ) output=false {
+	private void function _setContentRendererService( required any contentRendererService ) {
 		_contentRendererService = arguments.contentRendererService;
 	}
 
-	private any function _getInterceptorService() output=false {
+	private any function _getInterceptorService() {
 		return _interceptorService;
 	}
-	private void function _setInterceptorService( required any interceptorService ) output=false {
+	private void function _setInterceptorService( required any interceptorService ) {
 		_interceptorService = arguments.interceptorService;
 	}
 
-	private any function _getPageDao() output=false {
+	private any function _getPageDao() {
 		return _pageDao;
 	}
-	private void function _setPageDao( required any pageDao ) output=false {
+	private void function _setPageDao( required any pageDao ) {
 		_pageDao = arguments.pageDao;
 	}
 
-	private any function _getSiteTreeService() output=false {
+	private any function _getSiteTreeService() {
 		return _siteTreeService.get();
 	}
-	private void function _setSiteTreeService( required any siteTreeService ) output=false {
+	private void function _setSiteTreeService( required any siteTreeService ) {
 		_siteTreeService = arguments.siteTreeService;
 	}
 
-	private any function _getResultsFactory() output=false {
+	private any function _getResultsFactory() {
 		return _resultsFactory.get();
 	}
-	private void function _setResultsFactory( required any resultsFactory ) output=false {
+	private void function _setResultsFactory( required any resultsFactory ) {
 		_resultsFactory = arguments.resultsFactory;
 	}
 
-	private any function _getStatusDao() output=false {
+	private any function _getStatusDao() {
 		return _statusDao;
 	}
-	private void function _setStatusDao( required any statusDao ) output=false {
+	private void function _setStatusDao( required any statusDao ) {
 		_statusDao = arguments.statusDao;
 	}
 
-	private any function _getSystemConfigurationService() output=false {
+	private any function _getSystemConfigurationService() {
 		return _systemConfigurationService.get();
 	}
-	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
+	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
 	}
 }

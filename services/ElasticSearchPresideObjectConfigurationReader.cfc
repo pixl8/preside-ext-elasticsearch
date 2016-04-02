@@ -1,4 +1,8 @@
-component output=false singleton=true {
+/**
+ * @singleton
+ *
+ */
+component {
 
 // CONSTRUCTOR
 	/**
@@ -6,7 +10,7 @@ component output=false singleton=true {
 	 * @systemConfigurationService.inject systemConfigurationService
 	 *
 	 */
-	public any function init( required any presideObjectService, required any systemConfigurationService ) output=false {
+	public any function init( required any presideObjectService, required any systemConfigurationService ) {
 		_setLocalCache( {} );
 		_setPresideObjectService( arguments.presideObjectService );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
@@ -15,7 +19,7 @@ component output=false singleton=true {
 	}
 
 // PUBLIC API METHODS
-	public array function listIndexes() output=false {
+	public array function listIndexes() {
 		return _simpleLocalCache( "listIndexes", function(){
 			var indexes = {};
 			var objects = listSearchEnabledObjects();
@@ -31,7 +35,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public array function listDocumentTypes( required string indexName ) output=false {
+	public array function listDocumentTypes( required string indexName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "listDocumentTypes" & args.indexName, function(){
@@ -49,7 +53,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public struct function getFields( required string indexName, required string documentType ) output=false {
+	public struct function getFields( required string indexName, required string documentType ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "listFieldsForDocumentType" & args.indexName & args.documentType, function(){
@@ -87,7 +91,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public array function listSearchEnabledObjects() output=false {
+	public array function listSearchEnabledObjects() {
 		return _simpleLocalCache( "listSearchEnabledObjects", function(){
 			var poService = _getPresideObjectService();
 
@@ -105,7 +109,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public struct function getObjectConfiguration( required string objectName ) output=false {
+	public struct function getObjectConfiguration( required string objectName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "getObjectConfiguration" & args.objectName, function(){
@@ -149,7 +153,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public struct function getFieldConfiguration( required string objectName, required string fieldName ) output=false {
+	public struct function getFieldConfiguration( required string objectName, required string fieldName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "getFieldConfiguration" & args.objectName & args.fieldname, function(){
@@ -240,7 +244,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public boolean function doesObjectHaveDataGetterMethod( required string objectName ) output=false {
+	public boolean function doesObjectHaveDataGetterMethod( required string objectName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "doesObjectHaveDataGetterMethod" & args.objectName, function(){
@@ -250,7 +254,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public array function listObjectsForIndex( required string indexName ) output=false {
+	public array function listObjectsForIndex( required string indexName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "listObjectsForIndex" & args.indexName, function(){
@@ -262,7 +266,7 @@ component output=false singleton=true {
 		} );
 	}
 
-	public boolean function isObjectSearchEnabled( required string objectName ) output=false {
+	public boolean function isObjectSearchEnabled( required string objectName ) {
 		var args = arguments;
 
 		return _simpleLocalCache( "isObjectSearchEnabled" & args.objectName, function(){
@@ -271,7 +275,7 @@ component output=false singleton=true {
 	}
 
 // PRIVATE HELPERS
-	private any function _simpleLocalCache( required string cacheKey, required any generator ) output=false {
+	private any function _simpleLocalCache( required string cacheKey, required any generator ) {
 		var cache = _getLocalCache();
 
 		if ( !cache.keyExists( cacheKey ) ) {
@@ -281,40 +285,40 @@ component output=false singleton=true {
 		return cache[ cacheKey ] ?: NullValue();
 	}
 
-	private boolean function _isPageType( required string objectName ) output=false {
+	private boolean function _isPageType( required string objectName ) {
 		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
 
 		return IsBoolean( isPageType ) && isPageType;
 	}
 
-	private boolean function _isAssetObject( required string objectName ) output=false {
+	private boolean function _isAssetObject( required string objectName ) {
 		return arguments.objectName == "asset";
 	}
 
 
 // GETTERS AND SETTERS
-	private any function _getPresideObjectService() output=false {
+	private any function _getPresideObjectService() {
 		return _presideObjectService;
 	}
-	private void function _setPresideObjectService( required any presideObjectService ) output=false {
+	private void function _setPresideObjectService( required any presideObjectService ) {
 		_presideObjectService = arguments.presideObjectService;
 	}
 
-	private any function _getSystemConfigurationService() output=false {
+	private any function _getSystemConfigurationService() {
 		return _systemConfigurationService;
 	}
-	private void function _setSystemConfigurationService( required any systemConfigurationService ) output=false {
+	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
 	}
 
-	private struct function _getLocalCache() output=false {
+	private struct function _getLocalCache() {
 		return _localCache;
 	}
-	private void function _setLocalCache( required struct localCache ) output=false {
+	private void function _setLocalCache( required struct localCache ) {
 		_localCache = arguments.localCache;
 	}
 
-	private any function _getDefaultIndexName() output=false {
+	private any function _getDefaultIndexName() {
 		return _getSystemConfigurationService().getSetting( "elasticsearch", "default_index" );
 	}
 

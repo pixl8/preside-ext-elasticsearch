@@ -1,6 +1,6 @@
 component extends="testbox.system.BaseSpec" {
 
-	function run() output=false {
+	function run() {
 
 		describe( "init()", function(){
 			it( "should check all configured indexes exist", function(){
@@ -30,7 +30,7 @@ component extends="testbox.system.BaseSpec" {
 				}
 
 				engine.$( "createIndex", CreateUUId() );
-				engine.$( "rebuildIndex" );
+				engine.$( "rebuildIndex", true );
 
 				engine.ensureIndexesExist();
 
@@ -62,7 +62,7 @@ component extends="testbox.system.BaseSpec" {
 
 				uniqueIndexes = [ "ux1", "ux2", "ux3", "ux4" ];
 				engine.$( "createIndex" ).$results( uniqueIndexes[1], uniqueIndexes[2], uniqueIndexes[3], uniqueIndexes[4] );
-				engine.$( "rebuildIndex" );
+				engine.$( "rebuildIndex", true );
 
 				engine.ensureIndexesExist();
 
@@ -151,7 +151,7 @@ component extends="testbox.system.BaseSpec" {
 				expect( engine.$callLog().indexAllRecords.len() ).toBe( objects.len() );
 				var i=0;
 				for( var objName in objects ){
-					expect( engine.$callLog().indexAllRecords[++i] ).toBe( [ objName, uniqueIndexName, indexName ] );
+					expect( engine.$callLog().indexAllRecords[++i] ).toBe( [ objName, uniqueIndexName, indexName, NullValue() ] );
 				}
 			} );
 
@@ -277,11 +277,13 @@ component extends="testbox.system.BaseSpec" {
 						  field_1 = { test="field_1" }
 						, field_2 = { test="field_2" }
 						, field_3 = { test="field_3" }
+						, access_restricted = { type="boolean" }
 					} },
 					type_b = { properties={
 						  field_4 = { test="field_4" }
 						, field_5 = { test="field_5" }
 						, field_6 = { test="field_6" }
+						, access_restricted = { type="boolean" }
 					} }
 				};
 
@@ -569,6 +571,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "selectData", QueryNew('') );
 				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
 				engine.$( "convertQueryToArrayOfDocs", [] );
+				engine.$( "_isPageType", false );
 
 				engine.getObjectDataForIndexing( objectName );
 
@@ -594,6 +597,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "selectData", QueryNew('') );
 				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
 				engine.$( "convertQueryToArrayOfDocs", [] );
+				engine.$( "_isPageType", false );
 
 				engine.getObjectDataForIndexing( objectName=objectName, id=id );
 
@@ -621,6 +625,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "selectData", QueryNew('') );
 				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
 				engine.$( "convertQueryToArrayOfDocs", [] );
+				engine.$( "_isPageType", false );
 
 				engine.getObjectDataForIndexing( objectName=objectName, startRow=startRow, maxRows=maxRows );
 
@@ -647,6 +652,7 @@ component extends="testbox.system.BaseSpec" {
 				mockPresideObjectService.$( "selectData", records );
 				engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( selectFields );
 				engine.$( "convertQueryToArrayOfDocs" ).$args( objectName, records ).$results( docs );
+				engine.$( "_isPageType", false );
 
 				expect( engine.getObjectDataForIndexing( objectName=objectName ) ).toBe( docs );
 			} );
@@ -694,18 +700,19 @@ component extends="testbox.system.BaseSpec" {
 		} );
 
 		describe( "search()", function(){
-			it( "should search with no specified indexes or document types when no objects specified", function(){
+			it( "should search with all specified indexes and no types when no objects specified", function(){
 				var engine = _getSearchEngine();
 
 				mockApiWrapper.$( "search", {} );
 				mockResultsFactory.$( "newSearchResult", {} );
+				mockConfigReader.$( "listIndexes", [ "test", "indexes", "here" ] );
 
 				engine.search();
 
 				var callLog = mockApiWrapper.$callLog().search;
 
 				expect( callLog.len() ).toBe( 1 );
-				expect( callLog[1].index ?: "" ).toBe( "" );
+				expect( callLog[1].index ?: "" ).toBe( "test,indexes,here" );
 				expect( callLog[1].type ?: "" ).toBe( "" );
 			} );
 
@@ -749,6 +756,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "search", {} );
 				mockResultsFactory.$( "newSearchResult", {} );
+				mockConfigReader.$( "listIndexes", [ "test", "indexes", "here" ] );
 
 				engine.search();
 
@@ -778,6 +786,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockApiWrapper.$( "search", {} );
 				mockResultsFactory.$( "newSearchResult", {} );
+				mockConfigReader.$( "listIndexes", [ "test", "indexes", "here" ] );
 
 				engine.search( argumentCollection=args );
 
@@ -803,6 +812,7 @@ component extends="testbox.system.BaseSpec" {
 					, highlightFields = "field1,field2"
 				};
 
+				mockConfigReader.$( "listIndexes", [ "test", "indexes", "here" ] );
 				mockApiWrapper.$( "search", rawResponse );
 				mockResultsFactory.$( "newSearchResult" ).$args(
 					  rawResult       = rawResponse
@@ -891,7 +901,7 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 // PRIVATE HELPERS
-	private function _getSearchEngine() output=false {
+	private function _getSearchEngine() {
 		mockConfigReader               = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
 		mockApiWrapper                 = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
 		mockResultsFactory             = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchResultsFactory" );
