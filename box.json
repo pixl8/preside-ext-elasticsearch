@@ -3,7 +3,7 @@
     "version":"1.0.8.BUILD_NUMBER",
     "author":"Pixl8 Interactive",
     "createPackageDirectory":true,
-    "packageDirectory":"application/extensions/preside-ext-elasticsearch",
+    "directory":"application/extensions",
     "homepage":"",
     "documentation":"",
     "repository":{
