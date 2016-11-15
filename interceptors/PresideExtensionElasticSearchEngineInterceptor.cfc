@@ -1,7 +1,8 @@
 component extends="coldbox.system.Interceptor" output=false {
 
-	property name="elasticSearchEngine" inject="provider:elasticSearchEngine";
-	property name="elasticSearchConfig" inject="provider:elasticSearchPresideObjectConfigurationReader";
+	property name="elasticSearchEngine"        inject="provider:elasticSearchEngine";
+	property name="elasticSearchConfig"        inject="provider:elasticSearchPresideObjectConfigurationReader";
+	property name="systemConfigurationService" inject="provider:SystemConfigurationService";
 
 // PUBLIC
 	public void function configure() output=false {}
@@ -46,18 +47,20 @@ component extends="coldbox.system.Interceptor" output=false {
 				  objectName = objectName
 				, id         = id
 			);
-
-			if ( _inThread() ) {
-				_getSearchEngine().reindexChildPages( objectName, id, interceptData.data ?: {} );
-			} else {
-				thread name         = CreateUUId()
-				       searchEngine = _getSearchEngine()
-				       objectName   = objectName
-				       id           = id
-				       data         = ( interceptData.data ?: {} )
-				{
-					setting requesttimeout=300;
-					attributes.searchEngine.reindexChildPages( attributes.objectName, attributes.id, attributes.data );
+			var reindexChildPage = systemConfigurationService.getSetting( "elasticsearch", "reindex_child_pages_on_edit", true )
+			if( isBoolean( reindexChildPage ?: "" ) && reindexChildPage ){
+				if ( _inThread() ) {
+					_getSearchEngine().reindexChildPages( objectName, id, interceptData.data ?: {} );
+				} else {
+					thread name         = CreateUUId()
+					       searchEngine = _getSearchEngine()
+					       objectName   = objectName
+					       id           = id
+					       data         = ( interceptData.data ?: {} )
+					{
+						setting requesttimeout=300;
+						attributes.searchEngine.reindexChildPages( attributes.objectName, attributes.id, attributes.data );
+					}
 				}
 			}
 		}
