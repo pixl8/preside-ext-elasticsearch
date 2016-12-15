@@ -40,7 +40,7 @@ component extends="coldbox.system.Interceptor" output=false {
 		}
 
 		var objectName = interceptData.objectName ?: "";
-		var id         = interceptData.id ?: "";
+		var id = Len( Trim( interceptData.id ?: "" ) ) ? interceptData.id : ( interceptData.data.id ?: "" );
 
 		if ( Len( Trim( objectName ) ) && Len( Trim( id ) ) ) {
 			_getSearchEngine().indexRecord(
