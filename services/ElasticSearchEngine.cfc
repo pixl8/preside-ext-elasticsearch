@@ -18,7 +18,7 @@ component {
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService , required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
