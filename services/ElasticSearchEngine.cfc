@@ -1,6 +1,6 @@
 /**
  * @singleton
- *
+ * @presideservice
  */
 component {
 
@@ -12,12 +12,13 @@ component {
 	 * @contentRendererService.inject     provider:contentRendererService
 	 * @interceptorService.inject         coldbox:InterceptorService
 	 * @pageDao.inject                    presidecms:object:page
+	 * @siteService.inject                provider:siteService
 	 * @siteTreeService.inject            provider:siteTreeService
 	 * @resultsFactory.inject             provider:elasticSearchResultsFactory
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService , required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -25,6 +26,7 @@ component {
 		_setContentRendererService( arguments.contentRendererService );
 		_setInterceptorService( arguments.interceptorService );
 		_setPageDao( arguments.pageDao );
+		_setSiteService( arguments.siteService );
 		_setSiteTreeService( arguments.siteTreeService );
 		_setResultsFactory( arguments.resultsFactory );
 		_setStatusDao( arguments.statusDao );
@@ -154,16 +156,36 @@ component {
 			var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
 			var indexingSuccess = true;
 
-			for( var objectName in objects ){
-				if ( canInfo ) { arguments.logger.info( "Starting to index [#objectName#] records" ); }
-				indexingSuccess = indexAllRecords( objectName, uniqueIndexName, indexName, arguments.logger ?: NullValue() );
-				if ( canInfo ) { arguments.logger.info( "Finished indexing [#objectName#] records" ); }
-				if ( !indexingSuccess ) {
-					if ( canWarn ) { arguments.logger.warn( "Indexing of [#objectName#] records returned unsuccessful, aborting index job." ); }
-					break;
+			var event           = $getColdbox().getRequestContext();
+			var originalSite = event.getSite();
+			var sites        = _getSiteService().listSites();
+
+			for( var objectName in objects ) {
+				if( _isPageType( objectName ) || _objectIsUsingSiteTenancy( objectName ) ) {
+					for( var site in sites ) {
+						event.setSite( site );
+
+						if ( canInfo ) { arguments.logger.info( "> Site [#site.name#]" ); }
+
+						indexingSuccess = indexAllRecords( objectName, uniqueIndexName, indexName, arguments.logger ?: NullValue() );
+
+						if ( !indexingSuccess ) {
+							if ( canWarn ) { arguments.logger.warn( "Indexing of [#objectName#] records returned unsuccessful, aborting index job." ); }
+							break;
+						}
+					}
+					event.setSite( originalSite );
+				} else {
+					indexingSuccess = indexAllRecords( objectName, uniqueIndexName, indexName, arguments.logger ?: NullValue() );
+
+					if ( !indexingSuccess ) {
+						if ( canWarn ) { arguments.logger.warn( "Indexing of [#objectName#] records returned unsuccessful, aborting index job." ); }
+						break;
+					}
 				}
 			}
 
+			event.setSite( originalSite );
 
 			if ( indexingSuccess ) {
 				_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
@@ -351,6 +373,7 @@ component {
 					, page       = ++page
 					, pageSize   = pageSize
 				);
+
 				var recordCount = records.len();
 
 				if ( canDebug ) { arguments.logger.debug( "Fetched #recordCount# #objectName# records ready for indexing." ); }
@@ -887,6 +910,16 @@ component {
 		};
 	}
 
+	private boolean function _objectIsUsingSiteTenancy( required string objectName ) {
+		if ( !_getPresideObjectService().objectExists( arguments.objectName ) ) {
+			return false;
+		}
+
+		var usingSiteTenancy = _getPresideObjectService().getObjectAttribute( arguments.objectName, "siteFiltered", false );
+
+		return IsBoolean( usingSiteTenancy ) && usingSiteTenancy;
+	}
+
 // GETTERS AND SETTERS
 	private any function _getApiWrapper() {
 		return _apiWrapper.get();
@@ -935,6 +968,13 @@ component {
 	}
 	private void function _setPageDao( required any pageDao ) {
 		_pageDao = arguments.pageDao;
+	}
+
+	private any function _getSiteService() {
+		return _siteService.get();
+	}
+	private void function _setSiteService( required any siteService ) {
+		_siteService = arguments.siteService;
 	}
 
 	private any function _getSiteTreeService() {
