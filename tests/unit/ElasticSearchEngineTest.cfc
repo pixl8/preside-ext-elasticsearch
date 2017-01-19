@@ -914,6 +914,8 @@ component extends="testbox.system.BaseSpec" {
 		mockStatusDao                  = getMockBox().createStub();
 		mockSystemConfigurationService = getMockBox().createStub();
 
+		mockColdbox                    = getMockBox().createStub();
+
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
 		engine.$( "_checkIndexesExist" );
@@ -929,6 +931,7 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "_getResultsFactory"            , mockResultsFactory             );
 		engine.$( "_getStatusDao"                 , mockStatusDao                  );
 		engine.$( "_getSystemConfigurationService", mockSystemConfigurationService );
+		engine.$( "$getColdbox"                   , mockColdbox                    );
 
 		return engine.init(
 			  configurationReader        = mockConfigReader
