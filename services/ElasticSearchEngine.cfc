@@ -151,14 +151,13 @@ component {
 		}
 
 		try {
-
 			var uniqueIndexName = createIndex( arguments.indexName );
 			var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
 			var indexingSuccess = true;
 
 			var event           = $getColdbox().getRequestContext();
-			var originalSite = event.getSite();
-			var sites        = _getSiteService().listSites();
+			var originalSite    = event.getSite();
+			var sites           = _getSiteService().listSites();
 
 			for( var objectName in objects ) {
 				if( _isPageType( objectName ) || _objectIsUsingSiteTenancy( objectName ) ) {
