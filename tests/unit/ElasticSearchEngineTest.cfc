@@ -923,7 +923,6 @@ component extends="testbox.system.BaseSpec" {
 		mockSite                       = getMockBox().createStub();
 		mockSites                      = getMockBox().createStub();
 
-
 		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
 		engine.$( "_checkIndexesExist" );
