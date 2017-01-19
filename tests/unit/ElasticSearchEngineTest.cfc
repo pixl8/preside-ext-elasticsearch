@@ -918,13 +918,13 @@ component extends="testbox.system.BaseSpec" {
 		mockStatusDao                  = getMockBox().createStub();
 		mockSystemConfigurationService = getMockBox().createStub();
 
-		mockColdbox                    = getMockBox().createStub();
 		mockRequestContext             = getMockBox().createStub();
 		mockSite                       = getMockBox().createStub();
 		mockSites                      = getMockBox().createStub();
 
 
-		var engine = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
+		var engine      = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
+		var mockColdbox = createEmptyMock( "preside.system.coldboxModifications.Controller" );
 
 		engine.$( "_checkIndexesExist" );
 		engine.$( "_announceInterception", {} );
