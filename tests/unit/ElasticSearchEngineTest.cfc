@@ -909,6 +909,7 @@ component extends="testbox.system.BaseSpec" {
 		mockContentRenderer            = getMockBox().createStub();
 		mockInterceptorService         = getMockBox().createStub();
 		mockPageDao                    = getMockBox().createStub();
+		mockSiteService                = getMockBox().createStub();
 		mockSiteTreeService            = getMockBox().createStub();
 		mockStatusDao                  = getMockBox().createStub();
 		mockSystemConfigurationService = getMockBox().createStub();
@@ -923,6 +924,7 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "_getContentRendererService"    , mockContentRenderer            );
 		engine.$( "_getInterceptorService"        , mockInterceptorService         );
 		engine.$( "_getPageDao"                   , mockPageDao                    );
+		engine.$( "_getSiteService"               , mockSiteService                );
 		engine.$( "_getSiteTreeService"           , mockSiteTreeService            );
 		engine.$( "_getResultsFactory"            , mockResultsFactory             );
 		engine.$( "_getStatusDao"                 , mockStatusDao                  );
@@ -935,6 +937,7 @@ component extends="testbox.system.BaseSpec" {
 			, contentRendererService     = mockContentRenderer
 			, interceptorService         = mockInterceptorService
 			, pageDao                    = mockPageDao
+			, siteService                = mockSiteService
 			, siteTreeService            = mockSiteTreeService
 			, resultsFactory             = mockResultsFactory
 			, statusDao                  = mockStatusDao
