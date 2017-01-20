@@ -922,9 +922,8 @@ component extends="testbox.system.BaseSpec" {
 		mockSite                       = getMockBox().createStub();
 		mockSites                      = getMockBox().createStub();
 
-
 		var engine      = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
-		var mockColdbox = createEmptyMock( "preside.system.coldboxModifications.Controller" );
+		var mockColdbox = getMockBox().createEmptyMock( "preside.system.coldboxModifications.Controller" );
 
 		engine.$( "_checkIndexesExist" );
 		engine.$( "_announceInterception", {} );
