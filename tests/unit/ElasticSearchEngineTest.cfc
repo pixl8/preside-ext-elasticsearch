@@ -117,6 +117,7 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "isIndexReindexing", false );
+				mockColdbox.$( "getRequestContext", {} );
 				engine.$( "_objectIsUsingSiteTenancy", false );
 				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
@@ -139,6 +140,7 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "isIndexReindexing", false );
+				mockColdbox.$( "getRequestContext", {} );
 				engine.$( "_objectIsUsingSiteTenancy", false );
 				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
@@ -165,6 +167,7 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "isIndexReindexing", false );
+				mockColdbox.$( "getRequestContext", {} );
 				engine.$( "_objectIsUsingSiteTenancy", false );
 				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
@@ -186,6 +189,7 @@ component extends="testbox.system.BaseSpec" {
 				mockApiWrapper.$( "addAlias", {} );
 				mockApiWrapper.$( "deleteIndex", {} );
 				engine.$( "isIndexReindexing", false );
+				mockColdbox.$( "getRequestContext", {} );
 				engine.$( "_objectIsUsingSiteTenancy", false );
 				engine.$( "setIndexingStatus" );
 				engine.$( "createIndex" ).$args( indexName ).$results( uniqueIndexName );
@@ -918,12 +922,12 @@ component extends="testbox.system.BaseSpec" {
 		mockStatusDao                  = getMockBox().createStub();
 		mockSystemConfigurationService = getMockBox().createStub();
 
+		mockColdbox                    = getMockBox().createStub();
 		mockRequestContext             = getMockBox().createStub();
 		mockSite                       = getMockBox().createStub();
 		mockSites                      = getMockBox().createStub();
 
 		var engine      = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
-		var mockColdbox = CreateEmptyMock( "preside.system.coldboxModifications.Controller" );
 
 		engine.$( "_checkIndexesExist" );
 		engine.$( "_announceInterception", {} );
