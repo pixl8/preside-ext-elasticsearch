@@ -560,13 +560,14 @@ component {
 	public void function processPageTypeRecordsBeforeIndexing( required string objectName, required array records ) {
 		if ( _isPageType( arguments.objectName ) ) {
 			for( var i=arguments.records.len(); i > 0; i-- ){
-				if ( !_isPageRecordValidForSearch( arguments.records[i] ) ) {
+				var hierarchicalPageData = _getHierarchalPageData( arguments.records[i] );
+
+				if ( !hierarchicalPageData.validForSearch ) {
 					arguments.records.deleteAt( i );
 					continue;
 				}
 
-				var restrictionRules = _getSiteTreeService().getAccessRestrictionRulesForPage( arguments.records[i].id );
-				arguments.records[i].access_restricted = restrictionRules.access_restriction != "none";
+				arguments.records[i].access_restricted = hierarchicalPageData.accessRestricted;
 			}
 		}
 	}
@@ -748,32 +749,37 @@ component {
 		return settings;
 	}
 
-	private boolean function _isPageRecordValidForSearch( required struct pagerecord ) {
-		var cache      = request._isPageRecordValidForSearchCache = request._isPageRecordValidForSearchCache ?: {};
-		var pageId     = arguments.pageRecord.id ?: "";
-		var pageFields = [ "_hierarchy_id", "_hierarchy_lineage", "active", "internal_search_access", "embargo_date", "expiry_date" ];
-		var page       = _getPageDao().selectData( id=pageId, selectFields=pageFields );
+	private struct function _getHierarchalPageData( required struct pagerecord ) {
+		var cache            = request._getHierarchalPageDataCache = request._getHierarchalPageDataCache ?: {};
+		var pageId           = arguments.pageRecord.id ?: "";
+		var pageFields       = [ "_hierarchy_id", "_hierarchy_lineage", "active", "internal_search_access", "embargo_date", "expiry_date", "access_restriction" ];
+		var page             = _getPageDao().selectData( id=pageId, selectFields=pageFields, useCache=false );
+		var accessRestricted = "";
 		var isActive   = function( required boolean active, required string embargo_date, required string expiry_date ) {
 			return arguments.active && ( !IsDate( arguments.embargo_date ) || Now() >= arguments.embargo_date ) && ( !IsDate( arguments.expiry_date ) || Now() <= arguments.expiry_date );
 		};
 
 		if ( !page.recordCount ) {
-			return false;
+			return { validForSearch=false };
 		}
 
 		for( var p in page ) { cache[ p._hierarchy_id ] = p; }
 
 
 		if ( !isActive( page.active, page.embargo_date, page.expiry_date ) || page.internal_search_access == "block" ) {
-			return false;
+			return { validForSearch=false };
 		}
 
 		var internalSearchAccess = page.internal_search_access;
 		var lineage              = ListToArray( page._hierarchy_lineage, "/" );
 
+		if ( page.access_restriction != "inherit" ) {
+			accessRestricted = page.access_restriction != "none";
+		}
+
 		for( var i=lineage.len(); i>0; i-- ){
 			if ( !cache.keyExists( lineage[i] ) ){
-				var parentPage = _getPageDao().selectData( filter={ _hierarchy_id=lineage[i] }, selectFields=pageFields );
+				var parentPage = _getPageDao().selectData( filter={ _hierarchy_id=lineage[i] }, selectFields=pageFields, useCache=false );
 				for( var p in parentPage ) { cache[ p._hierarchy_id ] = p; }
 			}
 			cache[ lineage[ i ] ] = cache[ lineage[ i ] ] ?: {};
@@ -782,18 +788,24 @@ component {
 				var parentPage = cache[ lineage[ i ] ];
 
 				if ( !isActive( parentPage.active, parentPage.embargo_date, parentPage.expiry_date ) ) {
-					return false;
+					return { validForSearch=false };
 				}
 
 				if ( internalSearchAccess != "allow" && parentPage.internal_search_access == "block" ) {
-					return false;
+					return { validForSearch=false };
+				}
+
+				if ( !IsBoolean( accessRestricted ) ) {
+					if ( parentPage.access_restriction != "inherit" ) {
+						accessRestricted = parentPage.access_restriction != "none";
+					}
 				}
 
 				internalSearchAccess = parentPage.internal_search_access;
 			}
 		}
 
-		return true;
+		return { validForSearch=true, accessRestricted=( IsBoolean( accessRestricted ) && accessRestricted ) };
 	}
 
 	private any function _simpleLocalCache( required string cacheKey, required any generator ) {
