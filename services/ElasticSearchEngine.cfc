@@ -52,6 +52,7 @@ component {
 		, struct  basicFilter     = {}
 		, struct  directFilter    = {}
 		, struct  fullDsl
+		, string  showSuggestion  = false
 	) {
 		var configReader = _getConfigurationReader();
 		var searchArgs   = duplicate( arguments );
@@ -75,6 +76,16 @@ component {
 		}
 
  		var apiCallResult = _getApiWrapper().search( argumentCollection=searchArgs );
+
+		if( showSuggestion ){
+			apiCallResult.suggestions = _getApiWrapper().getSuggestion(
+				  q     = searchArgs.q
+				, index = searchArgs.index
+				, type  = searchArgs.type
+			);
+
+			structDelete( apiCallResult.suggestions , "_shards" );
+		}
 
 		return _getResultsFactory().newSearchResult(
 			  rawResult       = apiCallResult

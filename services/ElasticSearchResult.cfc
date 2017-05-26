@@ -10,6 +10,7 @@ component output=false {
 	variables._result.error        = "";
 	variables._result.facets       = {};
 	variables._result.aggregations = {};
+	variables._result.suggestions  = {};
 	variables._result.sortBy       = "RELEVANCE";
 
 // CONSTRUCTOR
@@ -24,6 +25,7 @@ component output=false {
 		, string  sortBy       = ""
 		, struct  facets       = {}
 		, struct  aggregations = {}
+		, struct  suggestions  = {}
 	) output=false {
 		_result.append( arguments );
 
@@ -33,6 +35,10 @@ component output=false {
 // PUBLIC API METHODS
 	public query function getResults() output=false {
 		return _result.results;
+	}
+
+	public struct function getSuggestion() output=false {
+		return _result.suggestions;
 	}
 
 	public numeric function getTimeTaken() output=false {
