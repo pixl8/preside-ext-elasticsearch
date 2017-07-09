@@ -17,7 +17,7 @@
         ".git/*",
         ".gitignore",
         ".twgit_features_subject",
-	".travis.yml"
+	".travis.yml",
         "test.sh",
 	"tests",
 	"jmimemagic.log"
