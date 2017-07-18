@@ -8,7 +8,7 @@
     "documentation":"",
     "repository":{
         "type":"git",
-        "URL":"https://pixl8.beanstalkapp.com/preside-ext-elasticsearch"
+        "URL":"https://github.com/pixl8/preside-ext-elasticsearch"
     },
     "slug":"preside-ext-elasticsearch",
     "type":"preside-extensions",
