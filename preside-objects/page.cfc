@@ -9,6 +9,6 @@ component output=false {
 	property name="teaser"             searchEnabled=true;
 	property name="main_content"       searchEnabled=true;
 	property name="meta_description"   searchEnabled=true;
-	property name="site"               searchEnabled=true searchSearchable=false searchSortable=true;
+	property name="site"               searchEnabled=true searchSearchable=false;
 	property name="datecreated"        searchEnabled=true;
 }

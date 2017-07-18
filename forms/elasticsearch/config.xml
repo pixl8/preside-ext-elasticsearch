@@ -9,10 +9,11 @@
 	</tab>
 	<tab id="serversettings" title="cms:elasticSearchControl.config.serversettings.tab">
 		<fieldset id="serversettings">
-			<field name="endpoint"         control="textinput" required="true"                               label="cms:elasticSearchControl.config.endpoint.label"         help="cms:elasticSearchControl.config.endpoint.help"        placeholder="cms:elasticSearchControl.config.endpoint.placeholder" />
-			<field name="charset"          control="textinput" required="false" defaultValue="UTF-8"         label="cms:elasticSearchControl.config.charset.label"          help="cms:elasticSearchControl.config.charset.help"         placeholder="cms:elasticSearchControl.config.charset.placeholder" />
-			<field name="api_call_timeout" control="spinner"   required="true" minValue="30" maxValue="1000" label="cms:elasticSearchControl.config.api_call_timeout.label" help="cms:elasticSearchControl.config.api_call_timeout.help"/>
-			<field name="retry_attempts"   control="spinner"   required="true" minValue="1"  maxValue="10"   label="cms:elasticSearchControl.config.retry_attempts.label"   help="cms:elasticSearchControl.config.retry_attempts.help"/>
+			<field name="endpoint"                      control="textinput"    required="true"                               label="cms:elasticSearchControl.config.endpoint.label"                    help="cms:elasticSearchControl.config.endpoint.help"        placeholder="cms:elasticSearchControl.config.endpoint.placeholder" />
+			<field name="charset"                       control="textinput"    required="false" defaultValue="UTF-8"         label="cms:elasticSearchControl.config.charset.label"                     help="cms:elasticSearchControl.config.charset.help"         placeholder="cms:elasticSearchControl.config.charset.placeholder" />
+			<field name="api_call_timeout"              control="spinner"      required="true"  minValue="30" maxValue="1000" label="cms:elasticSearchControl.config.api_call_timeout.label"            help="cms:elasticSearchControl.config.api_call_timeout.help"/>
+			<field name="retry_attempts"                control="spinner"      required="true"  minValue="1"  maxValue="10"   label="cms:elasticSearchControl.config.retry_attempts.label"              help="cms:elasticSearchControl.config.retry_attempts.help"/>
+			<field name="reindex_child_pages_on_edit"   control="yesnoswitch"  required="false" default="true"                label="cms:elasticSearchControl.config.reindex_child_pages_on_edit.label" help="cms:elasticSearchControl.config.reindex_child_pages_on_edit.help"/>
 		</fieldset>
 	</tab>
 </form>
