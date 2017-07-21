@@ -1,40 +1,57 @@
-component extends="coldbox.system.Interceptor" output=false {
+component extends="coldbox.system.Interceptor" {
 
 	property name="elasticSearchEngine"        inject="provider:elasticSearchEngine";
 	property name="elasticSearchConfig"        inject="provider:elasticSearchPresideObjectConfigurationReader";
 	property name="systemConfigurationService" inject="provider:SystemConfigurationService";
+	property name="presideObjectService"       inject="provider:PresideObjectService";
 
 // PUBLIC
-	public void function configure() output=false {}
+	public void function configure() {}
 
-	public void function preElasticSearchIndexDoc( event, interceptData ) output=false {
+	public void function preElasticSearchIndexDoc( event, interceptData ) {
 		_getSearchEngine().processPageTypeRecordsBeforeIndexing(
 			  objectName = interceptData.objectName ?: ""
 			, records    = interceptData.doc        ?: []
 		);
 	}
-	public void function preElasticSearchIndexDocs( event, interceptData ) output=false {
+	public void function preElasticSearchIndexDocs( event, interceptData ) {
 		_getSearchEngine().processPageTypeRecordsBeforeIndexing(
 			  objectName = interceptData.objectName ?: ""
 			, records    = interceptData.docs       ?: []
 		);
 	}
 
-	public void function postInsertObjectData( event, interceptData ) output=false {
-		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) {
+	public void function postInsertObjectData( event, interceptData ) {
+		var objectName = interceptData.objectName ?: "";
+
+		var isPageType = presideObjectService.getObjectAttribute( objectName, "isPageType" , false );
+
+		if ( ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) || isPageType ||  objectName == 'page' ) {
 			return;
 		}
 		var id = Len( Trim( interceptData.newId ?: "" ) ) ? interceptData.newId : ( interceptData.data.id ?: "" );
 
 		if ( Len( Trim( id ) ) ) {
 			_getSearchEngine().indexRecord(
-				  objectName = interceptData.objectName ?: ""
+				  objectName = objectName
 				, id         = id
 			);
 		}
 	}
 
-	public void function postUpdateObjectData( event, interceptData ) output=false {
+	public void function postAddSiteTreePage( event, interceptData ) {
+
+		var id = interceptData.id ?: "";
+
+		if ( Len( Trim( id ) ) ) {
+			_getSearchEngine().indexRecord(
+				  objectName = interceptData.page_type ?: ""
+				, id         = id
+			);
+		}
+	}
+
+	public void function postUpdateObjectData( event, interceptData ) {
 		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) {
 			return;
 		}
@@ -66,7 +83,7 @@ component extends="coldbox.system.Interceptor" output=false {
 		}
 	}
 
-	public void function preDeleteObjectData( event, interceptData ) output=false {
+	public void function preDeleteObjectData( event, interceptData ) {
 		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) {
 			return;
 		}
@@ -90,16 +107,16 @@ component extends="coldbox.system.Interceptor" output=false {
 
 
 // PRIVATE
-	private boolean function _isSearchEnabled( required string objectName ) output=false {
+	private boolean function _isSearchEnabled( required string objectName ) {
 		return Len( Trim( arguments.objectName ) ) && _getElasticSearchConfig().isObjectSearchEnabled( arguments.objectName );
 	}
-	private any function _getSearchEngine() output=false {
+	private any function _getSearchEngine() {
 		return elasticSearchEngine.get();
 	}
-	private any function _getElasticSearchConfig() output=false {
+	private any function _getElasticSearchConfig() {
 		return elasticSearchConfig.get();
 	}
-	private boolean function _inThread() output=false {
+	private boolean function _inThread() {
 		return getPageContext().hasFamily();
 	}
 }
