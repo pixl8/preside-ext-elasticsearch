@@ -32,8 +32,8 @@ component output=false singleton=true {
 			if ( StructKeyExists( arguments.rawResult, 'aggregations' ) ) {
 				args.aggregations = arguments.rawResult.aggregations;
 			}
-			if ( StructKeyExists( arguments.rawResult, 'suggestions' ) ) {
-				args.suggestions = arguments.rawResult.suggestions;
+			if ( StructKeyExists( arguments.rawResult, 'suggest' ) ) {
+				args.suggestions = arguments.rawResult.suggest;
 			}
 		}
 
