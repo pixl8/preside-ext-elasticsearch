@@ -220,38 +220,6 @@ component {
 		);
 	}
 
-	public struct function getSuggestion(
-		  string  field         = "title"
-		, string  q             = ""
-		, numeric minWordLength = 2
-		, numeric size          = 1
-		, string  suggestMode   = "missing"
-		, string  sort          = "score"
-		, string  index
-		, string  type
-	) {
-		var uri  = _getIndexAndTypeUri( args=arguments ) & "/_suggest";
-
-		var body = {
-				result = {
-				  text = arguments.q
-				, term = {
-					  field           = arguments.field
-					, min_word_length = arguments.minWordLength
-					, size            = arguments.size
-					, suggest_mode    = arguments.suggestMode
-					, sort            = arguments.sort
-				}
-			}
-		}
-
-		return _call(
-			  uri    = uri
-			, method = "POST"
-			, body   = SerializeJson( body )
-		);
-	}
-
 	public struct function moreLikeThis(
 		  required string  documentId
 		, required string  index
