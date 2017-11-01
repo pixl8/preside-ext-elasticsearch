@@ -36,17 +36,25 @@ component extends="coldbox.system.Interceptor" {
 				  objectName = objectName
 				, id         = id
 			);
+			_getSearchEngine().queueRecordReindexIfNecessary(
+				  objectName = objectName
+				, recordId   = id
+			);
 		}
 	}
 
 	public void function postAddSiteTreePage( event, interceptData ) {
-
 		var id = interceptData.id ?: "";
 
 		if ( Len( Trim( id ) ) ) {
 			_getSearchEngine().indexRecord(
 				  objectName = interceptData.page_type ?: ""
 				, id         = id
+			);
+
+			_getSearchEngine().queueRecordReindexIfNecessary(
+				  objectName = interceptData.page_type ?: ""
+				, recordId   = id
 			);
 		}
 	}
@@ -63,6 +71,10 @@ component extends="coldbox.system.Interceptor" {
 			_getSearchEngine().indexRecord(
 				  objectName = objectName
 				, id         = id
+			);
+			_getSearchEngine().queueRecordReindexIfNecessary(
+				  objectName = objectName
+				, recordId   = id
 			);
 			var reindexChildPage = systemConfigurationService.getSetting( "elasticsearch", "reindex_child_pages_on_edit", true )
 			if( isBoolean( reindexChildPage ?: "" ) && reindexChildPage ){
@@ -101,6 +113,11 @@ component extends="coldbox.system.Interceptor" {
 			_getSearchEngine().deleteRecord(
 				  objectName = objectName
 				, id         = id
+			);
+			_getSearchEngine().queueRecordReindexIfNecessary(
+				  objectName = objectName
+				, recordId   = id
+				, isDeleted  = true
 			);
 		}
 	}
