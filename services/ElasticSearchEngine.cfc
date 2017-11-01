@@ -93,6 +93,8 @@ component {
 		for( var ix in indexes ){
 			if ( !apiWrapper.getAliasIndexes( ix ).len() ) {
 				var ux = createIndex( ix );
+
+				apiWrapper.deleteIndex( ix ); // looks odd but correct. Ensure we don't have a physical index with the alias name
 				apiWrapper.addAlias( index=ux, alias=ix );
 				rebuildIndex( ix );
 			}
@@ -189,6 +191,7 @@ component {
 			event.setSite( originalSite );
 
 			if ( indexingSuccess ) {
+				_getApiWrapper().deleteIndex( arguments.indexName );
 				_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
 
 				setIndexingStatus(
