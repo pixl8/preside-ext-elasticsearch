@@ -150,6 +150,8 @@ component {
 			);
 		}
 
+		clearReindexingQueue( arguments.indexName );
+
 		try {
 			var uniqueIndexName = createIndex( arguments.indexName );
 			var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
@@ -198,8 +200,9 @@ component {
 					, lastIndexingTimetaken   = GetTickCount() - start
 				);
 
-
 				cleanupOldIndexes( keepIndex=uniqueIndexName, alias=arguments.indexName );
+
+				processReindexingQueue( indexName=indexName, logger=arguments.logger ?: NullValue() );
 
 				_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
 			} else {
@@ -696,6 +699,65 @@ component {
 		var synonyms = _getSystemConfigurationService().getSetting( "elasticsearch", "synonyms" );
 
 		return ListToArray( synonyms, Chr(10) & Chr(13) );
+	}
+
+	public void function queueRecordReindexIfNecessary(
+		  required string  objectName
+		, required string  recordId
+		,          boolean isDeleted = false
+	) {
+		if ( _getConfigurationReader().isObjectSearchEnabled( arguments.objectName ) ) {
+			var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+
+			if ( Len( Trim( objConfig.indexName ?: "" ) ) && isIndexReindexing( objConfig.indexName ) ) {
+				$getPresideObject( "elasticsearch_index_queue" ).insertData( {
+					  index_name  = objConfig.indexName
+					, object_name = arguments.objectName
+					, record_id   = arguments.recordId
+					, is_deleted  = arguments.isDeleted
+				} );
+			}
+		}
+	}
+
+	public void function clearReindexingQueue( required string indexName ) {
+		$getPresideObject( "elasticsearch_index_queue" ).deleteData( filter={ index_name = arguments.indexName } );
+	}
+
+	public query function getQueuedRecordsForReindexing( required string indexName ) {
+		return $getPresideObject( "elasticsearch_index_queue" ).selectData(
+			  filter       = { index_name = arguments.indexName }
+			, selectFields = [ "id", "object_name", "record_id", "is_deleted" ]
+		);
+	}
+
+	public void function processReindexingQueue( required string indexName, any logger ) {
+		var queue    = getQueuedRecordsForReindexing( arguments.indexName );
+		var queueDao = $getPresideObject( "elasticsearch_index_queue" );
+
+		if ( queue.recordCount ) {
+			var canLog  = StructKeyExists( arguments, "logger" );
+			var canInfo = canLog && arguments.logger.canInfo();
+
+			if ( canInfo ) {
+				arguments.logger.info( "Processing post-reindex record queue. [#NumberFormat( queue.recordCount )#] records to re-index that were modified during the indexing process" );
+			}
+
+			for( var record in queue ) {
+				if ( record.is_deleted ) {
+					deleteRecord( record.object_name, record.record_id );
+
+				} else {
+					indexRecord( record.object_name, record.record_id );
+				}
+
+				queueDao.deleteData( record.id );
+			}
+
+			if ( canInfo ) {
+				arguments.logger.info( "Finished processing [#NumberFormat( queue.recordCount )#] post-reindex queued records." );
+			}
+		}
 	}
 
 // PRIVATE HELPERS
