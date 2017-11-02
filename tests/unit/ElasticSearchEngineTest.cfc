@@ -24,6 +24,7 @@ component extends="testbox.system.BaseSpec" {
 
 				mockConfigReader.$( "listIndexes", indexes.keyArray().sort( "textnocase" ) );
 				mockApiWrapper.$( "addAlias", {} );
+				mockApiWrapper.$( "deleteIndex", {} );
 
 				for( var ix in indexes ){
 					mockApiWrapper.$( "getAliasIndexes" ).$args( ix ).$results( indexes[ ix ] );
@@ -59,6 +60,7 @@ component extends="testbox.system.BaseSpec" {
 					mockApiWrapper.$( "getAliasIndexes" ).$args( ix ).$results( indexes[ ix ] );
 				}
 				mockApiWrapper.$( "addAlias", {} );
+				mockApiWrapper.$( "deleteIndex", {} );
 
 				uniqueIndexes = [ "ux1", "ux2", "ux3", "ux4" ];
 				engine.$( "createIndex" ).$results( uniqueIndexes[1], uniqueIndexes[2], uniqueIndexes[3], uniqueIndexes[4] );
@@ -951,6 +953,9 @@ component extends="testbox.system.BaseSpec" {
 		mockRequestContext.$( "getSite", mockSites[ 1 ] );
 		mockRequestContext.$( "setSite" );
 		mockSiteService.$( "listSites", mockSites );
+
+		engine.$( "clearReindexingQueue" );
+		engine.$( "processReindexingQueue" );
 
 		return engine.init(
 			  configurationReader        = mockConfigReader
