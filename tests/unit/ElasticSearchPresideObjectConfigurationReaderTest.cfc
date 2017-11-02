@@ -150,6 +150,20 @@ component extends="testbox.system.BaseSpec" {
 				expect( configuration.hasOwnDataGetter ?: "" ).toBe( false );
 			} );
 
+			it( "should return searchDataSource configured on the object", function(){
+				var svc              = _getService();
+				var objectName       = "someobject";
+				var searchDataSource = "testsearchDataSource";
+
+				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "seachDataSource" ).$results( searchDataSource );
+				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
+				mockPresideObjectService.$( "getObjectProperties", [] );
+				svc.$( "doesObjectHaveDataGetterMethod", false );
+
+				var configuration = svc.getObjectConfiguration( objectName );
+				expect( configuration.searchDataSource ?: "" ).toBe( searchDataSource );
+			} );
+
 			it( "should return an array of saved filters to use when retrieving data for indexing", function(){
 				var svc          = _getService();
 				var objectName   = "someobject";
