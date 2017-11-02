@@ -323,6 +323,13 @@ component {
 
 			if ( IsBoolean( objectConfig.hasOwnDataGetter ?: "" ) && objectConfig.hasOwnDataGetter ) {
 				doc = object.getDataForSearchEngine( arguments.id );
+			} else if ( _hasSearchDataSource( arguments.objectName ) ) {
+				doc = $getColdbox().runEvent(
+					  event          = objConfig.searchDataSource
+					, eventArguments = { id = arguments.id }
+					, private        = true
+					, prePostExempt  = true
+				);
 			} else {
 				doc = getObjectDataForIndexing( objName, arguments.id );
 			}
@@ -553,6 +560,14 @@ component {
 			return _getPresideObjectService().getObject( arguments.objectName ).getDataForSearchEngine(
 				  maxRows  = maxRows
 				, startRow = startRow
+			);
+
+		} else if ( _hasSearchDataSource( arguments.objectName ) ){
+			return $getColdbox().runEvent(
+				  event          = objConfig.searchDataSource
+				, eventArguments = { maxRows  = maxRows, startRow = startRow }
+				, private        = true
+				, prePostExempt  = true
 			);
 		}
 
@@ -994,6 +1009,18 @@ component {
 		var usingSiteTenancy = _getPresideObjectService().getObjectAttribute( arguments.objectName, "siteFiltered", false );
 
 		return IsBoolean( usingSiteTenancy ) && usingSiteTenancy;
+	}
+
+	private boolean function _hasSearchDataSource( required string objectName ){
+		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+
+		if ( len( objConfig.searchDataSource ?: "" ) ) {
+			if ( !$getColdbox().handlerExists( objConfig.searchDataSource ) ){
+				throw( type="ElasticSearchEngine.indexing.searchDataSource.notFound", message="Defined searchDataSource method '#objConfig.searchDataSource#' for object '#arguments.objectName#' was not found." );
+			}
+			return true;
+		}
+		return false;
 	}
 
 // GETTERS AND SETTERS
