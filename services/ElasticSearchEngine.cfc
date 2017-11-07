@@ -191,7 +191,7 @@ component {
 			event.setSite( originalSite );
 
 			if ( indexingSuccess ) {
-				_getApiWrapper().deleteIndex( arguments.indexName );
+				_deleteIndex( arguments.indexName );
 				_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
 
 				setIndexingStatus(
@@ -212,7 +212,7 @@ component {
 				if ( canError ) { arguments.logger.error( "An error occurred during indexing, aborting the job. Existing search indexes will be left untouched." ); }
 				terminateIndexing( arguments.indexName );
 				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
-				_getApiWrapper().deleteIndex( uniqueIndexName );
+				_deleteIndex( uniqueIndexName );
 			}
 
 			return indexingSuccess;
@@ -221,7 +221,7 @@ component {
 			try {
 				terminateIndexing( arguments.indexName );
 				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName, error = e } );
-				_getApiWrapper().deleteIndex( uniqueIndexName );
+				_deleteIndex( uniqueIndexName );
 				if ( canError ) { arguments.logger.error( "An error occurred during indexing, aborting the job. Existing search indexes will be left untouched." ); }
 			} catch ( any e ) {}
 
@@ -238,7 +238,7 @@ component {
 
 		for( var indexName in indexes ){
 			if ( indexName != arguments.keepIndex ) {
-				_getApiWrapper().deleteIndex( indexName );
+				_deleteIndex( indexName );
 			}
 		}
 	}
@@ -1021,6 +1021,14 @@ component {
 			return true;
 		}
 		return false;
+	}
+
+	private void function _deleteIndex( required string indexName ) {
+		try {
+			_getApiWrapper().deleteIndex( arguments.indexName );
+		} catch( "cfelasticsearch.IndexMissingException" e ) {
+			// ignore missing index exceptions - consider deleted
+		}
 	}
 
 // GETTERS AND SETTERS
