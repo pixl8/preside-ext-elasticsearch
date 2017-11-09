@@ -94,9 +94,8 @@ component {
 			if ( !apiWrapper.getAliasIndexes( ix ).len() ) {
 				var ux = createIndex( ix );
 
-				apiWrapper.deleteIndex( ix ); // looks odd but correct. Ensure we don't have a physical index with the alias name
-				apiWrapper.addAlias( index=ux, alias=ix );
-				rebuildIndex( ix );
+				_createAlias( index=ux, alias=ix );
+				cleanupOldIndexes( keepIndex=ux, alias=ix );
 			}
 		}
 		return;
@@ -191,8 +190,7 @@ component {
 			event.setSite( originalSite );
 
 			if ( indexingSuccess ) {
-				_deleteIndex( arguments.indexName );
-				_getApiWrapper().addAlias( index=uniqueIndexName, alias=arguments.indexName );
+				_createAlias( index=uniqueIndexName, alias=arguments.indexName );
 
 				setIndexingStatus(
 					  indexName               = arguments.indexName
@@ -1028,6 +1026,16 @@ component {
 			_getApiWrapper().deleteIndex( arguments.indexName );
 		} catch( "cfelasticsearch.IndexMissingException" e ) {
 			// ignore missing index exceptions - consider deleted
+		}
+	}
+
+	private void function _createAlias( required string index, required string alias ) {
+		try {
+			_getApiWrapper().addAlias( argumentCollection=arguments  );
+		} catch( "cfelasticsearch.InvalidAliasNameException" e ) {
+			_deleteIndex( arguments.alias );
+			sleep( 5000 ); // avoid delayed delete subsequently deleting our alias!
+			_getApiWrapper().addAlias( argumentCollection=arguments );
 		}
 	}
 

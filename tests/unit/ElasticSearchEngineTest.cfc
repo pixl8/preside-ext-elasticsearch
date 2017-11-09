@@ -23,15 +23,15 @@ component extends="testbox.system.BaseSpec" {
 				};
 
 				mockConfigReader.$( "listIndexes", indexes.keyArray().sort( "textnocase" ) );
-				mockApiWrapper.$( "addAlias", {} );
-				mockApiWrapper.$( "deleteIndex", {} );
 
 				for( var ix in indexes ){
 					mockApiWrapper.$( "getAliasIndexes" ).$args( ix ).$results( indexes[ ix ] );
 				}
 
+				engine.$( "_createAlias", {} );
 				engine.$( "createIndex", CreateUUId() );
 				engine.$( "rebuildIndex", true );
+				engine.$( "cleanupOldIndexes" );
 
 				engine.ensureIndexesExist();
 
@@ -59,20 +59,20 @@ component extends="testbox.system.BaseSpec" {
 				for( var ix in indexes ){
 					mockApiWrapper.$( "getAliasIndexes" ).$args( ix ).$results( indexes[ ix ] );
 				}
-				mockApiWrapper.$( "addAlias", {} );
-				mockApiWrapper.$( "deleteIndex", {} );
 
 				uniqueIndexes = [ "ux1", "ux2", "ux3", "ux4" ];
 				engine.$( "createIndex" ).$results( uniqueIndexes[1], uniqueIndexes[2], uniqueIndexes[3], uniqueIndexes[4] );
 				engine.$( "rebuildIndex", true );
+				engine.$( "_createAlias", {} );
+				engine.$( "cleanupOldIndexes" );
 
 				engine.ensureIndexesExist();
 
-				expect( mockApiWrapper.$callLog().addAlias.len() ).toBe( 4 );
-				expect( mockApiWrapper.$callLog().addAlias[1] ).toBe( { index=uniqueIndexes[1], alias="ix_1" } );
-				expect( mockApiWrapper.$callLog().addAlias[2] ).toBe( { index=uniqueIndexes[2], alias="ix_3" } );
-				expect( mockApiWrapper.$callLog().addAlias[3] ).toBe( { index=uniqueIndexes[3], alias="ix_4" } );
-				expect( mockApiWrapper.$callLog().addAlias[4] ).toBe( { index=uniqueIndexes[4], alias="ix_6" } );
+				expect( engine.$callLog()._createAlias.len() ).toBe( 4 );
+				expect( engine.$callLog()._createAlias[1] ).toBe( { index=uniqueIndexes[1], alias="ix_1" } );
+				expect( engine.$callLog()._createAlias[2] ).toBe( { index=uniqueIndexes[2], alias="ix_3" } );
+				expect( engine.$callLog()._createAlias[3] ).toBe( { index=uniqueIndexes[3], alias="ix_4" } );
+				expect( engine.$callLog()._createAlias[4] ).toBe( { index=uniqueIndexes[4], alias="ix_6" } );
 			} );
 		} );
 
