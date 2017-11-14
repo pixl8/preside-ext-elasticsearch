@@ -323,7 +323,7 @@ component {
 				doc = object.getDataForSearchEngine( arguments.id );
 			} else if ( _hasSearchDataSource( arguments.objectName ) ) {
 				doc = $getColdbox().runEvent(
-					  event          = objConfig.searchDataSource
+					  event          = objectConfig.searchDataSource
 					, eventArguments = { id = arguments.id }
 					, private        = true
 					, prePostExempt  = true
