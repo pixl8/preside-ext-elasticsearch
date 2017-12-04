@@ -1,7 +1,7 @@
 {
     "name":"PresideCMS Extension: ElasticSearch",
-    "version":"1.0.25",
-    "location":"https://github.com/pixl8/preside-ext-elasticsearch/archive/v1.0.25.zip",
+    "version":"1.1.0",
+    "location":"https://github.com/pixl8/preside-ext-elasticsearch/archive/v1.1.0.zip",
     "author":"Pixl8 Interactive",
     "directory":"application/extensions",
     "homepage":"",

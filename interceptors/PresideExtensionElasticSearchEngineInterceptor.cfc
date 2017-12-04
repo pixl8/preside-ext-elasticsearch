@@ -31,7 +31,7 @@ component extends="coldbox.system.Interceptor" {
 		}
 		var id = Len( Trim( interceptData.newId ?: "" ) ) ? interceptData.newId : ( interceptData.data.id ?: "" );
 
-		if ( Len( Trim( id ) ) ) {
+		if ( Len( Trim( id ) ) && !_skipSingleRecordIndexing() ) {
 			_getSearchEngine().indexRecord(
 				  objectName = objectName
 				, id         = id
@@ -46,7 +46,7 @@ component extends="coldbox.system.Interceptor" {
 	public void function postAddSiteTreePage( event, interceptData ) {
 		var id = interceptData.id ?: "";
 
-		if ( Len( Trim( id ) ) ) {
+		if ( Len( Trim( id ) ) && !_skipSingleRecordIndexing() ) {
 			_getSearchEngine().indexRecord(
 				  objectName = interceptData.page_type ?: ""
 				, id         = id
@@ -67,7 +67,7 @@ component extends="coldbox.system.Interceptor" {
 		var objectName = interceptData.objectName ?: "";
 		var id = Len( Trim( interceptData.id ?: "" ) ) ? interceptData.id : ( interceptData.data.id ?: "" );
 
-		if ( Len( Trim( objectName ) ) && Len( Trim( id ) ) ) {
+		if ( Len( Trim( objectName ) ) && Len( Trim( id ) ) && !_skipSingleRecordIndexing() ) {
 			_getSearchEngine().indexRecord(
 				  objectName = objectName
 				, id         = id
@@ -109,7 +109,7 @@ component extends="coldbox.system.Interceptor" {
 			id = id.toList();
 		}
 
-		if ( IsSimpleValue( id ) && Len( Trim( id ) ) ) {
+		if ( IsSimpleValue( id ) && Len( Trim( id ) ) && !_skipSingleRecordIndexing() ) {
 			_getSearchEngine().deleteRecord(
 				  objectName = objectName
 				, id         = id
@@ -135,5 +135,9 @@ component extends="coldbox.system.Interceptor" {
 	}
 	private boolean function _inThread() {
 		return getPageContext().hasFamily();
+	}
+	private boolean function _skipSingleRecordIndexing() {
+		var skipSingleRecordIndexing = systemConfigurationService.getSetting( "elasticsearch", "skip_single_record_indexing" );
+		return IsBoolean( skipSingleRecordIndexing ) && skipSingleRecordIndexing;
 	}
 }
