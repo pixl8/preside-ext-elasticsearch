@@ -155,7 +155,7 @@ component extends="testbox.system.BaseSpec" {
 				var objectName       = "someobject";
 				var searchDataSource = "testsearchDataSource";
 
-				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "seachDataSource" ).$results( searchDataSource );
+				mockPresideObjectService.$( "getObjectAttribute" ).$args( objectName, "searchDataSource" ).$results( searchDataSource );
 				mockPresideObjectService.$( "getObjectAttribute", "dummy" );
 				mockPresideObjectService.$( "getObjectProperties", [] );
 				svc.$( "doesObjectHaveDataGetterMethod", false );
