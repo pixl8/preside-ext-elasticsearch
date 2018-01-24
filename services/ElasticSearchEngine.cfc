@@ -431,7 +431,8 @@ component {
 		}
 
 		if ( _isPageType( arguments.objectName ) ) {
-			selectDataArgs.extraFilters = [ { filter={ "page.trashed" = false } } ];
+			selectDataArgs.extraFilters       = [ { filter={ "page.trashed" = false } } ];
+			selectDataArgs.allowDraftVersions = false;
 		}
 
 		if ( _isAssetObject( arguments.objectName ) ) {
