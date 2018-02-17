@@ -424,6 +424,7 @@ component {
 			, maxRows      = arguments.maxRows
 			, startRow     = arguments.startRow
 			, groupby      = "#arguments.objectName#.id"
+			, useCache     = false
 		};
 
 		if ( Len( Trim( arguments.id ?: "" ) ) ) {
