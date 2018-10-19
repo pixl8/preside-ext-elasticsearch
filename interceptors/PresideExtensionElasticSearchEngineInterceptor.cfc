@@ -101,22 +101,18 @@ component extends="coldbox.system.Interceptor" {
 		}
 
 		var objectName = interceptData.objectName ?: "";
-		var id         = interceptData.id ?: "";
-		if ( !Len( Trim( id ) ) ) {
-			id = interceptData.filter.id ?: ( interceptData.filterParams.id ?: "" );
-		}
-		if ( IsArray( id ) ) {
-			id = id.toList();
-		}
+			arguments.interceptData.selectFields = [ "id" ];
+		var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData );
+		var ids        = ValueList( records.id ?: "" );
 
-		if ( IsSimpleValue( id ) && Len( Trim( id ) ) && !_skipSingleRecordIndexing() ) {
+		if ( IsSimpleValue( ids ) && Len( Trim( ids ) ) && !_skipSingleRecordIndexing() ) {
 			_getSearchEngine().deleteRecord(
 				  objectName = objectName
-				, id         = id
+				, id         = ids
 			);
 			_getSearchEngine().queueRecordReindexIfNecessary(
 				  objectName = objectName
-				, recordId   = id
+				, recordId   = ids
 				, isDeleted  = true
 			);
 		}
