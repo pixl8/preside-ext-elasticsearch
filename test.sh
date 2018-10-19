@@ -1,11 +1,12 @@
 #!/bin/bash
 
 cd `dirname $0`/tests
-CWD="`pwd`"
 
-box "$CWD/runtests.cfm"
+exitcode=0
 
-exitcode=$(<.exitcode)
-rm -f .exitcode
+box stop name="extensiontests"
+box start directory="./" serverConfigFile="./test-server-config.json"
+box testbox run verbose=false || exitcode=1
+box stop name="extensiontests"
 
 exit $exitcode

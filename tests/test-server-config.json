@@ -1,0 +1,15 @@
+{
+    "name":"extensiontests",
+    "openbrowser":false,
+    "trayEnable":false,
+    "web":{
+        "webroot":"/",
+        "http":{
+            "port":"9136"
+        }
+    },
+    "JVM":{
+        "heapSize":"2048",
+        "minHeapSize":"1024"
+    }
+}

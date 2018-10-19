@@ -1,0 +1,5 @@
+{
+    "testbox":{
+        "runner":"http://127.0.0.1:9136/runtests.cfm"
+    }
+}
