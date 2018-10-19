@@ -1,7 +1,7 @@
 {
     "name":"PresideCMS Extension: ElasticSearch",
-    "version":"1.1.4",
-    "location":"https://github.com/pixl8/preside-ext-elasticsearch/archive/v1.1.4.zip",
+    "version":"1.1.5",
+    "location":"https://github.com/pixl8/preside-ext-elasticsearch/archive/v1.1.5.zip",
     "author":"Pixl8 Interactive",
     "directory":"application/extensions",
     "homepage":"",
@@ -17,10 +17,10 @@
         ".git/*",
         ".gitignore",
         ".twgit_features_subject",
-	".travis.yml",
+        ".travis.yml",
         "test.sh",
-	"tests",
-	"jmimemagic.log"
+        "tests",
+        "jmimemagic.log"
     ],
     "devDependencies":{
         "testbox":"2.2.0"
