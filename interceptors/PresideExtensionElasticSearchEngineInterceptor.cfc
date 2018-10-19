@@ -101,8 +101,7 @@ component extends="coldbox.system.Interceptor" {
 		}
 
 		var objectName = interceptData.objectName ?: "";
-			arguments.interceptData.selectFields = [ "id" ];
-		var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData );
+		var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData, selectFields=[ "id" ] );
 		var ids        = ValueList( records.id ?: "" );
 
 		if ( IsSimpleValue( ids ) && Len( Trim( ids ) ) && !_skipSingleRecordIndexing() ) {
