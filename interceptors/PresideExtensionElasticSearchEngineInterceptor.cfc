@@ -101,20 +101,34 @@ component extends="coldbox.system.Interceptor" {
 		}
 
 		var objectName = interceptData.objectName ?: "";
-		var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData, selectFields=[ "id" ] );
-		var ids        = records.recordCount ? ValueList( records.id ) : "";
+		var idField    = presideObjectService.getIdField( objectName=objectName );
 
-		if ( IsSimpleValue( ids ) && Len( Trim( ids ) ) && !_skipSingleRecordIndexing() ) {
-			_getSearchEngine().deleteRecord(
-				  objectName = objectName
-				, id         = ids
-			);
-			_getSearchEngine().queueRecordReindexIfNecessary(
-				  objectName = objectName
-				, recordId   = ids
-				, isDeleted  = true
-			);
+		try {
+			var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData, selectFields=[ idField ] );
+			var ids        = records.recordCount ? ValueList( records[ idField ] ) : "";
+
+			if ( IsSimpleValue( ids ) && Len( Trim( ids ) ) && !_skipSingleRecordIndexing() ) {
+				_getSearchEngine().deleteRecord(
+					  objectName = objectName
+					, id         = ids
+				);
+				_getSearchEngine().queueRecordReindexIfNecessary(
+					  objectName = objectName
+					, recordId   = ids
+					, isDeleted  = true
+				);
+			}
+		} catch( any e ) {
+			var message = e.detail ?: "";
+			var type    = e.type   ?: "";
+
+			if ( type == "database" && ( message contains "Unknown column" ) ) {
+				return;
+			} else {
+				rethrow;
+			}
 		}
+		return;
 	}
 
 
