@@ -694,10 +694,10 @@ component extends="testbox.system.BaseSpec" {
 				engine.getPaginatedRecordsForObject( objectName=objectName, page=1, pageSize=100 );
 
 				expect( object.$callLog().getDataForSearchEngine.len() ).toBe( 1 );
-				// expect( object.$callLog().getDataForSearchEngine[1] ).toBe( {
-				// 	  startRow = 1
-				// 	, maxRows  = 100
-				// } );
+				expect( object.$callLog().getDataForSearchEngine[1] ).toBe( {
+					  startRow = 1
+					, maxRows  = 100
+				} );
 			} );
 
 			it( "should fetch records from auto data getter when object does not have its own data getter", function(){
