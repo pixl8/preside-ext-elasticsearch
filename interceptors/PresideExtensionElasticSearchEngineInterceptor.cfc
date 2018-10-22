@@ -102,7 +102,7 @@ component extends="coldbox.system.Interceptor" {
 
 		var objectName = interceptData.objectName ?: "";
 		var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData, selectFields=[ "id" ] );
-		var ids        = ValueList( records.id ?: "" );
+		var ids        = records.recordCount ? ValueList( records.id ) : "";
 
 		if ( IsSimpleValue( ids ) && Len( Trim( ids ) ) && !_skipSingleRecordIndexing() ) {
 			_getSearchEngine().deleteRecord(
