@@ -21,5 +21,5 @@ From the root of your application, type the following command:
 
 From the root of your application, type the following command:
 
-    box install pixl8/preside-ext-elasticsearch#v1.1.7
+    box install pixl8/preside-ext-elasticsearch#v1.1.8
 
