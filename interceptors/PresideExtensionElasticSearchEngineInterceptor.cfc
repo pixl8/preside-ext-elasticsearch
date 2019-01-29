@@ -26,7 +26,7 @@ component extends="coldbox.system.Interceptor" {
 
 		var isPageType = presideObjectService.getObjectAttribute( objectName, "isPageType" , false );
 
-		if ( ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) || isPageType ||  objectName == 'page' ) {
+		if ( ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) || isPageType || objectName == 'page' || !_isSearchEnabled( objectName ) ) {
 			return;
 		}
 		var id = Len( Trim( interceptData.newId ?: "" ) ) ? interceptData.newId : ( interceptData.data.id ?: "" );
@@ -60,11 +60,12 @@ component extends="coldbox.system.Interceptor" {
 	}
 
 	public void function postUpdateObjectData( event, interceptData ) {
-		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) {
+		var objectName = interceptData.objectName ?: "";
+
+		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors || !_isSearchEnabled( objectName ) ) {
 			return;
 		}
 
-		var objectName = interceptData.objectName ?: "";
 		var id = Len( Trim( interceptData.id ?: "" ) ) ? interceptData.id : ( interceptData.data.id ?: "" );
 
 		if ( Len( Trim( objectName ) ) && Len( Trim( id ) ) && !_skipSingleRecordIndexing() ) {
@@ -96,12 +97,13 @@ component extends="coldbox.system.Interceptor" {
 	}
 
 	public void function preDeleteObjectData( event, interceptData ) {
-		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors ) {
+		var objectName = interceptData.objectName ?: "";
+
+		if ( IsBoolean( interceptData.skipTrivialInterceptors ?: "" ) && interceptData.skipTrivialInterceptors || !_isSearchEnabled( objectName ) ) {
 			return;
 		}
 
-		var objectName = interceptData.objectName ?: "";
-		var idField    = presideObjectService.getIdField( objectName=objectName );
+		var idField = presideObjectService.getIdField( objectName=objectName );
 
 		try {
 			var records    = presideObjectService.selectData( argumentCollection=arguments.interceptData, selectFields=[ idField ] );
