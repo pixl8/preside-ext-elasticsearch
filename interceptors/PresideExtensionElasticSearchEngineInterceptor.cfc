@@ -121,10 +121,11 @@ component extends="coldbox.system.Interceptor" {
 				);
 			}
 		} catch( any e ) {
-			var message = e.detail ?: "";
-			var type    = e.type   ?: "";
+			var message = e.message ?: "";
+			var detail  = e.detail  ?: "";
+			var type    = e.type    ?: "";
 
-			if ( type == "database" && ( message contains "Unknown column" ) ) {
+			if ( type == "database" && ( message contains "Unknown column" || detail contains "Unknown column" ) ) {
 				return;
 			} else {
 				rethrow;
