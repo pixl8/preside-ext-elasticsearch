@@ -15,6 +15,7 @@
 			<field name="retry_attempts"                control="spinner"      required="true"  minValue="1"  maxValue="10"   label="cms:elasticSearchControl.config.retry_attempts.label"              help="cms:elasticSearchControl.config.retry_attempts.help"/>
 			<field name="reindex_child_pages_on_edit"   control="yesnoswitch"  required="false" default="true"                label="cms:elasticSearchControl.config.reindex_child_pages_on_edit.label" help="cms:elasticSearchControl.config.reindex_child_pages_on_edit.help"/>
 			<field name="skip_single_record_indexing"   control="yesnoswitch"  required="false" default="false"               label="cms:elasticSearchControl.config.skip_single_record_indexing.label" help="cms:elasticSearchControl.config.skip_single_record_indexing.help"/>
+			<field name="page_size"                     control="spinner"      minValue="100" defaultValue="100"              label="cms:elasticSearchControl.config.page_size.label" help="cms:elasticSearchControl.config.page_size.help" />
 		</fieldset>
 	</tab>
 </form>

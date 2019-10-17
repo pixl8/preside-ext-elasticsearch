@@ -363,7 +363,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = 100;
+			var pageSize  = $getPresideSetting( category="elasticsearch", setting="page_size", default="100" );
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
