@@ -423,7 +423,7 @@ component {
 			, savedFilters = objConfig.indexFilters ?: []
 			, maxRows      = arguments.maxRows
 			, startRow     = arguments.startRow
-			, groupby      = "#arguments.objectName#.id"
+			, autoGroupBy  = true
 			, useCache     = false
 		};
 

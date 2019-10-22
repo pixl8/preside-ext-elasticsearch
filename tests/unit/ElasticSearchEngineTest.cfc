@@ -576,12 +576,12 @@ component extends="testbox.system.BaseSpec" {
 				var selectFields = [ "myobj.id", "myobj.field1", "myobj.field2" ];
 				var filters      = [ "filterx", "filtery" ];
 				var expected     = [
-					  { "objectName"   = objectName         }
-					, { "selectFields" = selectFields       }
-					, { "savedFilters" = filters            }
-					, { "groupBy"      = objectName & ".id" }
-					, { "maxRows"      = 100                }
-					, { "startRow"     = 1                  }
+					  { "objectName"   = objectName   }
+					, { "selectFields" = selectFields }
+					, { "savedFilters" = filters      }
+					, { "autoGroupBy"  = true         }
+					, { "maxRows"      = 100          }
+					, { "startRow"     = 1            }
 				];
 				// var expected     = "[[{OBJECTNAME={myobj}}, {SELECTFIELDS={[myobj.id, myobj.field1, myobj.field2]}}, {SAVEDFILTERS={[filterx, filtery]}}, {GROUPBY={myobj.id}}, {MAXROWS={100}}, {STARTROW={1}}]]";
 
@@ -598,7 +598,7 @@ component extends="testbox.system.BaseSpec" {
 				// 	  objectName   = objectName
 				// 	, selectFields = selectFields
 				// 	, savedFilters = filters
-				// 	, groupBy      = objectName & ".id"
+				// 	, autoGroupBy  = true
 				// 	, maxRows      = 100
 				// 	, startRow     = 1
 				// } );
@@ -616,7 +616,7 @@ component extends="testbox.system.BaseSpec" {
 					, selectFields = selectFields
 					, filter       = { "#objectName#.id" = id }
 					, savedFilters = filters
-					, groupBy      = objectName & ".id"
+					, autoGroupBy  = true
 					, maxRows      = 100
 					, startRow     = 1
 				}
@@ -644,7 +644,7 @@ component extends="testbox.system.BaseSpec" {
 					  objectName   = objectName
 					, selectFields = selectFields
 					, savedFilters = filters
-					, groupBy      = objectName & ".id"
+					, autoGroupBy  = true
 					, maxRows      = maxRows
 					, startRow     = startRow
 				}

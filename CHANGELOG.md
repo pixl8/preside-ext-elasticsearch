@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.15
+
+* Fix issue with groupBy/autogroupBy for MSSQL
+* Fix build on trusty
+
 ## v1.1.14
 
 * Fix compatibility issue with latest Lucee whose message/detail contents for database errors have switched
