@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.3.1
+
+* Make all standard extension API calls and index metadata compatible with ElasticSearch 6.3
+* Make easier to use environment variables and default settings for connecting to ElasticSearch
+
 ## v1.1.15
 
 * Fix issue with groupBy/autogroupBy for MSSQL
