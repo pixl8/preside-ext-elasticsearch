@@ -5,7 +5,7 @@
     "author":"Pixl8 Interactive",
     "directory":"application/extensions",
     "homepage":"",
-    "documentation":"https://pixl8.github.io/preside-ext-elasticsearch",
+    "documentation":"https://.github.com/pixl8/preside-ext-elasticsearch",
     "repository":{
         "type":"git",
         "URL":"https://github.com/pixl8/preside-ext-elasticsearch"
@@ -26,6 +26,6 @@
         "testbox":"2.2.0"
     },
     "installPaths":{
-        "testbox":"tests/testbox"
+        "testbox":"tests/testbox/"
     }
 }
