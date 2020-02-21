@@ -172,6 +172,7 @@ component {
 			if ( !Len( Trim( configuration.type ?: "" ) ) ) {
 				switch( fieldType ){
 					case "string":
+						configuration.type = "text";
 					case "date":
 					case "boolean":
 						configuration.type = fieldType;
@@ -204,12 +205,13 @@ component {
 					break;
 
 					default:
-						configuration.type = "string";
+						configuration.type = "text";
 				}
 			}
 
 			switch( configuration.type ){
 				case "string":
+					configuration.type = "text";
 					configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
 					if(primaryKey){
 						configuration.searchable=IsBoolean(configuration.searchable)?configuration.searchable:false; //default to false for primary key if setting is not found

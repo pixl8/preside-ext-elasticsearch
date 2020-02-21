@@ -74,11 +74,11 @@ component output=false singleton=true {
 
 			for( n=1; n lte ArrayLen( fields ); n=n+1 ){
 				field = fields[ n ];
-				if ( StructKeyExists( hit.fields, field ) ) {
-					if ( IsArray( hit.fields[ field ] ) && hit.fields[ field ].len() < 2 ) {
-						hit.fields[ field ] = hit.fields[ field ].toList();
+				if ( StructKeyExists( hit._source, field ) ) {
+					if ( IsArray( hit._source[ field ] ) && hit._source[ field ].len() < 2 ) {
+						hit._source[ field ] = hit._source[ field ].toList();
 					}
-					QuerySetCell( results, field, hit.fields[ field ] );
+					QuerySetCell( results, field, hit._source[ field ] );
 				}
 			}
 		}
