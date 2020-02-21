@@ -1000,7 +1000,7 @@ component {
 	private struct function _getCommonPropertyMappings() {
 		return {
 			access_restricted = { type="boolean" },
-			type = { type: "keyword" }
+			type = { type="keyword" }
 		};
 	}
 

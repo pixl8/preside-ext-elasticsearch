@@ -282,17 +282,15 @@ component extends="testbox.system.BaseSpec" {
 					, type_b = { field_x={ fieldName="field_4", type="string", searchable=false, sortable=true }, field_5={ fieldName="field_5", type="number", sortable=true }, field_6={ fieldName="field_6", type="string", analyzer="test", searchable=true, sortable=false } }
 				};
 				var expectedMappings = {
-					type_a = { properties={
+					doc = { properties={
 						  field_1 = { test="field_1" }
 						, field_2 = { test="field_2" }
 						, field_3 = { test="field_3" }
-						, access_restricted = { type="boolean" }
-					} },
-					type_b = { properties={
-						  field_4 = { test="field_4" }
+						, field_4 = { test="field_4" }
 						, field_5 = { test="field_5" }
 						, field_6 = { test="field_6" }
 						, access_restricted = { type="boolean" }
+						, type = { type="keyword" }
 					} }
 				};
 
@@ -318,13 +316,13 @@ component extends="testbox.system.BaseSpec" {
 				expect( mapping.type ).toBe( field.type );
 			} );
 
-			it( "should return index='not_analyzed' when field is not searchable or sortable", function(){
+			it( "should return index='true' when field is not searchable or sortable", function(){
 				var engine = _getSearchEngine();
 				var field = { name="myfield", type="boolean", searchable=false, sortable=false };
 
 				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
 
-				expect( mapping.index ?: '' ).toBe( 'not_analyzed' );
+				expect( mapping.index ?: '' ).toBe( 'true' );
 			} );
 
 			it( "should return analyzer when field is searchable and analyzer supplied", function(){
@@ -352,8 +350,8 @@ component extends="testbox.system.BaseSpec" {
 				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
 
 				expect( mapping.type ?: '' ).toBe( "multi_field" );
-				expect( mapping.fields.myfield   ?: {} ).toBe( { type="string", analyzer="anotheranalyzer" } );
-				expect( mapping.fields.untouched ?: {} ).toBe( { type="string", analyzer="preside_sortable" } );
+				expect( mapping.fields.myfield   ?: {} ).toBe( { type="string", analyzer="anotheranalyzer", index=true, fielddata=true } );
+				expect( mapping.fields.untouched ?: {} ).toBe( { type="string", analyzer="preside_sortable", index=true, fielddata=true } );
 			} );
 
 			it( "should return dateformat and ignore malformed options when type is date", function(){
