@@ -10,9 +10,14 @@ install:
 - curl --location 'https://www.ortussolutions.com/parent/download/commandbox/type/bin' -o /tmp/box.zip
 - unzip /tmp/box.zip -d /tmp/bin
 - sed -i "s/java_args='-client'/java_args='-Xmx512m -client'/" /tmp/bin/box
-script:
-- box install
-- ./test.sh && ./publish.sh
-
+jobs:
+  include:
+    - stage: test
+      script:
+        - box install
+        - ./test.sh
+    - stage: publish
+      script:
+        - ./buildDeployAndPublish.sh
 notifications:
   email: false
