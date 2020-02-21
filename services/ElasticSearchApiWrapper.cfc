@@ -159,6 +159,7 @@ component {
 			} else {
 				body.append( '{"index":{}}' & chr(10) );
 			}
+			docs[i].type = arguments.type;
 			body.append( SerializeJson( docs[i] ) & chr(10) );
 		}
 
@@ -263,6 +264,8 @@ component {
 		, struct  directFilter     = {}
 		, string  idList           = ""
 		, string  excludeIdList    = ""
+		, array   objects		   = []
+
 	) {
 		var body = StructNew();
 		var idList = "";
@@ -270,14 +273,21 @@ component {
 		body['from'] = _calculateStartRecordFromPageInfo( arguments.page, arguments.pageOffset, arguments.pageSize );
 		body['size'] = pageSize;
 		if (Len(Trim(arguments.fieldList))) {
-			body['fields'] = ListToArray(arguments.fieldList);
+			body['_source'] = ListToArray(arguments.fieldList);
 		}
 		body['query'] = StructNew();
-		body['query']['query_string'] = StructNew();
-		body['query']['query_string']['query'] = escapeSpecialChars( arguments.q );
-		body['query']['query_string']['default_operator'] = UCase( arguments.defaultOperator );
+		body['query']['bool'] = StructNew();
+		body['query']['bool']['must'] = StructNew();
+		body['query']['bool']['must']['query_string'] = StructNew();
+		body['query']['bool']['filter'] = StructNew();
+		body['query']['bool']['filter']['bool'] = StructNew();
+		body['query']['bool']['filter']['bool']['should'] = ArrayNew();
+
+		body['query']['bool']['must']['query_string']['query'] = escapeSpecialChars( arguments.q );
+		body['query']['bool']['must']['query_string']['default_operator'] = UCase( arguments.defaultOperator );
+
 		if ( Len( Trim( arguments.queryFields ) ) ) {
-			body['query']['query_string']['fields'] = ListToArray(arguments.queryFields);
+			body['query']['bool']['must']['query_string']['fields'] = ListToArray(arguments.queryFields);
 		}
 
 		if ( Len( Trim( arguments.sortOrder ) ) ) {
@@ -298,6 +308,15 @@ component {
 		if ( not StructIsEmpty( arguments.directFilter ) ) {
 			body['filter'] = _generateDirectFilter( arguments.directFilter );
 		}
+
+		if ( objects.len() > 0 ){
+			var term = {};
+			for ( var object in objects ){
+				term = { type = object };
+				body['query']['bool']['filter']['bool']['should'].append( { term = term } );
+			}
+		}
+
 
 		if ( Len( Trim( arguments.idList ) ) ) {
 			if ( not StructKeyExists( body, 'filter' ) ) {
@@ -434,8 +453,8 @@ component {
 		var errorDetail  = SerializeJson( result );
 
 		if ( IsStruct( result ) and StructKeyExists( result, "error" ) ) {
-			errorType    = ListFirst( result.error, "[" );
-			errorMessage = Replace( result.error, errorType, "" );
+			errorType    = result.error.type;
+			errorMessage = result.error.reason;
 			if ( Len( Trim( errorMessage ) ) gt 2 ) {
 				errorMessage = mid( errorMessage, 2, Len( errorMessage) - 2 );
 			}
@@ -464,7 +483,7 @@ component {
 			if ( uri EQ "" ) {
 				uri = "/_all";
 			}
-			uri = uri & "/#Trim( args.type )#";
+			uri = uri & "/doc";
 		}
 
 		return uri;

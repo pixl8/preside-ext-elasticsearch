@@ -388,7 +388,7 @@ component extends="testbox.system.BaseSpec" {
 				expect( configuration.ignoreMalformedDates ?: "" ).toBe( true );
 			} );
 
-			it( "it should return 'string' type when property is a string", function(){
+			it( "it should return 'text' type when property is a string", function(){
 				var svc        = _getService();
 				var objectName = "someobject";
 				var fieldName  = "somefield";
@@ -399,7 +399,7 @@ component extends="testbox.system.BaseSpec" {
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
-				expect( configuration.type ?: "" ).toBe( "string" );
+				expect( configuration.type ?: "" ).toBe( "text" );
 			} );
 
 			it( "it should return 'boolean' type when property is a boolean", function(){
@@ -441,7 +441,7 @@ component extends="testbox.system.BaseSpec" {
 				expect( configuration.type ?: "" ).toBe( "integer" );
 			} );
 
-			it( "should return string for types other tyan date, boolean, string and numeric", function(){
+			it( "should return 'text' for types other tyan date, boolean, string and numeric", function(){
 				var svc        = _getService();
 				var objectName = "someobject";
 				var fieldName  = "somefield";
@@ -452,7 +452,7 @@ component extends="testbox.system.BaseSpec" {
 
 				var configuration = svc.getFieldConfiguration( objectName, fieldName );
 
-				expect( configuration.type ?: "" ).toBe( "string" );
+				expect( configuration.type ?: "" ).toBe( "text" );
 			} );
 		} );
 

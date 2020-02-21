@@ -256,16 +256,15 @@ component {
 		var mappings      = {};
 		var configWrapper = _getConfigurationReader();
 		var docTypes      = configWrapper.listDocumentTypes( arguments.indexName );
+		mappings.doc = { properties={} };
+		mappings.doc.properties.append( _getCommonPropertyMappings(), false );
 
 		for( var docType in docTypes ){
 			var fields = configWrapper.getFields( arguments.indexName, docType );
-			mappings[ docType ] = { properties={} };
 			for( var field in fields ){
 				var fieldName = fields[ field ].fieldName;
-				mappings[ docType ].properties[ fieldName ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName );
+				mappings.doc.properties.append({ "#fieldName#"  = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName ) });
 			}
-
-			mappings[ docType ].properties.append( _getCommonPropertyMappings(), false );
 		}
 
 		return mappings;
@@ -277,12 +276,14 @@ component {
 		if ( arguments.searchable ) {
 			if ( Len( Trim( arguments.analyzer ) ) ) {
 				mapping.analyzer = arguments.analyzer;
+				mapping.fielddata = true;
+				mapping.index = true;
 			}
 		} else {
 			if ( arguments.sortable ) {
 				mapping.analyzer = "preside_sortable";
 			} else {
-				mapping.index = "not_analyzed";
+				mapping.index = true;
 			}
 		}
 
@@ -341,6 +342,7 @@ component {
 					, id    = arguments.id
 				);
 			}
+			doc[1].type = objectConfig.documentType ?: "";
 
 			var result = _getApiWrapper().addDoc(
 				  index = objectConfig.indexName    ?: ""
@@ -997,7 +999,8 @@ component {
 
 	private struct function _getCommonPropertyMappings() {
 		return {
-			access_restricted = { type="boolean" }
+			access_restricted = { type="boolean" },
+			type = { type="keyword" }
 		};
 	}
 
