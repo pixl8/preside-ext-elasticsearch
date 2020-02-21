@@ -342,6 +342,7 @@ component {
 					, id    = arguments.id
 				);
 			}
+			doc[1].type = objectConfig.documentType ?: "";
 
 			var result = _getApiWrapper().addDoc(
 				  index = objectConfig.indexName    ?: ""
