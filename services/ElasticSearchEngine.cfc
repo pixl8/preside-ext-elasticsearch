@@ -17,8 +17,9 @@ component {
 	 * @resultsFactory.inject             provider:elasticSearchResultsFactory
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
+	 * @tenancyService.inject             provider:tenancyService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -31,6 +32,7 @@ component {
 		_setResultsFactory( arguments.resultsFactory );
 		_setStatusDao( arguments.statusDao );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
+		_setTenancyService( arguments.tenancyService );
 
 		_checkIndexesExist();
 
@@ -1009,9 +1011,7 @@ component {
 			return false;
 		}
 
-		var usingSiteTenancy = _getPresideObjectService().getObjectAttribute( arguments.objectName, "siteFiltered", false );
-
-		return IsBoolean( usingSiteTenancy ) && usingSiteTenancy;
+		return _getTenancyService().objectIsUsingTenancy( arguments.objectName, "site" );
 	}
 
 	private boolean function _hasSearchDataSource( required string objectName ){
@@ -1127,5 +1127,12 @@ component {
 	}
 	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
+	}
+
+	private any function _getTenancyService() {
+		return _tenancyService.get();
+	}
+	private void function _setTenancyService( required any tenancyService ) {
+		_tenancyService = arguments.tenancyService;
 	}
 }

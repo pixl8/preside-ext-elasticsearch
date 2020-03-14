@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.2
+
+* #11 Respect @tenant when detecting site tenancy, not just siteFiltered=true
+
 ## v6.3.1
 
 * Make all standard extension API calls and index metadata compatible with ElasticSearch 6.3
