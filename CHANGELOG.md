@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.16
+
+* #11 Respect @tenant when detecting site tenancy, not just siteFiltered=true
+
 ## v1.1.15
 
 * Fix issue with groupBy/autogroupBy for MSSQL

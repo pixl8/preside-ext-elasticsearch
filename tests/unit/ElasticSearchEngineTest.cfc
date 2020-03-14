@@ -934,6 +934,7 @@ component extends="testbox.system.BaseSpec" {
 		mockSiteTreeService            = getMockBox().createStub();
 		mockStatusDao                  = getMockBox().createStub();
 		mockSystemConfigurationService = getMockBox().createStub();
+		mockTenancyService             = getMockBox().createStub();
 
 		mockColdbox                    = getMockBox().createStub();
 		mockRequestContext             = getMockBox().createStub();
@@ -955,6 +956,7 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "_getResultsFactory"            , mockResultsFactory             );
 		engine.$( "_getStatusDao"                 , mockStatusDao                  );
 		engine.$( "_getSystemConfigurationService", mockSystemConfigurationService );
+		engine.$( "_getTenancyService"            , mockTenancyService             );
 
 		engine.$( "$getColdbox"                   , mockColdbox                    );
 		mockColdbox.$( "getRequestContext"        , mockRequestContext             );
@@ -981,6 +983,7 @@ component extends="testbox.system.BaseSpec" {
 			, resultsFactory             = mockResultsFactory
 			, statusDao                  = mockStatusDao
 			, systemConfigurationService = mockSystemConfigurationService
+			, tenancyService             = mockTenancyService
 		);
 	}
 
