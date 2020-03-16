@@ -288,6 +288,7 @@ component {
 
 		body['query']['bool']['must']['multi_match']['query'] = escapeSpecialChars( arguments.q );
 		body['query']['bool']['must']['multi_match']['fuzziness'] = arguments.fuzziness;
+		body['query']['bool']['must']['multi_match']['prefix_length'] = 2;
 		body['query']['bool']['must']['multi_match']['operator'] = UCase( arguments.defaultOperator );
 
 		if ( Len( Trim( arguments.queryFields ) ) ) {
