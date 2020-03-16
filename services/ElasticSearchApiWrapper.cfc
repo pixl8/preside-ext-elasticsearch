@@ -202,6 +202,7 @@ component {
 		, numeric pageSize           = 10
 		, string  defaultOperator    = "OR"
 		, string  highlightFields    = ""
+		, string  highlightEncoder   = "default"
 		, string  fuzziness          = "0"
 		, numeric minimumScore       = 0
 		, struct  basicFilter        = {}
@@ -260,6 +261,7 @@ component {
 		, numeric pageSize         = 10
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
+		, string  highlightEncoder = "default"
 		, string  fuzziness        = "0"
 		, numeric minimumScore     = 0
 		, struct  basicFilter      = {}
@@ -297,7 +299,7 @@ component {
 		}
 
 		if ( Len( Trim( arguments.highlightFields ) ) ) {
-			body['highlight'] = _generateHighlightsDsl( arguments.highlightFields );
+			body['highlight'] = _generateHighlightsDsl( arguments.highlightFields, arguments.highlightEncoder );
 		}
 		if ( arguments.minimumScore ) {
 			body['min_score'] = arguments.minimumScore;
@@ -492,14 +494,14 @@ component {
 		throw( type=arguments.type, message=arguments.message, detail=arguments.detail, errorcode=arguments.errorCode );
 	}
 
-	private struct function _generateHighlightsDsl( required string highlightFields ) {
+	private struct function _generateHighlightsDsl( required string highlightFields, string highlightEncoder="default" ) {
 		var highlights = StructNew();
-		var i = "";
-		var field = "";
+		var i          = "";
+		var field      = "";
 
-		highlights.fields = StructNew();
+		highlights.fields      = StructNew();
 		highlights.tags_schema = "styled";
-		highlights.encoder = "html";
+		highlights.encoder     = arguments.highlightEncoder;
 
 		for( i=1; i lte ListLen( arguments.highlightFields ); i=i+1 ){
 			field = ListGetAt( arguments.highlightFields, i );

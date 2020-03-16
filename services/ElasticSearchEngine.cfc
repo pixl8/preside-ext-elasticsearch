@@ -41,19 +41,20 @@ component {
 
 // PUBLIC API METHODS
 	public any function search(
-		  array   objects         = []
-		, string  q               = "*"
-		, string  fieldList       = ""
-		, string  queryFields     = ""
-		, string  sortOrder       = ""
-		, numeric page            = 1
-		, numeric pageSize        = 10
-		, string  defaultOperator = "OR"
-		, string  highlightFields = ""
-		, string  fuzziness       = "0"
-		, numeric minimumScore    = 0
-		, struct  basicFilter     = {}
-		, struct  directFilter    = {}
+		  array   objects          = []
+		, string  q                = "*"
+		, string  fieldList        = ""
+		, string  queryFields      = ""
+		, string  sortOrder        = ""
+		, numeric page             = 1
+		, numeric pageSize         = 10
+		, string  defaultOperator  = "OR"
+		, string  highlightFields  = ""
+		, string  highlightEncoder = "default"
+		, string  fuzziness        = "0"
+		, numeric minimumScore     = 0
+		, struct  basicFilter      = {}
+		, struct  directFilter     = {}
 		, struct  fullDsl
 	) {
 		var configReader = _getConfigurationReader();
