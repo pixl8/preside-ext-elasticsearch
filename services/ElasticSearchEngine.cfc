@@ -275,7 +275,9 @@ component {
 	public struct function getElasticSearchMappingFromFieldConfiguration( required string name, required string type, boolean searchable=false, boolean sortable=false, string analyzer="", boolean ignoreMalformedDates=false ) {
 		var mapping = { type=arguments.type };
 
-		if ( arguments.searchable ) {
+		if ( arguments.type == "keyword" ) {
+			mapping.index = true;
+		} else if ( arguments.searchable ) {
 			if ( Len( Trim( arguments.analyzer ) ) ) {
 				mapping.analyzer = arguments.analyzer;
 				mapping.fielddata = true;
