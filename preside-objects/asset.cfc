@@ -6,7 +6,7 @@
  *
  */
 component output=false {
-	property name="asset_folder"        searchEnabled=true searchSearchable=false searchSortable=true;
+	property name="asset_folder"        searchEnabled=true searchType="keyword";
 	property name="title"               searchEnabled=true;
 	property name="original_title"      searchEnabled=true;
 	property name="storage_path"        searchEnabled=true;
@@ -20,6 +20,6 @@ component output=false {
 	property name="access_restriction"  searchEnabled=true;
 	property name="full_login_required" searchEnabled=true;
 
-	property name="site"                searchEnabled=true searchSearchable=false searchSortable=true;
+	property name="site"                searchEnabled=true searchType="keyword";
 	property name="datecreated"         searchEnabled=true;
 }
