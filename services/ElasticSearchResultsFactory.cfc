@@ -97,8 +97,8 @@ component output=false singleton=true {
 	}
 
 	private string function _formatHighlight( required struct highlights, required string highlightField ) output=false {
-		var highlight      = "";
-		var highLightArray = "";
+		var highlight      = [];
+		var highlightArray = [];
 		var maxHighlights  = 3;
 		var dotdotdot      = " &##133; ";
 		var i              = 0;
@@ -107,12 +107,11 @@ component output=false singleton=true {
 			highlightArray = arguments.highlights[ arguments.highlightField ];
 
 			for( i=1; i lte ArrayLen( highlightArray ) and i lte maxHighlights; i=i+1 ) {
-				highlight = ListAppend( highlight, highlightArray[i], "|" );
+				highlight.append( rereplace( highlightArray[i], "&[a-z]*$", "" ) );
 			}
-			highlight = Replace( highlight, '|', dotdotdot, 'all' );
 		}
 
-		return highlight;
+		return arrayToList( highlight, dotdotdot );
 	}
 
 	private struct function _transformFacets( required struct facets ) output=false {
