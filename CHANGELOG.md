@@ -1,5 +1,14 @@
 # Changelog
 
+## v6.3.3
+
+* Change DSL generation for updated API
+* Change default query to multi_match, add fuzziness
+* Add configurable prefixLength for fuzzy searches
+* Add new interception point: postElasticSearchGenerateDsl
+* Add option to specify highlight encoder
+* Remove truncated HTML entities from highlights
+
 ## v6.3.2
 
 * #11 Respect @tenant when detecting site tenancy, not just siteFiltered=true

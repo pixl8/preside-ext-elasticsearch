@@ -53,6 +53,7 @@ component output=false {
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGetObjectDataForIndexing" );
 		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchDeleteRecord"              );
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchDeleteRecord"             );
+		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGenerateDsl"              );
 	}
 
 	private string function _getDefaultIndexName() {

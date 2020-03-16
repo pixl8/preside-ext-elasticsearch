@@ -1,5 +1,6 @@
 /**
  * @singleton
+ * @presideservice
  *
  */
 component {
@@ -202,6 +203,9 @@ component {
 		, numeric pageSize           = 10
 		, string  defaultOperator    = "OR"
 		, string  highlightFields    = ""
+		, string  highlightEncoder   = "default"
+		, string  fuzziness          = "0"
+		, numeric prefixLength       = 3
 		, numeric minimumScore       = 0
 		, struct  basicFilter        = {}
 	) {
@@ -259,6 +263,9 @@ component {
 		, numeric pageSize         = 10
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
+		, string  highlightEncoder = "default"
+		, string  fuzziness        = "0"
+		, numeric prefixLength     = 3
 		, numeric minimumScore     = 0
 		, struct  basicFilter      = {}
 		, struct  directFilter     = {}
@@ -277,17 +284,18 @@ component {
 		}
 		body['query'] = StructNew();
 		body['query']['bool'] = StructNew();
+		body['query']['bool']['filter'] = arrayNew();
+		body['query']['bool']['must_not'] = arrayNew();
 		body['query']['bool']['must'] = StructNew();
-		body['query']['bool']['must']['query_string'] = StructNew();
-		body['query']['bool']['filter'] = StructNew();
-		body['query']['bool']['filter']['bool'] = StructNew();
-		body['query']['bool']['filter']['bool']['should'] = ArrayNew();
+		body['query']['bool']['must']['multi_match'] = StructNew();
 
-		body['query']['bool']['must']['query_string']['query'] = escapeSpecialChars( arguments.q );
-		body['query']['bool']['must']['query_string']['default_operator'] = UCase( arguments.defaultOperator );
+		body['query']['bool']['must']['multi_match']['query'] = escapeSpecialChars( arguments.q );
+		body['query']['bool']['must']['multi_match']['fuzziness'] = arguments.fuzziness;
+		body['query']['bool']['must']['multi_match']['prefix_length'] = arguments.prefixLength;
+		body['query']['bool']['must']['multi_match']['operator'] = UCase( arguments.defaultOperator );
 
 		if ( Len( Trim( arguments.queryFields ) ) ) {
-			body['query']['bool']['must']['query_string']['fields'] = ListToArray(arguments.queryFields);
+			body['query']['bool']['must']['multi_match']['fields'] = ListToArray(arguments.queryFields);
 		}
 
 		if ( Len( Trim( arguments.sortOrder ) ) ) {
@@ -295,54 +303,36 @@ component {
 		}
 
 		if ( Len( Trim( arguments.highlightFields ) ) ) {
-			body['highlight'] = _generateHighlightsDsl( arguments.highlightFields );
+			body['highlight'] = _generateHighlightsDsl( arguments.highlightFields, arguments.highlightEncoder );
 		}
 		if ( arguments.minimumScore ) {
 			body['min_score'] = arguments.minimumScore;
 		}
 
 		if ( not StructIsEmpty( arguments.basicFilter ) ) {
-			body['filter'] = _generateBasicFilter( arguments.basicFilter );
+			body['query']['bool']['filter'] = _generateBasicFilter( arguments.basicFilter );
 		}
 
 		if ( not StructIsEmpty( arguments.directFilter ) ) {
-			body['filter'] = _generateDirectFilter( arguments.directFilter );
+			body['query']['bool']['filter'] = _generateDirectFilter( arguments.directFilter );
 		}
 
 		if ( objects.len() > 0 ){
 			var term = {};
 			for ( var object in objects ){
 				term = { type = object };
-				body['query']['bool']['filter']['bool']['should'].append( { term = term } );
+				body['query']['bool']['filter'].append( { term = term } );
 			}
 		}
-
 
 		if ( Len( Trim( arguments.idList ) ) ) {
-			if ( not StructKeyExists( body, 'filter' ) ) {
-				body['filter'] = StructNew();
-				body['filter']['and'] = ArrayNew(1);
-			}
-
-			idList = StructNew();
-			idList['ids'] = StructNew();
-			idList['ids']['values'] = ListToArray( arguments.idList );
-
-			ArrayAppend( body.filter['and'], idList );
+			body['query']['bool']['filter'].append( { terms={ _id=ListToArray( arguments.idList ) } } );
 		}
 		if ( Len( Trim( arguments.excludeIdList ) ) ) {
-			if ( not StructKeyExists( body, 'filter' ) ) {
-				body['filter'] = StructNew();
-				body['filter']['and'] = ArrayNew(1);
-			}
-
-			idList = StructNew();
-			idList['not'] = StructNew();
-			idList['not']['ids'] = StructNew();
-			idList['not']['ids']['values'] = ListToArray( arguments.excludeIdList );
-
-			ArrayAppend( body.filter['and'], idList );
+			body['query']['bool']['must_not'].append( { terms={ _id=ListToArray( arguments.excludeIdList ) } } );
 		}
+
+		$announceInterception( "postElasticSearchGenerateDsl", { dsl=body } );
 
 		return body;
 	}
@@ -510,14 +500,14 @@ component {
 		throw( type=arguments.type, message=arguments.message, detail=arguments.detail, errorcode=arguments.errorCode );
 	}
 
-	private struct function _generateHighlightsDsl( required string highlightFields ) {
+	private struct function _generateHighlightsDsl( required string highlightFields, string highlightEncoder="default" ) {
 		var highlights = StructNew();
-		var i = "";
-		var field = "";
+		var i          = "";
+		var field      = "";
 
-		highlights.fields = StructNew();
+		highlights.fields      = StructNew();
 		highlights.tags_schema = "styled";
-		highlights.encoder = "html";
+		highlights.encoder     = arguments.highlightEncoder;
 
 		for( i=1; i lte ListLen( arguments.highlightFields ); i=i+1 ){
 			field = ListGetAt( arguments.highlightFields, i );
@@ -527,13 +517,11 @@ component {
 		return highlights;
 	}
 
-	private struct function _generateBasicFilter ( required struct filters ) {
-		var filter     = StructNew();
+	private array function _generateBasicFilter ( required struct filters ) {
+		var filter     = ArrayNew();
 		var fields     = StructKeyArray( arguments.filters );
 		var i          = 0;
 		var termFilter = "";
-
-		filter['and'] = ArrayNew(1);
 
 		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
 			termFilter = StructNew();
@@ -549,19 +537,17 @@ component {
 					termFilter['exists']['field'] = fields[i];
 				}
 			}
-			ArrayAppend( filter['and'], termFilter );
+			ArrayAppend( filter, termFilter );
 		}
 
 		return filter;
 	}
 
-	private struct function _generateDirectFilter( required struct filters ) {
-		var filter     = StructNew();
+	private array function _generateDirectFilter( required struct filters ) {
+		var filter     = ArrayNew();
 		var fields     = StructKeyArray( arguments.filters );
 		var i          = 0;
 		var directFilter = "";
-
-		filter['and'] = ArrayNew(1);
 
 		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
 			directFilter = StructNew();
@@ -571,7 +557,7 @@ component {
 				directFilter[fields[i]]['value'] = arguments.filters[ fields[i] ];
 			}
 
-			ArrayAppend( filter['and'], directFilter );
+			ArrayAppend( filter, directFilter );
 		}
 
 		return filter;
