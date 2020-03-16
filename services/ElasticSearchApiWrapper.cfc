@@ -202,6 +202,7 @@ component {
 		, numeric pageSize           = 10
 		, string  defaultOperator    = "OR"
 		, string  highlightFields    = ""
+		, string  fuzziness          = "0"
 		, numeric minimumScore       = 0
 		, struct  basicFilter        = {}
 	) {
@@ -259,6 +260,7 @@ component {
 		, numeric pageSize         = 10
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
+		, string  fuzziness        = "0"
 		, numeric minimumScore     = 0
 		, struct  basicFilter      = {}
 		, struct  directFilter     = {}
@@ -280,13 +282,14 @@ component {
 		body['query']['bool']['filter'] = arrayNew();
 		body['query']['bool']['must_not'] = arrayNew();
 		body['query']['bool']['must'] = StructNew();
-		body['query']['bool']['must']['query_string'] = StructNew();
+		body['query']['bool']['must']['multi_match'] = StructNew();
 
-		body['query']['bool']['must']['query_string']['query'] = escapeSpecialChars( arguments.q );
-		body['query']['bool']['must']['query_string']['default_operator'] = UCase( arguments.defaultOperator );
+		body['query']['bool']['must']['multi_match']['query'] = escapeSpecialChars( arguments.q );
+		body['query']['bool']['must']['multi_match']['fuzziness'] = arguments.fuzziness;
+		body['query']['bool']['must']['multi_match']['operator'] = UCase( arguments.defaultOperator );
 
 		if ( Len( Trim( arguments.queryFields ) ) ) {
-			body['query']['bool']['must']['query_string']['fields'] = ListToArray(arguments.queryFields);
+			body['query']['bool']['must']['multi_match']['fields'] = ListToArray(arguments.queryFields);
 		}
 
 		if ( Len( Trim( arguments.sortOrder ) ) ) {

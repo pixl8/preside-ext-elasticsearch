@@ -50,6 +50,7 @@ component {
 		, numeric pageSize        = 10
 		, string  defaultOperator = "OR"
 		, string  highlightFields = ""
+		, string  fuzziness       = "0"
 		, numeric minimumScore    = 0
 		, struct  basicFilter     = {}
 		, struct  directFilter    = {}
