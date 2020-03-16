@@ -205,6 +205,7 @@ component {
 		, string  highlightFields    = ""
 		, string  highlightEncoder   = "default"
 		, string  fuzziness          = "0"
+		, numeric prefixLength       = 3
 		, numeric minimumScore       = 0
 		, struct  basicFilter        = {}
 	) {
@@ -264,6 +265,7 @@ component {
 		, string  highlightFields  = ""
 		, string  highlightEncoder = "default"
 		, string  fuzziness        = "0"
+		, numeric prefixLength     = 3
 		, numeric minimumScore     = 0
 		, struct  basicFilter      = {}
 		, struct  directFilter     = {}
@@ -289,7 +291,7 @@ component {
 
 		body['query']['bool']['must']['multi_match']['query'] = escapeSpecialChars( arguments.q );
 		body['query']['bool']['must']['multi_match']['fuzziness'] = arguments.fuzziness;
-		body['query']['bool']['must']['multi_match']['prefix_length'] = 2;
+		body['query']['bool']['must']['multi_match']['prefix_length'] = arguments.prefixLength;
 		body['query']['bool']['must']['multi_match']['operator'] = UCase( arguments.defaultOperator );
 
 		if ( Len( Trim( arguments.queryFields ) ) ) {

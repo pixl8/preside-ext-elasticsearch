@@ -50,6 +50,7 @@ component {
 		, string  highlightFields  = ""
 		, string  highlightEncoder = "default"
 		, string  fuzziness        = "0"
+		, numeric prefixLength     = 3
 		, numeric minimumScore     = 0
 		, struct  basicFilter      = {}
 		, struct  directFilter     = {}
