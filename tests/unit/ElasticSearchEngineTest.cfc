@@ -942,7 +942,7 @@ component extends="testbox.system.BaseSpec" {
 		var engine      = getMockBox().createMock( object=CreateObject( "elasticsearch.services.ElasticSearchEngine" ) );
 
 		engine.$( "_checkIndexesExist" );
-		engine.$( "_announceInterception", {} );
+		engine.$( "$announceInterception", {} );
 		engine.$( "_getConfigurationReader"       , mockConfigReader               );
 		engine.$( "_getApiWrapper"                , mockApiWrapper                 );
 		engine.$( "_getPresideObjectService"      , mockPresideObjectService       );

@@ -10,7 +10,6 @@ component {
 	 * @configurationReader.inject        provider:elasticSearchPresideObjectConfigurationReader
 	 * @presideObjectService.inject       provider:presideObjectService
 	 * @contentRendererService.inject     provider:contentRendererService
-	 * @interceptorService.inject         coldbox:InterceptorService
 	 * @pageDao.inject                    presidecms:object:page
 	 * @siteService.inject                provider:siteService
 	 * @siteTreeService.inject            provider:siteTreeService
@@ -19,13 +18,12 @@ component {
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 * @tenancyService.inject             provider:tenancyService
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
 		_setPresideObjectService( arguments.presideObjectService );
 		_setContentRendererService( arguments.contentRendererService );
-		_setInterceptorService( arguments.interceptorService );
 		_setPageDao( arguments.pageDao );
 		_setSiteService( arguments.siteService );
 		_setSiteTreeService( arguments.siteTreeService );
@@ -110,11 +108,11 @@ component {
 		var uniqueId   = createUniqueIndexName( arguments.indexName );
 		var apiWrapper = _getApiWrapper();
 
-		_announceInterception( "preElasticSearchCreateIndex", { indexName = uniqueId, settings  = settings } );
+		$announceInterception( "preElasticSearchCreateIndex", { indexName = uniqueId, settings  = settings } );
 
 		apiWrapper.createIndex( index=uniqueId, settings=settings );
 
-		_announceInterception( "postElasticSearchCreateIndex", { indexName = uniqueId, settings  = settings } );
+		$announceInterception( "postElasticSearchCreateIndex", { indexName = uniqueId, settings  = settings } );
 
 		return uniqueId;
 	}
@@ -140,7 +138,7 @@ component {
 		var canWarn    = haveLogger && arguments.logger.canWarn();
 		var canError   = haveLogger && arguments.logger.canError();
 
-		_announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
+		$announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
 
 		transaction {
 			if ( isIndexReindexing( arguments.indexName ) ) {
@@ -209,11 +207,11 @@ component {
 
 				processReindexingQueue( indexName=indexName, logger=arguments.logger ?: NullValue() );
 
-				_announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
+				$announceInterception( "postElasticSearchRebuildIndex", { alias = arguments.indexName, indexName = uniqueIndexName } );
 			} else {
 				if ( canError ) { arguments.logger.error( "An error occurred during indexing, aborting the job. Existing search indexes will be left untouched." ); }
 				terminateIndexing( arguments.indexName );
-				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
+				$announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName } );
 				_deleteIndex( uniqueIndexName );
 			}
 
@@ -222,7 +220,7 @@ component {
 		} catch ( any e ) {
 			try {
 				terminateIndexing( arguments.indexName );
-				_announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName, error = e } );
+				$announceInterception( "onElasticSearchRebuildIndexFailure", { alias = arguments.indexName, indexName = uniqueIndexName, error = e } );
 				_deleteIndex( uniqueIndexName );
 				if ( canError ) { arguments.logger.error( "An error occurred during indexing, aborting the job. Existing search indexes will be left untouched." ); }
 			} catch ( any e ) {}
@@ -251,7 +249,7 @@ component {
 			, mappings = getIndexMappings( arguments.indexName )
 		};
 
-		_announceInterception( "postElasticSearchGetIndexSettings", { settings = settings } );
+		$announceInterception( "postElasticSearchGetIndexSettings", { settings = settings } );
 
 		return settings;
 	}
@@ -339,7 +337,7 @@ component {
 				doc = getObjectDataForIndexing( objName, arguments.id );
 			}
 
-			_announceInterception( "preElasticSearchIndexDoc", { objectName=objName, id=arguments.id, doc = doc } );
+			$announceInterception( "preElasticSearchIndexDoc", { objectName=objName, id=arguments.id, doc = doc } );
 
 			if ( !IsArray( doc ) || !doc.len() ) {
 				return _getApiWrapper().deleteDoc(
@@ -357,7 +355,7 @@ component {
 				, id    = arguments.id
 			);
 
-			_announceInterception( "postElasticSearchIndexDoc", { doc = doc[1], result=result } );
+			$announceInterception( "postElasticSearchIndexDoc", { doc = doc[1], result=result } );
 
 			return true;
 		}
@@ -382,7 +380,7 @@ component {
 			do{
 				if ( !isIndexReindexing( arguments.indexAlias ) ) {
 					if ( canWarn ) { arguments.logger.warn( "Aborting index of [#objectName#] records - rebuild not running." ); }
-					_announceInterception( "onElasticSearchIndexDocsTermination", { objectName = arguments.objectName } );
+					$announceInterception( "onElasticSearchIndexDocsTermination", { objectName = arguments.objectName } );
 					return false;
 				}
 
@@ -396,7 +394,7 @@ component {
 
 				if ( canDebug ) { arguments.logger.debug( "Fetched #recordCount# #objectName# records ready for indexing." ); }
 
-				_announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
+				$announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
 
 				if ( canDebug ) { arguments.logger.debug( "preElasticSearchIndexDocs() interception announced. #records.len()# #objectName# records ready for indexing." ); }
 
@@ -410,7 +408,7 @@ component {
 					);
 					if ( canDebug ) { arguments.logger.debug( "#records.len()# #objectName# records added to the index." ); }
 				}
-				_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
+				$announceInterception( "postElasticSearchIndexDocs", { docs = records } );
 				if ( canDebug ) { arguments.logger.debug( "postElasticSearchIndexDocs() interception announced." ); }
 
 			} while( recordCount );
@@ -450,7 +448,7 @@ component {
 			selectDataArgs.extraFilters.append( { filter="asset_folder.hidden is null or asset_folder.hidden = 0" } );
 		}
 
-		_announceInterception( "preElasticSearchGetObjectDataForIndexing", selectDataArgs );
+		$announceInterception( "preElasticSearchGetObjectDataForIndexing", selectDataArgs );
 
 		var records = _getPresideObjectService().selectData( argumentCollection=selectDataArgs );
 
@@ -458,7 +456,7 @@ component {
 
 		var interceptArgs = Duplicate( arguments );
 		interceptArgs.records=records
-		_announceInterception( "postElasticSearchGetObjectDataForIndexing", interceptArgs );
+		$announceInterception( "postElasticSearchGetObjectDataForIndexing", interceptArgs );
 
 		return records;
 	}
@@ -492,7 +490,7 @@ component {
 		if ( _getConfigurationReader().isObjectSearchEnabled( objName ) ) {
 			var objectConfig = _getConfigurationReader().getObjectConfiguration( objName );
 
-			_announceInterception( "preElasticSearchDeleteRecord", arguments );
+			$announceInterception( "preElasticSearchDeleteRecord", arguments );
 
 			var result = _getApiWrapper().deleteDoc(
 				  index = objectConfig.indexName    ?: ""
@@ -500,7 +498,7 @@ component {
 				, id    = arguments.id
 			);
 
-			_announceInterception( "postElasticSearchDeleteRecord", arguments );
+			$announceInterception( "postElasticSearchDeleteRecord", arguments );
 
 			return result;
 		}
@@ -947,12 +945,6 @@ component {
 		return arguments.value;
 	}
 
-	private any function _announceInterception( required string state, struct interceptData={} ) {
-		_getInterceptorService().processState( argumentCollection=arguments );
-
-		return interceptData.interceptorResult ?: {};
-	}
-
 	private boolean function _isPageType( required string objectName ) {
 		var isPageType = _getPresideObjectService().getObjectAttribute( arguments.objectName, "isPageType", false );
 
@@ -1082,13 +1074,6 @@ component {
 	}
 	private void function _setContentRendererService( required any contentRendererService ) {
 		_contentRendererService = arguments.contentRendererService;
-	}
-
-	private any function _getInterceptorService() {
-		return _interceptorService;
-	}
-	private void function _setInterceptorService( required any interceptorService ) {
-		_interceptorService = arguments.interceptorService;
 	}
 
 	private any function _getPageDao() {

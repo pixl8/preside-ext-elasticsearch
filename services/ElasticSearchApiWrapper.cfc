@@ -1,5 +1,6 @@
 /**
  * @singleton
+ * @presideservice
  *
  */
 component {
@@ -328,6 +329,8 @@ component {
 		if ( Len( Trim( arguments.excludeIdList ) ) ) {
 			body['query']['bool']['must_not'].append( { terms={ _id=ListToArray( arguments.excludeIdList ) } } );
 		}
+
+		$announceInterception( "postElasticSearchGenerateDsl", { dsl=body } );
 
 		return body;
 	}
