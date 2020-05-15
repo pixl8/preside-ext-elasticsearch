@@ -4,6 +4,7 @@ component output=false {
 		var settings = conf.settings ?: {};
 
 		settings.adminConfigurationMenuItems.append( "elasticsearchControl" );
+		settings.elasticSearchConfig.indexPageSize = 100;
 
 		settings.filters.elasticSearchPageFilter = {
 			filter = "page.internal_search_access is null or page.internal_search_access != 'block'"

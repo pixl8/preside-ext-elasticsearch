@@ -17,8 +17,9 @@ component {
 	 * @resultsFactory.inject             provider:elasticSearchResultsFactory
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
+	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any indexPageSize ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -31,6 +32,7 @@ component {
 		_setResultsFactory( arguments.resultsFactory );
 		_setStatusDao( arguments.statusDao );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
+		_setIndexPageSize( arguments.indexPageSize );
 
 		_checkIndexesExist();
 
@@ -363,7 +365,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = 100;
+			var pageSize  = _getIndexPageSize();
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
@@ -1124,5 +1126,12 @@ component {
 	}
 	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
+	}
+
+	private array function _getIndexPageSize() {
+		return _indexPageSize;
+	}
+	private void function _setIndexPageSize( required array indexPageSize ) {
+		_indexPageSize = arguments.indexPageSize;
 	}
 }
