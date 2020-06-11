@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.17
+
+* Add config.cfc option for default pagination size of search() method
+
 ## v1.1.16
 
 * #11 Respect @tenant when detecting site tenancy, not just siteFiltered=true
