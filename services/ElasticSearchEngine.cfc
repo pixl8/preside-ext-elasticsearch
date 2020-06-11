@@ -19,7 +19,7 @@ component {
 	 * @tenancyService.inject             provider:tenancyService
 	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, required any indexPageSize ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=100 ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -1128,10 +1128,10 @@ component {
 		_tenancyService = arguments.tenancyService;
 	}
 
-	private array function _getIndexPageSize() {
+	private numeric function _getIndexPageSize() {
 		return _indexPageSize;
 	}
-	private void function _setIndexPageSize( required array indexPageSize ) {
+	private void function _setIndexPageSize( required numeric indexPageSize ) {
 		_indexPageSize = arguments.indexPageSize;
 	}
 }
