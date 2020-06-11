@@ -1,5 +1,28 @@
 # Changelog
 
+## v6.3.3
+
+* Change DSL generation for updated API
+* Change default query to multi_match, add fuzziness
+* Add configurable prefixLength for fuzzy searches
+* Add new interception point: postElasticSearchGenerateDsl
+* Add option to specify highlight encoder
+* Remove truncated HTML entities from highlights
+
+## v6.3.2
+
+* #11 Respect @tenant when detecting site tenancy, not just siteFiltered=true
+
+## v6.3.1
+
+* Make all standard extension API calls and index metadata compatible with ElasticSearch 6.3
+* Make easier to use environment variables and default settings for connecting to ElasticSearch
+
+## v1.1.15
+
+* Fix issue with groupBy/autogroupBy for MSSQL
+* Fix build on trusty
+
 ## v1.1.14
 
 * Fix compatibility issue with latest Lucee whose message/detail contents for database errors have switched
