@@ -17,8 +17,9 @@ component {
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 * @tenancyService.inject             provider:tenancyService
+	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=100 ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -31,6 +32,7 @@ component {
 		_setStatusDao( arguments.statusDao );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 		_setTenancyService( arguments.tenancyService );
+		_setIndexPageSize( arguments.indexPageSize );
 
 		_checkIndexesExist();
 
@@ -370,7 +372,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = 100;
+			var pageSize  = _getIndexPageSize();
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
@@ -1124,5 +1126,12 @@ component {
 	}
 	private void function _setTenancyService( required any tenancyService ) {
 		_tenancyService = arguments.tenancyService;
+	}
+
+	private numeric function _getIndexPageSize() {
+		return _indexPageSize;
+	}
+	private void function _setIndexPageSize( required numeric indexPageSize ) {
+		_indexPageSize = arguments.indexPageSize;
 	}
 }
