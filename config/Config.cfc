@@ -7,6 +7,7 @@ component output=false {
 		_setupAdminUi( settings );
 		_setupGlobalFilters( settings );
 		_setupInterceptors( conf );
+		_setupIndexPageSize( settings );
 	}
 
 	private void function _setupEnvVars( settings ) {
@@ -54,6 +55,10 @@ component output=false {
 		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchDeleteRecord"              );
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchDeleteRecord"             );
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGenerateDsl"              );
+	}
+
+	private void function _setupIndexPageSize( settings ) {
+		settings.elasticSearchConfig.indexPageSize = 100;
 	}
 
 	private string function _getDefaultIndexName() {
