@@ -18,8 +18,9 @@ component {
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 * @tenancyService.inject             provider:tenancyService
+	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=10 ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -33,6 +34,7 @@ component {
 		_setStatusDao( arguments.statusDao );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 		_setTenancyService( arguments.tenancyService );
+		_setIndexPageSize( arguments.indexPageSize );
 
 		_checkIndexesExist();
 
@@ -47,7 +49,7 @@ component {
 		, string  queryFields     = ""
 		, string  sortOrder       = ""
 		, numeric page            = 1
-		, numeric pageSize        = 10
+		, numeric pageSize        = _getIndexPageSize()
 		, string  defaultOperator = "OR"
 		, string  highlightFields = ""
 		, numeric minimumScore    = 0
@@ -1131,5 +1133,12 @@ component {
 	}
 	private void function _setTenancyService( required any tenancyService ) {
 		_tenancyService = arguments.tenancyService;
+	}
+
+	private numeric function _getIndexPageSize() {
+	    return _indexPageSize;
+	}
+	private void function _setIndexPageSize( required numeric indexPageSize ) {
+	    _indexPageSize = arguments.indexPageSize;
 	}
 }

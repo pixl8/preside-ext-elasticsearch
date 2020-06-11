@@ -32,5 +32,7 @@ component output=false {
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGetObjectDataForIndexing" );
 		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchDeleteRecord"              );
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchDeleteRecord"             );
+
+		settings.elasticSearchConfig.indexPageSize = 10;
 	}
 }
