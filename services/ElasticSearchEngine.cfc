@@ -19,8 +19,9 @@ component {
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 * @tenancyService.inject             provider:tenancyService
 	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
+	 * @groupByRecordIdOnly.inject        coldbox:setting:elasticSearchConfig.groupByRecordIdOnly
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=10 ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=10, boolean groupByRecordIdOnly=false ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -35,6 +36,7 @@ component {
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 		_setTenancyService( arguments.tenancyService );
 		_setIndexPageSize( arguments.indexPageSize );
+		_setGroupByRecordIdOnly( arguments.groupByRecordIdOnly );
 
 		_checkIndexesExist();
 
@@ -420,14 +422,18 @@ component {
 	}
 
 	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) {
-		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var objConfig      = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var idField        = _getPresideObjectService().getIdField( arguments.objectName );
+		var autoGroupBy    = !_getGroupByRecordIdOnly() || !Len( idField );
+		var groupBy        = autoGroupBy ? "" : "#arguments.objectName#.#idField#";
 		var selectDataArgs = {
 			  objectName   = arguments.objectName
 			, selectFields = calculateSelectFieldsForIndexing( arguments.objectName )
 			, savedFilters = objConfig.indexFilters ?: []
 			, maxRows      = arguments.maxRows
 			, startRow     = arguments.startRow
-			, autoGroupBy  = true
+			, autoGroupBy  = autoGroupBy
+			, groupBy      = groupBy
 			, useCache     = false
 		};
 
@@ -1140,5 +1146,12 @@ component {
 	}
 	private void function _setIndexPageSize( required numeric indexPageSize ) {
 	    _indexPageSize = arguments.indexPageSize;
+	}
+
+	private boolean function _getGroupByRecordIdOnly() {
+	    return _groupByRecordIdOnly;
+	}
+	private void function _setGroupByRecordIdOnly( required boolean groupByRecordIdOnly ) {
+	    _groupByRecordIdOnly = arguments.groupByRecordIdOnly;
 	}
 }

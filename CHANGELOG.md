@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.18
+
+* Allow applications to use group by table.id instead of autogroupBy while fetching all records from tables for indexing
+
 ## v1.1.17
 
 * Add config.cfc option for default pagination size of search() method
