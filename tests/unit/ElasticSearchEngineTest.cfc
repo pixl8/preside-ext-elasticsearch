@@ -971,6 +971,8 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "clearReindexingQueue" );
 		engine.$( "processReindexingQueue" );
 
+		mockPresideObjectService.$( "getIdField", "id" );
+
 		return engine.init(
 			  configurationReader        = mockConfigReader
 			, apiWrapper                 = mockApiWrapper
