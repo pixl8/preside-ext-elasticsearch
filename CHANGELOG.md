@@ -1,6 +1,12 @@
 # Changelog
 
+## v1.1.19
+
+* Fix 10.14 compatibility issue with numeric fields attempting to get indexed with locale formatting (commas, etc.)
+
 ## v1.1.18
+
+attempting to get indexed with locale formatting (commas, etc.)
 
 * Allow applications to use group by table.id instead of autogroupBy while fetching all records from tables for indexing
 
