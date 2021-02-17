@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.5
+
+* Fix 10.14 compatibility issue with numeric fields attempting to get indexed with locale formatting (commas, etc.)
+
 ## v6.3.3
 
 * Change DSL generation for updated API
