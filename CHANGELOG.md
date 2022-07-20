@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.20
+
+* Fix issue with multi-site setup where indexing caching for pages could get mixed up between sites
+
 ## v1.1.19
 
 * Fix 10.14 compatibility issue with numeric fields attempting to get indexed with locale formatting (commas, etc.)
