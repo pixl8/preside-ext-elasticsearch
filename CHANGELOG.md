@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.22
+
+* Convert to Github actions
+
 ## v1.1.21
 
 * Fix issue with multi-site setup where indexing caching for pages could get mixed up between sites
