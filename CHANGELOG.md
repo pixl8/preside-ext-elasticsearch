@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.7
+
+* Convert to Github actions
+
 ## v6.3.6
 
 * Fix issue with multi-site configuration where index caches for page indexing were mixing up pages across sites
