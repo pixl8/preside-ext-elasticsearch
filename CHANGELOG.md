@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.6
+
+* Fix issue with multi-site configuration where index caches for page indexing were mixing up pages across sites
+
 ## v6.3.5
 
 * Fix 10.14 compatibility issue with numeric fields attempting to get indexed with locale formatting (commas, etc.)
