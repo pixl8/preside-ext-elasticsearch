@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.1.20
+## v1.1.21
 
 * Fix issue with multi-site setup where indexing caching for pages could get mixed up between sites
 
