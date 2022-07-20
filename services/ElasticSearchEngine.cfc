@@ -841,7 +841,7 @@ component {
 	private struct function _getHierarchalPageData( required struct pagerecord ) {
 		var cache            = request._getHierarchalPageDataCache = request._getHierarchalPageDataCache ?: {};
 		var pageId           = arguments.pageRecord.id ?: "";
-		var pageFields       = [ "_hierarchy_id", "_hierarchy_lineage", "active", "internal_search_access", "embargo_date", "expiry_date", "access_restriction" ];
+		var pageFields       = [ "_hierarchy_id", "_hierarchy_lineage", "active", "internal_search_access", "embargo_date", "expiry_date", "access_restriction", "site" ];
 		var page             = _getPageDao().selectData( id=pageId, selectFields=pageFields, useCache=false );
 		var accessRestricted = "";
 		var isActive   = function( required boolean active, required string embargo_date, required string expiry_date ) {
@@ -852,7 +852,7 @@ component {
 			return { validForSearch=false };
 		}
 
-		for( var p in page ) { cache[ p._hierarchy_id ] = p; }
+		for( var p in page ) { cache[ p._hierarchy_id & p.site ] = p; }
 
 
 		if ( !isActive( page.active, page.embargo_date, page.expiry_date ) || page.internal_search_access == "block" ) {
@@ -867,14 +867,14 @@ component {
 		}
 
 		for( var i=lineage.len(); i>0; i-- ){
-			if ( !cache.keyExists( lineage[i] ) ){
+			if ( !cache.keyExists( lineage[i] & page.site ) ){
 				var parentPage = _getPageDao().selectData( filter={ _hierarchy_id=lineage[i] }, selectFields=pageFields, useCache=false );
-				for( var p in parentPage ) { cache[ p._hierarchy_id ] = p; }
+				for( var p in parentPage ) { cache[ p._hierarchy_id & p.site ] = p; }
 			}
-			cache[ lineage[ i ] ] = cache[ lineage[ i ] ] ?: {};
+			cache[ lineage[ i ] & page.site ] = cache[ lineage[ i ] & page.site ] ?: {};
 
-			if ( cache[ lineage[ i ] ].count() ) {
-				var parentPage = cache[ lineage[ i ] ];
+			if ( cache[ lineage[ i ] & page.site ].count() ) {
+				var parentPage = cache[ lineage[ i ] & page.site ];
 
 				if ( !isActive( parentPage.active, parentPage.embargo_date, parentPage.expiry_date ) ) {
 					return { validForSearch=false };
