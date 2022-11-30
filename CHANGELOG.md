@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.23
+
+* Enum renderer fix to ensure raw enum values are indexed rather than prettified versions that are used in the admin
+
 ## v1.1.22
 
 * Convert to Github actions
