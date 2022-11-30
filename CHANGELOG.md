@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.8
+
+* Address issue with enum renderer and indexed enum fields (where raw values wanted)
+
 ## v6.3.7
 
 * Convert to Github actions
