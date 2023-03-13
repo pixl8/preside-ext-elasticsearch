@@ -720,13 +720,13 @@ component {
 	public array function getConfiguredStopWords() {
 		var stopWords = _getSystemConfigurationService().getSetting( "elasticsearch", "stopwords" );
 
-		return ListToArray( stopWords, " ," & Chr(10) & Chr(13) );
+		return ListToArray( LCase( stopWords ), " ," & Chr(10) & Chr(13) );
 	}
 
 	public array function getConfiguredSynonyms() {
 		var synonyms = _getSystemConfigurationService().getSetting( "elasticsearch", "synonyms" );
 
-		return ListToArray( synonyms, Chr(10) & Chr(13) );
+		return ListToArray( LCase( synonyms ), Chr(10) & Chr(13) );
 	}
 
 	public void function queueRecordReindexIfNecessary(
@@ -825,16 +825,16 @@ component {
 
 		analysis.filter = { preside_stemmer = { type="stemmer", language="English" } };
 		var stopwords = getConfiguredStopWords();
-		if ( stopwords.len() ) {
-			analysis.filter.preside_stopwords = { type="stop"   , stopwords=stopwords }
-			analysis.analyzer.preside_analyzer.filter.append( "preside_stopwords" );
+		if ( ArrayLen( stopwords ) ) {
+			analysis.filter.preside_stopwords = { type="stop", stopwords=stopwords }
+			ArrayAppend( analysis.analyzer.preside_analyzer.filter, "preside_stopwords" );
 		}
 		var synonyms = getConfiguredSynonyms();
-		if ( synonyms.len() ) {
+		if ( ArrayLen( synonyms ) ) {
 			analysis.filter.preside_synonyms = { type="synonym", synonyms=synonyms }
-			analysis.analyzer.preside_analyzer.filter.append( "preside_synonyms" );
+			ArrayAppend( analysis.analyzer.preside_analyzer.filter, "preside_synonyms" );
 		}
-		analysis.analyzer.preside_analyzer.filter.append( "preside_stemmer" );
+		ArrayAppend( analysis.analyzer.preside_analyzer.filter, "preside_stemmer" );
 
 		return settings;
 	}
