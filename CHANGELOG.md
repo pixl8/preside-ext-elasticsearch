@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.24
+
+* Synonyms not working due to case sensitivity
+
 ## v1.1.23
 
 * Enum renderer fix to ensure raw enum values are indexed rather than prettified versions that are used in the admin
