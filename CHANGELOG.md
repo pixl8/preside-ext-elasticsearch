@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.25
+
+* Add in "missing" scheduled task to rebuild search indexes
+
 ## v1.1.24
 
 * Synonyms not working due to case sensitivity
