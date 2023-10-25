@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.10
+
+* Cleanup index name case sensitivity check
+
 ## v6.3.9
 
 * Synonyms not working due to case sensitivity
