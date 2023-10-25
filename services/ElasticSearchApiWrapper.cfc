@@ -361,6 +361,10 @@ component {
 		return ReReplace( arguments.q, specialCharsRegex, "\\1", "all" );
 	}
 
+	public string function safeIndexName( required string indexName ){
+		return _safeIndexName( arguments.indexName );
+	}
+
 // PRIVATE HELPERS
 	private any function _call( required string uri, required string method, string body ) {
 		var result        = "";
