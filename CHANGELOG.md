@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.26
+
+* Cleanup index name case sensitivity check
+
 ## v1.1.25
 
 * Add in "missing" scheduled task to rebuild search indexes
