@@ -189,6 +189,44 @@ component {
 		return IsDefined( 'result.ok') and IsBoolean( result.ok ) and result.ok;
 	}
 
+	public boolean function deleteDocs( required string index, required string type, required array ids ){
+		if ( !arrayLen( arguments.ids ) ){
+			_throw(
+				  type    = "cfelasticsearch.deleteDocs.noIds"
+				, message = "No IDs to delete."
+				, detail  = "An empty array was passed to the deleteDocs() method."
+			);
+		}
+
+		var uri  = _getIndexAndTypeUri( args=arguments ) & "/_bulk";
+		var body = CreateObject( "java", "java.lang.StringBuffer" );
+
+		for( var i = 1; i <= arrayLen( arguments.ids ); i++ ){
+			if ( !isSimpleValue( arguments.ids[ i ] ) ) {
+				_throw(
+					  type    = "cfelasticsearch.deleteDocs.badId"
+					, message = "The record id at index #i# was not a simple value."
+				);
+			}
+
+			body.append( "{""delete"":{""_id"":""#arguments.ids[ i ]#""}}" & chr(10) );
+		}
+
+		try {
+			var result = _call(
+				  uri    = uri
+				, method = "POST"
+				, body   = body.toString()
+			);
+
+			return $helpers.isFalse( result.errors ?: "" );
+		} catch ( any e ) {
+			$raiseError( e );
+		}
+
+		return false;
+	}
+
 	public struct function search(
 		  struct  fullDsl
 		, string  index
