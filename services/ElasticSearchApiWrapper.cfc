@@ -385,7 +385,7 @@ component {
 
 		while( !success && attempts < maxAttempts ) {
 			try {
-				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" charset=_getCharset() getAsBinary="yes" timeout=_getRequestTimeoutInSeconds() {
+				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" getAsBinary="false" timeout=_getRequestTimeoutInSeconds() {
 					if ( StructKeyExists( arguments, "body" ) ) {
 						httpparam type="body" value=arguments.body;
 						httpparam type="header" name="Content-Type" value="application/json; charset=#_getCharset()#";
@@ -416,22 +416,14 @@ component {
 
 	private any function _processResult( required struct result ) {
 		var deserialized = "";
-		var errorMessage = "";
-		var jsonResponse = "";;
 
 		try {
-			if ( StructKeyExists( result, 'filecontent' ) and IsBinary( result.filecontent ) ) {
-				jsonResponse = CharsetEncode( result.filecontent, _getCharset() );
-
-				if ( Len( Trim( jsonResponse ) ) ) {
-					deserialized = DeserializeJson( jsonResponse );
-				}
-			}
+			deserialized = DeserializeJson( result.filecontent );
 		} catch ( any e ) {
 			_throw(
 				  type    = "cfelasticsearch.api.Wrapper"
-				, message = "Could not parse result from Elastic Search Server. See detail for response."
-				, detail  = jsonResponse
+				, message = "Could not parse result from Elastic Search Server. #e.message#."
+				, detail  = result.filecontent
 			);
 		}
 		if ( left( result.responseHeader.status_code ?: 500, 1 ) EQ "2" ) {
