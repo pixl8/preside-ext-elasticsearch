@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.3.11
+
+* Performance: do not fetchasbinary when making http calls to the ElasticSearch server - wastes java memory with encoding/decoding
+* New feature: allow bulk deletion of records
+
 ## v6.3.10
 
 * Cleanup index name case sensitivity check

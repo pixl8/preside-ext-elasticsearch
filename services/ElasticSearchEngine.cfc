@@ -496,11 +496,21 @@ component {
 
 			$announceInterception( "preElasticSearchDeleteRecord", arguments );
 
-			var result = _getApiWrapper().deleteDoc(
-				  index = objectConfig.indexName    ?: ""
-				, type  = objectConfig.documentType ?: ""
-				, id    = arguments.id
-			);
+			var result = "";
+
+			if ( ListLen( arguments.id ) > 1 ) {
+				result = _getApiWrapper().deleteDocs(
+					  index = objectConfig.indexName    ?: ""
+					, type  = objectConfig.documentType ?: ""
+					, ids   = listToArray( arguments.id )
+				);
+			} else {
+				result = _getApiWrapper().deleteDoc(
+					  index = objectConfig.indexName    ?: ""
+					, type  = objectConfig.documentType ?: ""
+					, id    = arguments.id
+				);
+			}
 
 			$announceInterception( "postElasticSearchDeleteRecord", arguments );
 
