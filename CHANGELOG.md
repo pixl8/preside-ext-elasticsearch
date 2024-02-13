@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.28
+
+* Fix errors thrown when performing bulk deletes
+
 ## v1.1.27
 
 * Performance: do not fetchasbinary when making http calls to the ElasticSearch server - wastes java memory with encoding/decoding
