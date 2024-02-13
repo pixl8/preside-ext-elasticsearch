@@ -219,9 +219,9 @@ component {
 				, body   = body.toString()
 			);
 
-			return $helpers.isFalse( result.errors ?: "" );
+			return !IsBoolean( result.errors ?: "" ) || !result.errors;
 		} catch ( any e ) {
-			$raiseError( e );
+			_throw( argumentCollection=e );
 		}
 
 		return false;
