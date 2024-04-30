@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.30
+
+* Ensure batch indexing errors are raised with an any error logging services installed in the system.
+
 ## v1.1.29
 
 * Ensure indexing fails and reports an error when there are errors returned from a batch indexing operation.
