@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.29
+
+* Ensure indexing fails and reports an error when there are errors returned from a batch indexing operation.
+
 ## v1.1.28
 
 * Fix errors thrown when performing bulk deletes

@@ -401,12 +401,29 @@ component {
 
 				if ( records.len() ) {
 					total += records.len();
-					esApi.addDocs(
+
+					var result = esApi.addDocs(
 						  index   = arguments.indexName
 						, type    = objConfig.documentType ?: ""
 						, docs    = records
 						, idField = "id"
 					);
+
+					if ( IsBoolean( result.errors ?: "" ) && result.errors ) {
+						if ( canError ) {
+							var items = result.items ?: [];
+							for( var item in items ) {
+								if ( Len( item.index.error ?: "") ) {
+									arguments.logger.error( "Error adding document(s). First found error report: #item.index.error#" );
+									return false;
+								}
+							}
+
+							arguments.logger.error( "Error adding document(s). Full response from ES: #SerializeJson( result )#" );
+						}
+						return false;
+					}
+
 					if ( canDebug ) { arguments.logger.debug( "#records.len()# #objectName# records added to the index." ); }
 				}
 				_announceInterception( "postElasticSearchIndexDocs", { docs = records } );
