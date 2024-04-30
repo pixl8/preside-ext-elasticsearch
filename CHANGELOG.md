@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.12
+
+* Ensure indexing fails and reports an error when there are errors returned from a batch indexing operation.
+
 ## v6.3.11
 
 * Performance: do not fetchasbinary when making http calls to the ElasticSearch server - wastes java memory with encoding/decoding
