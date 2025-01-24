@@ -20,8 +20,10 @@ component {
 	 * @tenancyService.inject             provider:tenancyService
 	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
 	 * @groupByRecordIdOnly.inject        coldbox:setting:elasticSearchConfig.groupByRecordIdOnly
+	 * @indexExpiryUnit.inject            coldbox:setting:elasticSearchConfig.indexExpiryUnit
+	 * @indexExpiryMeasure.inject         coldbox:setting:elasticSearchConfig.indexExpiryMeasure
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=10, boolean groupByRecordIdOnly=false ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any interceptorService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=10, boolean groupByRecordIdOnly=false, string indexExpiryUnit="d", numeric indexExpiryMeasure=1 ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -37,6 +39,8 @@ component {
 		_setTenancyService( arguments.tenancyService );
 		_setIndexPageSize( arguments.indexPageSize );
 		_setGroupByRecordIdOnly( arguments.groupByRecordIdOnly );
+		_setIndexExpiryUnit( arguments.indexExpiryUnit );
+		_setIndexExpiryMeasure( arguments.indexExpiryMeasure );
 
 		_checkIndexesExist();
 
@@ -153,7 +157,7 @@ component {
 				  indexName         = arguments.indexName
 				, isIndexing        = true
 				, indexingStartedAt = Now()
-				, indexingExpiry    = DateAdd( "h", 1, Now() )
+				, indexingExpiry    = DateAdd( _getIndexExpiryUnit(), _getIndexExpiryMeasure(), Now() )
 			);
 		}
 
@@ -1190,4 +1194,19 @@ component {
 	private void function _setGroupByRecordIdOnly( required boolean groupByRecordIdOnly ) {
 	    _groupByRecordIdOnly = arguments.groupByRecordIdOnly;
 	}
+
+	private string function _getIndexExpiryUnit() {
+	    return _indexExpiryUnit;
+	}
+	private void function _setIndexExpiryUnit( required string indexExpiryUnit ) {
+	    _indexExpiryUnit = arguments.indexExpiryUnit;
+	}
+
+	private numeric function _getIndexExpiryMeasure() {
+	    return _indexExpiryMeasure;
+	}
+	private void function _setIndexExpiryMeasure( required numeric indexExpiryMeasure ) {
+	    _indexExpiryMeasure = arguments.indexExpiryMeasure;
+	}
+
 }

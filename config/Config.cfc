@@ -34,7 +34,9 @@ component output=false {
 		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchDeleteRecord"             );
 
 		settings.elasticSearchConfig = settings.elasticSearchConfig ?: {};
-		settings.elasticSearchConfig.indexPageSize = 10;
+		settings.elasticSearchConfig.indexPageSize       = 10;
 		settings.elasticSearchConfig.groupByRecordIdOnly = false;
+		settings.elasticSearchConfig.indexExpiryUnit     = "d";
+		settings.elasticSearchConfig.indexExpiryMeasure  = 1;
 	}
 }
