@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.3.14
+
+* Build fixes
+
+## v6.3.13
+
+* Change default indexing timeout to 1d and make configurable
+
 ## v6.3.12
 
 * Ensure indexing fails and reports an error when there are errors returned from a batch indexing operation.
