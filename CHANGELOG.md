@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.31
+
+* Make larger default indexing timeout and make configurable
+
 ## v1.1.30
 
 * Ensure batch indexing errors are raised with an any error logging services installed in the system.
