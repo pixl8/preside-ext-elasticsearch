@@ -58,7 +58,11 @@ component output=false {
 	}
 
 	private void function _setupIndexPageSize( settings ) {
-		settings.elasticSearchConfig.indexPageSize = 100;
+		settings.elasticSearchConfig = {
+			  indexPageSize      = 100
+			, indexExpiryUnit    = "d"
+			, indexExpiryMeasure = 1
+		}
 	}
 
 	private string function _getDefaultIndexName() {
