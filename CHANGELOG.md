@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.32
+
+* Build fixes
+
 ## v1.1.31
 
 * Make larger default indexing timeout and make configurable
