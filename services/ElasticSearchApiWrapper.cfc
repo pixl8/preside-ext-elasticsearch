@@ -251,6 +251,10 @@ component {
 			body = generateSearchDsl( argumentCollection = arguments );
 		}
 
+		if ( !StructKeyExists( body, "timeout" ) ) {
+			body.timeout = _getRequestTimeoutInSeconds() & "s";
+		}
+
 		return _call(
 			  uri    = uri
 			, method = "POST"
@@ -414,7 +418,7 @@ component {
 
 		while( !success && attempts < maxAttempts ) {
 			try {
-				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" getAsBinary="false" timeout=_getRequestTimeoutInSeconds() {
+				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" getAsBinary="false" timeout=_getRequestTimeoutInSeconds()+1 {
 					if ( StructKeyExists( arguments, "body" ) ) {
 						httpparam type="body" value=arguments.body;
 						httpparam type="header" name="Content-Type" value="application/json; charset=#_getCharset()#";
