@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.34
+
+* Improve timeout functionality
+
 ## v1.1.32-33
 
 * Build fixes
