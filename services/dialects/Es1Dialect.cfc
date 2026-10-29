@@ -97,6 +97,10 @@ component extends="BaseDialect" {
 			body['filter'] = { 'and' = _generateDirectFilterClauses( arguments.directFilter ) };
 		}
 
+		if ( StructKeyExists( body, 'filter' ) && !ArrayLen( body.filter['and'] ) ) {
+			StructDelete( body, 'filter' );
+		}
+
 		if ( Len( Trim( arguments.idList ) ) ) {
 			if ( not StructKeyExists( body, 'filter' ) ) {
 				body['filter'] = StructNew();

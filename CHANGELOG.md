@@ -27,6 +27,11 @@ Fixes for ElasticSearch 6.x:
 * The first and last characters of error messages were removed.
 * The `type` column of search results was always `doc`. It now holds the Preside document type.
 
+Fixes for all versions:
+
+* `directFilter` now generates valid `term` filters. Empty values are ignored, and no empty filter clauses are sent.
+* Indexing errors returned by ElasticSearch 6.x as structs no longer break the error logging when a batch fails.
+
 ## v6.3.14
 
 * Build fixes

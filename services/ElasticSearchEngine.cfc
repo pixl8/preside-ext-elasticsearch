@@ -426,8 +426,10 @@ component {
 						if ( canError ) {
 							var items = result.items ?: [];
 							for( var item in items ) {
-								if ( Len( item.index.error ?: "") ) {
-									arguments.logger.error( "Error adding document(s). First found error report: #item.index.error#" );
+								// ElasticSearch 1.x reports item errors as strings, later versions as structs
+								var itemError = item.index.error ?: "";
+								if ( !IsSimpleValue( itemError ) || Len( itemError ) ) {
+									arguments.logger.error( "Error adding document(s). First found error report: #IsSimpleValue( itemError ) ? itemError : SerializeJson( itemError )#" );
 
 									return false;
 								}

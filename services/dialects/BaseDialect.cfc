@@ -236,7 +236,10 @@ component {
 					termFilter['exists']['field'] = fields[i];
 				}
 			}
-			ArrayAppend( filter, termFilter );
+			// empty clauses are rejected by ElasticSearch
+			if ( !StructIsEmpty( termFilter ) ) {
+				ArrayAppend( filter, termFilter );
+			}
 		}
 
 		return filter;
@@ -248,15 +251,16 @@ component {
 		var i            = 0;
 		var directFilter = "";
 
+		// exact (term) matches on each field's value. Fields with empty values are ignored
 		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
-			directFilter = StructNew();
-
 			if ( Len( Trim( arguments.filters[ fields[i] ] ) ) ) {
-				directFilter[fields[i]] = StructNew();
-				directFilter[fields[i]]['value'] = arguments.filters[ fields[i] ];
-			}
+				directFilter = StructNew();
+				directFilter['term'] = StructNew();
+				directFilter['term'][fields[i]] = StructNew();
+				directFilter['term'][fields[i]]['value'] = arguments.filters[ fields[i] ];
 
-			ArrayAppend( filter, directFilter );
+				ArrayAppend( filter, directFilter );
+			}
 		}
 
 		return filter;

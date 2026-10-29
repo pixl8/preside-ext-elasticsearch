@@ -32,6 +32,20 @@ component extends="testbox.system.BaseSpec" {
 				] } );
 			} );
 
+			it( "should generate term filters for direct filters, ignoring empty values", function(){
+				var wrapper = _getWrapper( "1.7" );
+				var dsl     = wrapper.generateSearchDsl( directFilter={ site="abc", empty="" } );
+
+				expect( dsl.filter ).toBe( { "and"=[ { term={ site={ value="abc" } } } ] } );
+			} );
+
+			it( "should not generate an empty filter when all direct filter values are empty", function(){
+				var wrapper = _getWrapper( "1.7" );
+				var dsl     = wrapper.generateSearchDsl( directFilter={ empty="" } );
+
+				expect( StructKeyExists( dsl, "filter" ) ).toBeFalse();
+			} );
+
 			it( "should ignore arguments that only apply to later versions of ElasticSearch", function(){
 				var wrapper = _getWrapper( "1.7" );
 
@@ -75,6 +89,20 @@ component extends="testbox.system.BaseSpec" {
 				var dsl     = wrapper.generateSearchDsl( highlightFields="title", highlightEncoder="html" );
 
 				expect( dsl.highlight.encoder ).toBe( "html" );
+			} );
+
+			it( "should generate term filters for direct filters, ignoring empty values", function(){
+				var wrapper = _getWrapper( "6.3" );
+				var dsl     = wrapper.generateSearchDsl( directFilter={ site="abc", empty="" } );
+
+				expect( dsl.query.bool.filter ).toBe( [ { term={ site={ value="abc" } } } ] );
+			} );
+
+			it( "should not generate empty clauses for basic filters with unsupported values", function(){
+				var wrapper = _getWrapper( "6.3" );
+				var dsl     = wrapper.generateSearchDsl( basicFilter={ site="abc", bad={ "not"="supported" } } );
+
+				expect( dsl.query.bool.filter ).toBe( [ { term={ site="abc" } } ] );
 			} );
 
 			it( "should generate bool filters for basic filters, document types and id lists, and must_not for excluded ids", function(){

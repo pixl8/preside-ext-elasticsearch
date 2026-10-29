@@ -582,6 +582,22 @@ component extends="testbox.system.BaseSpec" {
 			} );
 		} );
 
+		describe( "indexAllRecords() error reporting", function(){
+			it( "should log string item errors returned by ElasticSearch 1.x", function(){
+				var logged = _getIndexingErrorLogged( "MapperParsingException[failed to parse]" );
+
+				expect( logged ).toBe( "Error adding document(s). First found error report: MapperParsingException[failed to parse]" );
+			} );
+
+			it( "should log structured item errors returned by ElasticSearch 6.x", function(){
+				var logged = _getIndexingErrorLogged( { type="mapper_parsing_exception", reason="failed to parse" } );
+
+				expect( logged ).toInclude( "First found error report: " );
+				expect( logged ).toInclude( "mapper_parsing_exception" );
+				expect( logged ).toInclude( "failed to parse" );
+			} );
+		} );
+
 		describe( "calculateSelectFieldsForIndexing()", function(){
 			it( "should return an array of field names that are configured for search on the object", function(){
 				var engine           = _getSearchEngine();
@@ -1058,6 +1074,30 @@ component extends="testbox.system.BaseSpec" {
 				expect( mapping ).toBe( expected.sortableDateMapping );
 			} );
 		} );
+	}
+
+	private string function _getIndexingErrorLogged( required any itemError ) {
+		var engine     = _getSearchEngine();
+		var objectName = "testObject";
+		var indexAlias = "someindex";
+		var logger     = getMockBox().createStub();
+
+		logger.$( "canDebug", false );
+		logger.$( "canInfo" , false );
+		logger.$( "canWarn" , false );
+		logger.$( "canError", true  );
+		logger.$( "error" );
+
+		engine.$( "isIndexReindexing" ).$args( indexAlias ).$results( true );
+		engine.$( "$raiseError" );
+		mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
+		mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results( { documentType="somedoctype" } );
+		engine.$( "getPaginatedRecordsForObject", [ { id="1" } ] );
+		mockApiWrapper.$( "addDocs", { errors=true, items=[ { index={ _id="1", error=arguments.itemError } } ] } );
+
+		expect( engine.indexAllRecords( objectName, "someindex_123", indexAlias, logger ) ).toBeFalse();
+
+		return logger.$callLog().error[ 1 ][ 1 ];
 	}
 
 	private struct function _indexRecordWithVersion( required string engineVersion ) {
