@@ -4,7 +4,7 @@ component {
 	/**
 	 * @displayName  Rebuild search indexes
 	 * @displayGroup Search
-	 * @schedule     0 0 4 *\/1 * *
+	 * @schedule     0 0 4 * * *
 	 * @timeout      120
 	 */
 	private boolean function rebuildSearchIndexes( event, rc, prc, logger ){
