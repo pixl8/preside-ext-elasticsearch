@@ -5,7 +5,7 @@
  * @searchEnabled true
  *
  */
-component output=false {
+component {
 	property name="asset_folder"        searchEnabled=true searchType="keyword" searchSearchable=false searchSortable=true;
 	property name="title"               searchEnabled=true;
 	property name="original_title"      searchEnabled=true;

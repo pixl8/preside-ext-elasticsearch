@@ -32,10 +32,10 @@ component extends="BaseDialect" {
 		var mappings = {};
 
 		mappings.doc = { properties={} };
-		mappings.doc.properties.append( getCommonPropertyMappings(), false );
+		StructAppend( mappings.doc.properties, getCommonPropertyMappings(), false );
 
 		for( var docTypeMapping in arguments.docTypeMappings ){
-			mappings.doc.properties.append( Duplicate( docTypeMapping.properties ) );
+			StructAppend( mappings.doc.properties, Duplicate( docTypeMapping.properties ) );
 		}
 
 		return mappings;
@@ -79,13 +79,13 @@ component extends="BaseDialect" {
 			body['_source'] = ListToArray(arguments.fieldList);
 			// the type field is always needed in order to report each hit's document type
 			if ( !ArrayFindNoCase( body['_source'], "type" ) ) {
-				body['_source'].append( "type" );
+				ArrayAppend( body['_source'], "type" );
 			}
 		}
 		body['query'] = StructNew();
 		body['query']['bool'] = StructNew();
-		body['query']['bool']['filter'] = arrayNew();
-		body['query']['bool']['must_not'] = arrayNew();
+		body['query']['bool']['filter'] = ArrayNew();
+		body['query']['bool']['must_not'] = ArrayNew();
 		body['query']['bool']['must'] = StructNew();
 		body['query']['bool']['must']['multi_match'] = StructNew();
 
@@ -109,30 +109,30 @@ component extends="BaseDialect" {
 			body['min_score'] = arguments.minimumScore;
 		}
 
-		if ( not StructIsEmpty( arguments.basicFilter ) ) {
+		if ( !StructIsEmpty( arguments.basicFilter ) ) {
 			body['query']['bool']['filter'] = _generateBasicFilterClauses( arguments.basicFilter );
 		}
 
-		if ( not StructIsEmpty( arguments.directFilter ) ) {
+		if ( !StructIsEmpty( arguments.directFilter ) ) {
 			body['query']['bool']['filter'] = _generateDirectFilterClauses( arguments.directFilter );
 		}
 
 		// all document types share the single "doc" mapping, so restrict to the requested types with a filter
 		if ( Len( Trim( arguments.type ) ) ) {
-			body['query']['bool']['filter'].append( { terms={ type=ListToArray( arguments.type ) } } );
+			ArrayAppend( body['query']['bool']['filter'],  { terms={ type=ListToArray( arguments.type ) } } );
 		}
 
-		if ( arguments.objects.len() > 0 ){
+		if ( ArrayLen( arguments.objects ) > 0 ){
 			for ( var object in arguments.objects ){
-				body['query']['bool']['filter'].append( { term = { type = object } } );
+				ArrayAppend( body['query']['bool']['filter'], { term = { type = object } } );
 			}
 		}
 
 		if ( Len( Trim( arguments.idList ) ) ) {
-			body['query']['bool']['filter'].append( { terms={ _id=ListToArray( arguments.idList ) } } );
+			ArrayAppend( body['query']['bool']['filter'], { terms={ _id=ListToArray( arguments.idList ) } } );
 		}
 		if ( Len( Trim( arguments.excludeIdList ) ) ) {
-			body['query']['bool']['must_not'].append( { terms={ _id=ListToArray( arguments.excludeIdList ) } } );
+			ArrayAppend( body['query']['bool']['must_not'], { terms={ _id=ListToArray( arguments.excludeIdList ) } } );
 		}
 
 		return body;

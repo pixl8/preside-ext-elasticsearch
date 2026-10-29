@@ -34,7 +34,7 @@ component extends="BaseDialect" {
 
 		for( var docTypeMapping in arguments.docTypeMappings ){
 			mappings[ docTypeMapping.docType ] = { properties=Duplicate( docTypeMapping.properties ) };
-			mappings[ docTypeMapping.docType ].properties.append( getCommonPropertyMappings(), false );
+			StructAppend( mappings[ docTypeMapping.docType ].properties, getCommonPropertyMappings(), false );
 		}
 
 		return mappings;
@@ -67,8 +67,8 @@ component extends="BaseDialect" {
 
 		body['from'] = _calculateStartRecordFromPageInfo( arguments.page, arguments.pageOffset, arguments.pageSize );
 		body['size'] = pageSize;
-		if (Len(Trim(arguments.fieldList))) {
-			body['fields'] = ListToArray(arguments.fieldList);
+		if ( Len( Trim( arguments.fieldList ) ) ) {
+			body['fields'] = ListToArray( arguments.fieldList );
 		}
 		body['query'] = StructNew();
 		body['query']['query_string'] = StructNew();
@@ -89,11 +89,11 @@ component extends="BaseDialect" {
 			body['min_score'] = arguments.minimumScore;
 		}
 
-		if ( not StructIsEmpty( arguments.basicFilter ) ) {
+		if ( !StructIsEmpty( arguments.basicFilter ) ) {
 			body['filter'] = { 'and' = _generateBasicFilterClauses( arguments.basicFilter ) };
 		}
 
-		if ( not StructIsEmpty( arguments.directFilter ) ) {
+		if ( !StructIsEmpty( arguments.directFilter ) ) {
 			body['filter'] = { 'and' = _generateDirectFilterClauses( arguments.directFilter ) };
 		}
 
@@ -102,7 +102,7 @@ component extends="BaseDialect" {
 		}
 
 		if ( Len( Trim( arguments.idList ) ) ) {
-			if ( not StructKeyExists( body, 'filter' ) ) {
+			if ( !StructKeyExists( body, 'filter' ) ) {
 				body['filter'] = StructNew();
 				body['filter']['and'] = ArrayNew(1);
 			}
@@ -114,7 +114,7 @@ component extends="BaseDialect" {
 			ArrayAppend( body.filter['and'], idList );
 		}
 		if ( Len( Trim( arguments.excludeIdList ) ) ) {
-			if ( not StructKeyExists( body, 'filter' ) ) {
+			if ( !StructKeyExists( body, 'filter' ) ) {
 				body['filter'] = StructNew();
 				body['filter']['and'] = ArrayNew(1);
 			}
@@ -159,8 +159,8 @@ component extends="BaseDialect" {
 		var errorMessage = Replace( arguments.error, errorType, "" );
 
 		// strip the square brackets that wrap the message, e.g. IndexMissingException[[foo] missing]
-		if ( Len( Trim( errorMessage ) ) gt 2 ) {
-			errorMessage = mid( errorMessage, 2, Len( errorMessage) - 2 );
+		if ( Len( Trim( errorMessage ) ) > 2 ) {
+			errorMessage = Mid( errorMessage, 2, Len( errorMessage) - 2 );
 		}
 
 		return {

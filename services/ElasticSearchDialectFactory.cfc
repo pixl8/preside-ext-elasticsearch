@@ -73,11 +73,11 @@ component {
 	public numeric function compareVersions( required string versionA, required string versionB ) {
 		var partsA = ListToArray( arguments.versionA, "." );
 		var partsB = ListToArray( arguments.versionB, "." );
-		var maxLen = Max( partsA.len(), partsB.len() );
+		var maxLen = Max( ArrayLen( partsA ), ArrayLen( partsB ) );
 
 		for( var i=1; i<=maxLen; i++ ) {
-			var a = i <= partsA.len() ? Val( partsA[ i ] ) : 0;
-			var b = i <= partsB.len() ? Val( partsB[ i ] ) : 0;
+			var a = i <= ArrayLen( partsA ) ? Val( partsA[ i ] ) : 0;
+			var b = i <= ArrayLen( partsB ) ? Val( partsB[ i ] ) : 0;
 
 			if ( a < b ) {
 				return -1;
@@ -114,11 +114,11 @@ component {
 	private string function _listSupportedVersions() {
 		var versions = StructKeyArray( _getDialects() );
 
-		versions.sort( function( a, b ){
+		ArraySort( versions, function( a, b ){
 			return compareVersions( a, b );
 		} );
 
-		return versions.toList( ", " );
+		return ArrayToList( versions, ", " );
 	}
 
 // GETTERS AND SETTERS

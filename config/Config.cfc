@@ -1,5 +1,5 @@
-component output=false {
-	public void function configure( required struct config ) output=false {
+component {
+	public void function configure( required struct config ) {
 		var conf     = arguments.config;
 		var settings = conf.settings ?: {};
 
@@ -21,7 +21,7 @@ component output=false {
 	}
 
 	private void function _setupAdminUi( settings ) {
-		settings.adminConfigurationMenuItems.append( "elasticsearchControl" );
+		ArrayAppend( settings.adminConfigurationMenuItems, "elasticsearchControl" );
 	}
 
 	private void function _setupGlobalFilters( settings ) {
@@ -35,26 +35,26 @@ component output=false {
 	}
 
 	private void function _setupInterceptors( conf ) {
-		conf.interceptors.prepend(
+		ArrayPrepend( conf.interceptors,
 			{ class="app.extensions.preside-ext-elasticsearch.interceptors.PresideExtensionElasticSearchEngineInterceptor", properties={} }
 		);
 
-		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchCreateIndex"               );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchCreateIndex"              );
-		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchRebuildIndex"              );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchRebuildIndex"             );
-		conf.interceptorSettings.customInterceptionPoints.append( "onElasticSearchRebuildIndexFailure"        );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGetIndexSettings"         );
-		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchIndexDoc"                  );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchIndexDoc"                 );
-		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchIndexDocs"                 );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchIndexDocs"                );
-		conf.interceptorSettings.customInterceptionPoints.append( "onElasticSearchIndexDocsTermination"       );
-		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchGetObjectDataForIndexing"  );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGetObjectDataForIndexing" );
-		conf.interceptorSettings.customInterceptionPoints.append( "preElasticSearchDeleteRecord"              );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchDeleteRecord"             );
-		conf.interceptorSettings.customInterceptionPoints.append( "postElasticSearchGenerateDsl"              );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "preElasticSearchCreateIndex"               );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchCreateIndex"              );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "preElasticSearchRebuildIndex"              );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchRebuildIndex"             );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "onElasticSearchRebuildIndexFailure"        );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchGetIndexSettings"         );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "preElasticSearchIndexDoc"                  );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchIndexDoc"                 );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "preElasticSearchIndexDocs"                 );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchIndexDocs"                );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "onElasticSearchIndexDocsTermination"       );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "preElasticSearchGetObjectDataForIndexing"  );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchGetObjectDataForIndexing" );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "preElasticSearchDeleteRecord"              );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchDeleteRecord"             );
+		ArrayAppend( conf.interceptorSettings.customInterceptionPoints, "postElasticSearchGenerateDsl"              );
 	}
 
 	private void function _setupElasticSearchConfig( settings ) {
@@ -78,7 +78,7 @@ component output=false {
 	}
 
 	private string function _getDefaultIndexName() {
-		var appSettings = getApplicationMetadata();
+		var appSettings = GetApplicationMetadata();
 
 		return ReReplace( appSettings.name ?: CreateUUId(), "\W+", "_", "all" );
 	}

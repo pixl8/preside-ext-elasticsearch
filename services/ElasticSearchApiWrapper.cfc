@@ -94,10 +94,10 @@ component {
 		var indexes       = [];
 
 		for( var indexName in callResult ) {
-			var indexHasAlias = callResult[ indexName ].keyExists( 'aliases' ) and callResult[ indexName ].aliases.keyExists( arguments.alias );
+			var indexHasAlias = StructKeyExists( callResult[ indexName ], "aliases" ) && StructKeyExists( callResult[ indexName ].aliases, arguments.alias );
 
 			if ( indexHasAlias ) {
-				indexes.append( indexName );
+				ArrayAppend( indexes, indexName );
 			}
 		}
 
@@ -109,12 +109,12 @@ component {
 		var indexes       = [];
 
 		for( var indexName in callResult ) {
-			if ( arguments.keyExists( "filter" ) ) {
+			if ( StructKeyExists( arguments, "filter" ) ) {
 				if ( arguments.filter( indexName ) ) {
-					indexes.append( indexName );
+					ArrayAppend( indexes, indexName );
 				}
 			} else {
-				indexes.append( indexName );
+				ArrayAppend( indexes, indexName );
 			}
 		}
 
@@ -125,7 +125,7 @@ component {
 		var uri    = _getIndexAndTypeUri( args=arguments );
 		var method = "POST";
 
-		if ( StructKeyExists( arguments, 'id' ) and Len( Trim( id ) ) ) {
+		if ( StructKeyExists( arguments, "id" ) && Len( Trim( id ) ) ) {
 			uri    = uri & "/#id#";
 			method = "PUT";
 		}
@@ -142,7 +142,7 @@ component {
 		var body = CreateObject( "java", "java.lang.StringBuffer" );
 		var i    = 0;
 
-		if ( not ArrayLen( docs ) ){
+		if ( !ArrayLen( docs ) ){
 			_throw(
 				  type    = "cfelasticsearch.addDocs.noDocs"
 				, message = "No documents to index."
@@ -150,8 +150,8 @@ component {
 			);
 		}
 
-		for( i=1; i LTE ArrayLen( docs ); i=i+1 ){
-			if ( not IsStruct( docs[i] ) ) {
+		for( i=1; i <= ArrayLen( docs ); i=i+1 ){
+			if ( !IsStruct( docs[i] ) ) {
 				_throw(
 					  type    = "cfelasticsearch.addDocs.badDoc"
 					, message = "The document at index #i# was not of type struct. All docs passed to the addDocs() method must be of type Struct."
@@ -159,12 +159,12 @@ component {
 			}
 
 			if ( StructKeyExists( docs[i], idField ) ) {
-				body.append( '{"index":{"_id":"#docs[i][idField]#"}}' & chr(10) );
+				body.append( '{"index":{"_id":"#docs[i][idField]#"}}' & Chr(10) );
 			} else {
-				body.append( '{"index":{}}' & chr(10) );
+				body.append( '{"index":{}}' & Chr(10) );
 			}
 			_getDialect().prepareDocForIndexing( docs[i], arguments.type );
-			body.append( SerializeJson( docs[i] ) & chr(10) );
+			body.append( SerializeJson( docs[i] ) & Chr(10) );
 		}
 
 		return _call(
@@ -184,18 +184,18 @@ component {
 				, method = "DELETE"
 			);
 		} catch ( "cfelasticsearch.UnknownError" e ) {
-			if( e.errorCode EQ 404 ) {
+			if ( e.errorCode == 404 ) {
 				return true; // not found, same as deleted
 			}
 
 			_throw(argumentCollection=e);
 		}
 
-		return IsDefined( 'result.ok') and IsBoolean( result.ok ) and result.ok;
+		return IsDefined( "result.ok" ) && IsBoolean( result.ok ) && result.ok;
 	}
 
 	public boolean function deleteDocs( required string index, required string type, required array ids ){
-		if ( !arrayLen( arguments.ids ) ){
+		if ( !ArrayLen( arguments.ids ) ){
 			_throw(
 				  type    = "cfelasticsearch.deleteDocs.noIds"
 				, message = "No IDs to delete."
@@ -206,15 +206,15 @@ component {
 		var uri  = _getIndexAndTypeUri( args=arguments ) & "/_bulk";
 		var body = CreateObject( "java", "java.lang.StringBuffer" );
 
-		for( var i = 1; i <= arrayLen( arguments.ids ); i++ ){
-			if ( !isSimpleValue( arguments.ids[ i ] ) ) {
+		for( var i = 1; i <= ArrayLen( arguments.ids ); i++ ){
+			if ( !IsSimpleValue( arguments.ids[ i ] ) ) {
 				_throw(
 					  type    = "cfelasticsearch.deleteDocs.badId"
 					, message = "The record id at index #i# was not a simple value."
 				);
 			}
 
-			body.append( "{""delete"":{""_id"":""#arguments.ids[ i ]#""}}" & chr(10) );
+			body.append( "{""delete"":{""_id"":""#arguments.ids[ i ]#""}}" & Chr(10) );
 		}
 
 		try {
@@ -344,7 +344,7 @@ component {
 			return true;
 
 		} catch ( "cfelasticsearch.UnknownError" e ) {
-			if( e.errorCode EQ 404 ) {
+			if( e.errorCode == 404 ) {
 				return false;
 			}
 
@@ -385,7 +385,7 @@ component {
 			if ( !success ) {
 				attempts++;
 				endpointIndex++;
-				if ( endpointIndex > endpoints.len() ) {
+				if ( endpointIndex > ArrayLen( endpoints ) ) {
 					endpointIndex = 1;
 				}
 			}
@@ -412,7 +412,7 @@ component {
 				, detail  = result.filecontent
 			);
 		}
-		if ( left( result.responseHeader.status_code ?: 500, 1 ) EQ "2" ) {
+		if ( Left( result.responseHeader.status_code ?: 500, 1 ) == "2" ) {
 			return deserialized;
 		}
 
@@ -424,7 +424,7 @@ component {
 		var errorType    = "UnknownError";
 		var errorDetail  = SerializeJson( result );
 
-		if ( IsStruct( result ) and StructKeyExists( result, "error" ) ) {
+		if ( IsStruct( result ) && StructKeyExists( result, "error" ) ) {
 			var parsedError = _getDialect().parseError( result.error );
 
 			errorType    = parsedError.type;
@@ -450,8 +450,8 @@ component {
 			uri = "/#_safeIndexName( args.index )#";
 		}
 
-		if ( typeAllowed and Len( Trim( args.type ?: "" ) ) ) {
-			if ( uri EQ "" ) {
+		if ( typeAllowed && Len( Trim( args.type ?: "" ) ) ) {
+			if ( uri == "" ) {
 				uri = "/_all";
 			}
 			uri = uri & _getDialect().getTypeUriSegment( args.type );

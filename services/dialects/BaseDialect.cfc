@@ -185,7 +185,7 @@ component {
 	}
 
 	private numeric function _calculateStartRecordFromPageInfo( required numeric page, required numeric pageOffset, required numeric pageSize ) {
-		if ( page lte 0 ) {
+		if ( page <= 0 ) {
 			throw(
 				  type    = "cfelasticsearch.search.invalidPage"
 				, message = "Page number must be greater than zero. Page number supplied was '#page#'."
@@ -208,7 +208,7 @@ component {
 		highlights.tags_schema = "styled";
 		highlights.encoder     = arguments.highlightEncoder;
 
-		for( i=1; i lte ListLen( arguments.highlightFields ); i=i+1 ){
+		for( i=1; i <= ListLen( arguments.highlightFields ); i=i+1 ){
 			field = ListGetAt( arguments.highlightFields, i );
 			highlights.fields[field] = StructNew();
 		}
@@ -222,7 +222,7 @@ component {
 		var i          = 0;
 		var termFilter = "";
 
-		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
+		for( i=1; i <= ArrayLen( fields ); i=i+1 ){
 			termFilter = StructNew();
 			if ( IsArray( arguments.filters[ fields[i] ] ) ) {
 				termFilter['terms'] = StructNew();
@@ -252,7 +252,7 @@ component {
 		var directFilter = "";
 
 		// exact (term) matches on each field's value. Fields with empty values are ignored
-		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
+		for( i=1; i <= ArrayLen( fields ); i=i+1 ){
 			if ( Len( Trim( arguments.filters[ fields[i] ] ) ) ) {
 				directFilter = StructNew();
 				directFilter['term'] = StructNew();
@@ -273,16 +273,16 @@ component {
 		var order = "";
 		var i = 0;
 
-		for( i=1; i lte ArrayLen( so ); i=i+1 ){
+		for( i=1; i <= ArrayLen( so ); i=i+1 ){
 			field = StructNew();
 			fieldName = ListFirst( so[i], ' ' );
 
 			field[ fieldName ] = StructNew();
-			if ( ListLen( so[i], ' ' ) eq 1 ) {
+			if ( ListLen( so[i], ' ' ) == 1 ) {
 				field[ fieldName ][ 'order' ] = 'asc';
 			} else {
 				order = Trim( ListGetAt( so[i], 2, ' ') );
-				field[ fieldName ][ 'order' ] = iif( order eq 'desc', DE('desc'), DE('asc') );
+				field[ fieldName ][ 'order' ] = ( order == 'desc' ? 'desc' : 'asc' );
 			}
 
 			so[i] = field;

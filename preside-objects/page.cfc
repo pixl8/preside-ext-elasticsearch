@@ -3,7 +3,7 @@
  * The purpose here is to make certain fields searchable.
  *
  */
-component output=false {
+component {
 	property name="title"              searchEnabled=true;
 	property name="navigation_title"   searchEnabled=true;
 	property name="teaser"             searchEnabled=true;
