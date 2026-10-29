@@ -17,11 +17,14 @@ component {
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 * @tenancyService.inject             provider:tenancyService
+	 * @dialectFactory.inject             provider:elasticSearchDialectFactory
 	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
+	 * @searchPageSize.inject             coldbox:setting:elasticSearchConfig.searchPageSize
+	 * @groupByRecordIdOnly.inject        coldbox:setting:elasticSearchConfig.groupByRecordIdOnly
 	 * @indexExpiryUnit.inject            coldbox:setting:elasticSearchConfig.indexExpiryUnit
 	 * @indexExpiryMeasure.inject         coldbox:setting:elasticSearchConfig.indexExpiryMeasure
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=100, string indexExpiryUnit="d", numeric indexExpiryMeasure=1 ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, required any dialectFactory, any indexPageSize="", any searchPageSize="", boolean groupByRecordIdOnly=false, string indexExpiryUnit="d", numeric indexExpiryMeasure=1 ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -34,7 +37,10 @@ component {
 		_setStatusDao( arguments.statusDao );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 		_setTenancyService( arguments.tenancyService );
+		_setDialectFactory( arguments.dialectFactory );
 		_setIndexPageSize( arguments.indexPageSize );
+		_setSearchPageSize( arguments.searchPageSize );
+		_setGroupByRecordIdOnly( arguments.groupByRecordIdOnly );
 		_setIndexExpiryUnit( arguments.indexExpiryUnit );
 		_setIndexExpiryMeasure( arguments.indexExpiryMeasure );
 
@@ -51,10 +57,10 @@ component {
 		, string  queryFields      = ""
 		, string  sortOrder        = ""
 		, numeric page             = 1
-		, numeric pageSize         = 10
+		, numeric pageSize         = _getDefaultSearchPageSize()
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
-		, string  highlightEncoder = "default"
+		, string  highlightEncoder = ""
 		, string  fuzziness        = "0"
 		, numeric prefixLength     = 3
 		, numeric minimumScore     = 0
@@ -93,6 +99,27 @@ component {
 			, highlightFields = arguments.highlightFields
 			, q               = arguments.q
 		);
+	}
+
+	/**
+	 * Compares the configured engine version with the version reported by the
+	 * ElasticSearch server. Returns a struct with keys: configuredVersion,
+	 * serverVersion (empty if the server could not be contacted) and compatible
+	 * (false only when the server responded and the major versions differ).
+	 */
+	public struct function checkServerVersion() {
+		var configuredVersion = _getDialectFactory().getEngineVersion();
+		var serverVersion     = "";
+
+		try {
+			serverVersion = _getApiWrapper().ping().version.number ?: "";
+		} catch( any e ) {}
+
+		return {
+			  configuredVersion = configuredVersion
+			, serverVersion     = serverVersion
+			, compatible        = !Len( serverVersion ) || ListFirst( serverVersion, "." ) == ListFirst( configuredVersion, "." )
+		};
 	}
 
 	public void function ensureIndexesExist() {
@@ -146,6 +173,13 @@ component {
 		var canError   = haveLogger && arguments.logger.canError();
 
 		$announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
+
+		if ( canWarn ) {
+			var versionCheck = checkServerVersion();
+			if ( !versionCheck.compatible ) {
+				arguments.logger.warn( "The configured ElasticSearch engine version [#versionCheck.configuredVersion#] does not match the version reported by the server [#versionCheck.serverVersion#]. Set settings.elasticSearchConfig.engineVersion (or the ELASTICSEARCH_VERSION environment variable) to match your server." );
+			}
+		}
 
 		transaction {
 			if ( isIndexReindexing( arguments.indexName ) ) {
@@ -263,61 +297,27 @@ component {
 	}
 
 	public struct function getIndexMappings( required string indexName ) {
-		var mappings      = {};
-		var configWrapper = _getConfigurationReader();
-		var docTypes      = configWrapper.listDocumentTypes( arguments.indexName );
-		mappings.doc = { properties={} };
-		mappings.doc.properties.append( _getCommonPropertyMappings(), false );
+		var configWrapper   = _getConfigurationReader();
+		var docTypes        = configWrapper.listDocumentTypes( arguments.indexName );
+		var docTypeMappings = [];
 
 		for( var docType in docTypes ){
-			var fields = configWrapper.getFields( arguments.indexName, docType );
+			var fields     = configWrapper.getFields( arguments.indexName, docType );
+			var properties = {};
+
 			for( var field in fields ){
 				var fieldName = fields[ field ].fieldName;
-				mappings.doc.properties.append({ "#fieldName#"  = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName ) });
+				properties[ fieldName ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName );
 			}
+
+			docTypeMappings.append( { docType=docType, properties=properties } );
 		}
 
-		return mappings;
+		return _getDialect().buildIndexMappings( docTypeMappings );
 	}
 
 	public struct function getElasticSearchMappingFromFieldConfiguration( required string name, required string type, boolean searchable=false, boolean sortable=false, string analyzer="", boolean ignoreMalformedDates=false ) {
-		var mapping = { type=arguments.type };
-
-		if ( arguments.type == "keyword" ) {
-			mapping.index = true;
-		} else if ( arguments.searchable ) {
-			if ( Len( Trim( arguments.analyzer ) ) ) {
-				mapping.analyzer = arguments.analyzer;
-				mapping.fielddata = true;
-				mapping.index = true;
-			}
-		} else {
-			if ( arguments.sortable ) {
-				mapping.analyzer = "preside_sortable";
-			} else {
-				mapping.index = true;
-			}
-		}
-
-		if ( arguments.sortable && arguments.searchable ) {
-			mapping = {
-				  type   = "multi_field"
-				, fields = {
-					  "#arguments.name#" = Duplicate( mapping )
-					, untouched          = Duplicate( mapping )
-				}
-			};
-			mapping.fields.untouched.analyzer = "preside_sortable";
-		}
-
-		if ( arguments.type == "date" ){
-			mapping.ignore_malformed = arguments.ignoreMalformedDates;
-			if ( StructKeyExists( arguments, "dateFormat" ) ) {
-				mapping.format = arguments.dateFormat;
-			}
-		}
-
-		return mapping;
+		return _getDialect().getFieldMapping( argumentCollection=arguments );
 	}
 
 	public string function createUniqueIndexName( required string sourceIndexName ) {
@@ -354,7 +354,7 @@ component {
 					, id    = arguments.id
 				);
 			}
-			doc[1].type = objectConfig.documentType ?: "";
+			_getDialect().prepareDocForIndexing( doc[1], objectConfig.documentType ?: "" );
 
 			var result = _getApiWrapper().addDoc(
 				  index = objectConfig.indexName    ?: ""
@@ -377,7 +377,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = _getIndexPageSize();
+			var pageSize  = _getIndexingPageSize();
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
@@ -455,14 +455,18 @@ component {
 	}
 
 	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) {
-		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var objConfig      = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var idField        = _getPresideObjectService().getIdField( arguments.objectName );
+		var autoGroupBy    = !_getGroupByRecordIdOnly() || !Len( idField );
+		var groupBy        = autoGroupBy ? "" : "#arguments.objectName#.#idField#";
 		var selectDataArgs = {
 			  objectName   = arguments.objectName
 			, selectFields = calculateSelectFieldsForIndexing( arguments.objectName )
 			, savedFilters = objConfig.indexFilters ?: []
 			, maxRows      = arguments.maxRows
 			, startRow     = arguments.startRow
-			, autoGroupBy  = true
+			, autoGroupBy  = autoGroupBy
+			, groupBy      = groupBy
 			, useCache     = false
 		};
 
@@ -1038,13 +1042,6 @@ component {
 		} );
 	}
 
-	private struct function _getCommonPropertyMappings() {
-		return {
-			access_restricted = { type="boolean" },
-			type = { type="keyword" }
-		};
-	}
-
 	private boolean function _objectIsUsingSiteTenancy( required string objectName ) {
 		if ( !_getPresideObjectService().objectExists( arguments.objectName ) ) {
 			return false;
@@ -1168,11 +1165,58 @@ component {
 		_tenancyService = arguments.tenancyService;
 	}
 
-	private numeric function _getIndexPageSize() {
+	private any function _getDialectFactory() {
+		return _dialectFactory;
+	}
+	private void function _setDialectFactory( required any dialectFactory ) {
+		_dialectFactory = arguments.dialectFactory;
+	}
+
+	private any function _getDialect() {
+		return _getDialectFactory().getDialect();
+	}
+
+	private any function _getIndexPageSize() {
 		return _indexPageSize;
 	}
-	private void function _setIndexPageSize( required numeric indexPageSize ) {
+	private void function _setIndexPageSize( required any indexPageSize ) {
 		_indexPageSize = arguments.indexPageSize;
+	}
+
+	private any function _getSearchPageSize() {
+		return _searchPageSize;
+	}
+	private void function _setSearchPageSize( required any searchPageSize ) {
+		_searchPageSize = arguments.searchPageSize;
+	}
+
+	private numeric function _getIndexingPageSize() {
+		var indexPageSize = _getIndexPageSize();
+
+		return IsNumeric( indexPageSize ) && indexPageSize > 0 ? indexPageSize : 100;
+	}
+
+	private numeric function _getDefaultSearchPageSize() {
+		var searchPageSize = _getSearchPageSize();
+		var indexPageSize  = _getIndexPageSize();
+
+		if ( IsNumeric( searchPageSize ) && searchPageSize > 0 ) {
+			return searchPageSize;
+		}
+
+		// ElasticSearch 1.x releases of this extension used indexPageSize as the default search page size
+		if ( _getDialect().getMajorVersion() < 6 && IsNumeric( indexPageSize ) && indexPageSize > 0 ) {
+			return indexPageSize;
+		}
+
+		return 10;
+	}
+
+	private boolean function _getGroupByRecordIdOnly() {
+		return _groupByRecordIdOnly;
+	}
+	private void function _setGroupByRecordIdOnly( required boolean groupByRecordIdOnly ) {
+		_groupByRecordIdOnly = arguments.groupByRecordIdOnly;
 	}
 
 	private string function _getIndexExpiryUnit() {

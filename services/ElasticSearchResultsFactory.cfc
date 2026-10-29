@@ -1,7 +1,12 @@
 component output=false singleton=true {
 
 // CONSTRUCTOR
-	public any function init() output=false {
+	/**
+	 * @dialectFactory.inject elasticSearchDialectFactory
+	 */
+	public any function init( required any dialectFactory ) output=false {
+		_setDialectFactory( arguments.dialectFactory );
+
 		return this;
 	}
 
@@ -46,6 +51,7 @@ component output=false singleton=true {
 		var fields     = ListToArray( arguments.fieldList );
 		var highlights = ListToArray( arguments.highlightFields );
 		var results    = QueryNew( _calculateResultQueryColumns( arguments.fieldList, highlights ) );
+		var dialect    = _getDialect();
 		var field      = "";
 		var i          = 0;
 		var n          = 0;
@@ -72,13 +78,14 @@ component output=false singleton=true {
 				}
 			}
 
+			var hitFields = dialect.getHitFields( hit );
 			for( n=1; n lte ArrayLen( fields ); n=n+1 ){
 				field = fields[ n ];
-				if ( StructKeyExists( hit._source, field ) ) {
-					if ( IsArray( hit._source[ field ] ) && hit._source[ field ].len() < 2 ) {
-						hit._source[ field ] = hit._source[ field ].toList();
+				if ( StructKeyExists( hitFields, field ) ) {
+					if ( IsArray( hitFields[ field ] ) && hitFields[ field ].len() < 2 ) {
+						hitFields[ field ] = hitFields[ field ].toList();
 					}
-					QuerySetCell( results, field, hit._source[ field ] );
+					QuerySetCell( results, field, hitFields[ field ] );
 				}
 			}
 		}
@@ -135,5 +142,17 @@ component output=false singleton=true {
 		}
 
 		return transformed;
+	}
+
+// GETTERS AND SETTERS
+	private any function _getDialectFactory() output=false {
+		return _dialectFactory;
+	}
+	private void function _setDialectFactory( required any dialectFactory ) output=false {
+		_dialectFactory = arguments.dialectFactory;
+	}
+
+	private any function _getDialect() output=false {
+		return _getDialectFactory().getDialect();
 	}
 }

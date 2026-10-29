@@ -20,7 +20,8 @@ component output="false" extends="preside.system.base.AdminHandler" {
 		prc.pageSubTitle = translateResource( "cms:elasticSearchControl.page.subtitle" );
 		prc.pageIcon     = "search";
 
-		prc.stats = elasticSearchEngine.getStats();
+		prc.stats        = elasticSearchEngine.getStats();
+		prc.versionCheck = elasticSearchEngine.checkServerVersion();
 	}
 
 	public void function rebuildAction( event, rc, prc ) output=false {

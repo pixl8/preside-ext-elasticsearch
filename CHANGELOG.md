@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+Combines the 1.x (ElasticSearch 1.7) and 6.x (ElasticSearch 6.3) releases into a single release.
+
+* Support multiple ElasticSearch engine versions, chosen with `settings.elasticSearchConfig.engineVersion` or the `ELASTICSEARCH_VERSION` environment variable (default `6.3`). Version-specific behaviour now lives in dialects (`services/dialects/`), so new ElasticSearch versions can be added without branching the codebase.
+* Show the configured and server ElasticSearch versions in the admin, with a warning when the major versions differ. The same check is logged when an index is rebuilt.
+* From 1.x, now also available to 6.x users:
+  * Scheduled task to rebuild search indexes
+  * `groupByRecordIdOnly` setting
+  * Search timeout added to the search DSL, so ElasticSearch stops searching when the request times out. The HTTP timeout is now the API timeout plus 1s, the minimum API timeout is 1s, and the defaults are a 5s timeout and 1 attempt
+* From 6.x, now also available to 1.x users:
+  * Settings and connection defaults from environment variables
+  * `postElasticSearchGenerateDsl` interception point
+  * `highlightEncoder` search argument (1.7 still defaults to `html`)
+  * Truncated HTML entities are removed from highlights
+* New `searchPageSize` setting. `indexPageSize` now sets the indexing batch size for all versions (default 100).
+* The `site` and `asset_folder` properties on the core objects now have `searchType="keyword"` plus `searchSearchable`/`searchSortable` annotations, which give the right mapping on every engine version. On ElasticSearch 1.x, `keyword` and `text` search types are mapped to `string`.
+
 ## v6.3.14
 
 * Build fixes
