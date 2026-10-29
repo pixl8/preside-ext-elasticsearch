@@ -62,11 +62,11 @@ component extends="testbox.system.BaseSpec" {
 				} );
 			} );
 
-			it( "should request _source fields, with the default highlight encoder by default", function(){
+			it( "should request _source fields, plus the type field, with the default highlight encoder by default", function(){
 				var wrapper = _getWrapper( "6.3" );
 				var dsl     = wrapper.generateSearchDsl( fieldList="title,teaser", highlightFields="title" );
 
-				expect( dsl._source ).toBe( [ "title", "teaser" ] );
+				expect( dsl._source ).toBe( [ "title", "teaser", "type" ] );
 				expect( dsl.highlight ).toBe( { fields={ title={} }, tags_schema="styled", encoder="default" } );
 			} );
 
@@ -107,6 +107,33 @@ component extends="testbox.system.BaseSpec" {
 				expect( wrapper.$callLog()._call[ 1 ].uri ).toBe( "/myindex/doc/_search" );
 			} );
 
+			it( "should filter by document type when using ElasticSearch 6.3", function(){
+				var wrapper = _getWrapper( "6.3" );
+
+				wrapper.search( index="myindex", type="page,news", q="foo" );
+
+				var dsl = DeserializeJson( wrapper.$callLog()._call[ 1 ].body );
+				expect( dsl.query.bool.filter ).toBe( [ { terms={ type=[ "page", "news" ] } } ] );
+			} );
+
+			it( "should not filter by document type when no types are specified", function(){
+				var wrapper = _getWrapper( "6.3" );
+
+				wrapper.search( index="myindex", q="foo" );
+
+				var dsl = DeserializeJson( wrapper.$callLog()._call[ 1 ].body );
+				expect( dsl.query.bool.filter ).toBe( [] );
+			} );
+
+			it( "should not add a document type filter when using ElasticSearch 1.7, where types are part of the URI", function(){
+				var wrapper = _getWrapper( "1.7" );
+
+				wrapper.search( index="myindex", type="page,news", q="foo" );
+
+				var dsl = DeserializeJson( wrapper.$callLog()._call[ 1 ].body );
+				expect( StructKeyExists( dsl, "filter" ) ).toBeFalse();
+			} );
+
 			it( "should add the configured API timeout to the search DSL", function(){
 				for( var version in [ "1.7", "6.3" ] ) {
 					var wrapper = _getWrapper( version );
@@ -123,6 +150,46 @@ component extends="testbox.system.BaseSpec" {
 				wrapper.search( index="myindex", fullDsl={ query={ match_all={} }, timeout="20s" } );
 
 				expect( DeserializeJson( wrapper.$callLog()._call[ 1 ].body ) ).toBe( { query={ match_all={} }, timeout="20s" } );
+			} );
+		} );
+
+		describe( "moreLikeThis()", function(){
+			it( "should use the _mlt endpoint, with the generated query removed, when using ElasticSearch 1.7", function(){
+				var wrapper = _getWrapper( "1.7" );
+
+				wrapper.moreLikeThis( documentId="abc", index="MyIndex", type="page", basicFilter={ site="x" } );
+
+				var call = wrapper.$callLog()._call[ 1 ];
+				var dsl  = DeserializeJson( call.body );
+
+				expect( call.uri ).toBe( "/myindex/page/abc/_mlt" );
+				expect( StructKeyExists( dsl, "query" ) ).toBeFalse();
+				expect( dsl.filter ).toBe( { "and"=[ { term={ site="x" } } ] } );
+			} );
+
+			it( "should use a more_like_this query, keeping filters, when using ElasticSearch 6.3", function(){
+				var wrapper = _getWrapper( "6.3" );
+
+				wrapper.moreLikeThis( documentId="abc", index="MyIndex", type="page", basicFilter={ site="x" } );
+
+				var call = wrapper.$callLog()._call[ 1 ];
+				var dsl  = DeserializeJson( call.body );
+
+				expect( call.uri ).toBe( "/myindex/doc/_search" );
+				expect( dsl.query.bool.must ).toBe( { more_like_this={ like=[ { _index="myindex", _type="doc", _id="abc" } ] } } );
+				expect( dsl.query.bool.filter ).toBe( [ { term={ site="x" } }, { terms={ type=[ "page" ] } } ] );
+			} );
+
+			it( "should send a full DSL as is", function(){
+				var wrapper = _getWrapper( "6.3" );
+				var fullDsl = { query={ match_all={} } };
+
+				wrapper.moreLikeThis( documentId="abc", index="myindex", type="page", fullDsl=fullDsl );
+
+				var call = wrapper.$callLog()._call[ 1 ];
+
+				expect( call.uri ).toBe( "/myindex/doc/_search" );
+				expect( DeserializeJson( call.body ) ).toBe( fullDsl );
 			} );
 		} );
 
@@ -173,7 +240,7 @@ component extends="testbox.system.BaseSpec" {
 				makePublic( wrapper, "_throwErrorResult" );
 				wrapper.$( "_throw" );
 
-				wrapper._throwErrorResult( { error={ type="index_not_found_exception", reason="[no such index]" } }, 404 );
+				wrapper._throwErrorResult( { error={ type="index_not_found_exception", reason="no such index" } }, 404 );
 
 				var thrown = wrapper.$callLog()._throw[ 1 ];
 				expect( thrown.type    ).toBe( "cfelasticsearch.index_not_found_exception" );

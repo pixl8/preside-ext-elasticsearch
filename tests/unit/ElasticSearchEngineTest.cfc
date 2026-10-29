@@ -361,8 +361,11 @@ component extends="testbox.system.BaseSpec" {
 				} }
 			  }
 			, notSearchableOrSortableIndex = "not_analyzed"
-			, splitFieldMapping            = { type="string", analyzer="anotheranalyzer" }
-			, splitUntouchedMapping        = { type="string", analyzer="preside_sortable" }
+			, splitMapping                 = { type="multi_field", fields={
+				  myfield   = { type="string", analyzer="anotheranalyzer" }
+				, untouched = { type="string", analyzer="preside_sortable" }
+			  } }
+			, sortableDateMapping          = { type="date", analyzer="preside_sortable", format="yyyy-MM-d", ignore_malformed=true }
 		} );
 
 		_runMappingSpecs( engineVersion="6.3", expected={
@@ -379,8 +382,14 @@ component extends="testbox.system.BaseSpec" {
 				} }
 			  }
 			, notSearchableOrSortableIndex = true
-			, splitFieldMapping            = { type="string", analyzer="anotheranalyzer", index=true, fielddata=true }
-			, splitUntouchedMapping        = { type="string", analyzer="preside_sortable", index=true, fielddata=true }
+			, splitMapping                 = {
+				  type      = "text"
+				, analyzer  = "anotheranalyzer"
+				, index     = true
+				, fielddata = true
+				, fields    = { untouched={ type="text", analyzer="preside_sortable", fielddata=true } }
+			  }
+			, sortableDateMapping          = { type="date", index=true, format="yyyy-MM-d", ignore_malformed=true }
 		} );
 
 		describe( "getElasticSearchMappingFromFieldConfiguration() (ElasticSearch 6.3)", function(){
@@ -391,6 +400,25 @@ component extends="testbox.system.BaseSpec" {
 				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
 
 				expect( mapping ).toBe( { type="keyword", index=true } );
+			} );
+
+			it( "should enable fielddata on sortable text fields so that they can be sorted on", function(){
+				var engine = _getSearchEngine( "6.3" );
+				var field = { name="myfield", type="text", searchable=false, sortable=true };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping ).toBe( { type="text", analyzer="preside_sortable", fielddata=true } );
+			} );
+
+			it( "should not add analyzers to sortable non-text fields", function(){
+				var engine = _getSearchEngine( "6.3" );
+
+				for( var type in [ "integer", "boolean", "keyword" ] ) {
+					var mapping = engine.getElasticSearchMappingFromFieldConfiguration( name="myfield", type=type, searchable=false, sortable=true );
+
+					expect( mapping ).toBe( { type=type, index=true } );
+				}
 			} );
 		} );
 
@@ -1012,15 +1040,13 @@ component extends="testbox.system.BaseSpec" {
 				expect( mapping.analyzer ?: '' ).toBe( 'preside_sortable' );
 			} );
 
-			it( "should return split definition when field is both searchable and sortable", function(){
+			it( "should return split definition, with an 'untouched' sortable version of the field, when field is both searchable and sortable", function(){
 				var engine = _getSearchEngine( version );
 				var field = { name="myfield", type="string", searchable=true, sortable=true, analyzer="anotheranalyzer" };
 
 				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
 
-				expect( mapping.type ?: '' ).toBe( "multi_field" );
-				expect( mapping.fields.myfield   ?: {} ).toBe( expected.splitFieldMapping );
-				expect( mapping.fields.untouched ?: {} ).toBe( expected.splitUntouchedMapping );
+				expect( mapping ).toBe( expected.splitMapping );
 			} );
 
 			it( "should return dateformat and ignore malformed options when type is date", function(){
@@ -1029,7 +1055,7 @@ component extends="testbox.system.BaseSpec" {
 
 				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
 
-				expect( mapping ).toBe( { type="date", analyzer="preside_sortable", format="yyyy-MM-d", ignore_malformed=true } );
+				expect( mapping ).toBe( expected.sortableDateMapping );
 			} );
 		} );
 	}

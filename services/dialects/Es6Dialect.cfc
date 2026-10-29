@@ -52,6 +52,7 @@ component extends="BaseDialect" {
 // SEARCH
 	public struct function generateSearchDsl(
 		  string  q                = "*"
+		, string  type             = ""
 		, string  fieldList        = ""
 		, string  queryFields      = ""
 		, string  sortOrder        = ""
@@ -76,6 +77,10 @@ component extends="BaseDialect" {
 		body['size'] = pageSize;
 		if (Len(Trim(arguments.fieldList))) {
 			body['_source'] = ListToArray(arguments.fieldList);
+			// the type field is always needed in order to report each hit's document type
+			if ( !ArrayFindNoCase( body['_source'], "type" ) ) {
+				body['_source'].append( "type" );
+			}
 		}
 		body['query'] = StructNew();
 		body['query']['bool'] = StructNew();
@@ -112,6 +117,11 @@ component extends="BaseDialect" {
 			body['query']['bool']['filter'] = _generateDirectFilterClauses( arguments.directFilter );
 		}
 
+		// all document types share the single "doc" mapping, so restrict to the requested types with a filter
+		if ( Len( Trim( arguments.type ) ) ) {
+			body['query']['bool']['filter'].append( { terms={ type=ListToArray( arguments.type ) } } );
+		}
+
 		if ( arguments.objects.len() > 0 ){
 			for ( var object in arguments.objects ){
 				body['query']['bool']['filter'].append( { term = { type = object } } );
@@ -128,9 +138,36 @@ component extends="BaseDialect" {
 		return body;
 	}
 
+	public struct function getMoreLikeThisRequest(
+		  required string  baseUri
+		, required string  index
+		, required string  documentId
+		, required struct  dsl
+		,          boolean isFullDsl = false
+	) {
+		var body = arguments.dsl;
+
+		if ( !arguments.isFullDsl ) {
+			// the _mlt endpoint was removed in ElasticSearch 2.0: use a more_like_this query,
+			// keeping any filters generated from the search arguments
+			body['query']['bool']['must'] = { more_like_this = {
+				like = [ { _index=arguments.index, _type="doc", _id=arguments.documentId } ]
+			} };
+		}
+
+		return {
+			  uri  = arguments.baseUri & "/_search"
+			, body = body
+		};
+	}
+
 // RESPONSES
 	public struct function getHitFields( required struct hit ) {
 		return arguments.hit._source ?: {};
+	}
+
+	public string function getHitType( required struct hit ) {
+		return arguments.hit._source.type ?: ( arguments.hit._type ?: "" );
 	}
 
 	public struct function parseError( required any error ) {
@@ -142,9 +179,13 @@ component extends="BaseDialect" {
 
 // PRIVATE HELPERS
 	private struct function _getBaseFieldMapping( required string type, boolean searchable=false, boolean sortable=false, string analyzer="" ) {
-		var mapping = { type=arguments.type };
+		// "string" no longer exists as a field type
+		var fieldType = arguments.type == "string" ? "text" : arguments.type;
+		var mapping   = { type=fieldType };
 
-		if ( arguments.type == "keyword" ) {
+		// analyzers and fielddata only apply to text fields. Other types
+		// (keyword, date, numeric, boolean) can be sorted on as they are
+		if ( fieldType != "text" ) {
 			mapping.index = true;
 		} else if ( arguments.searchable ) {
 			if ( Len( Trim( arguments.analyzer ) ) ) {
@@ -154,12 +195,29 @@ component extends="BaseDialect" {
 			}
 		} else {
 			if ( arguments.sortable ) {
-				mapping.analyzer = "preside_sortable";
+				mapping.analyzer  = "preside_sortable";
+				mapping.fielddata = true;
 			} else {
 				mapping.index = true;
 			}
 		}
 
 		return mapping;
+	}
+
+	/**
+	 * The multi_field type no longer exists: use a "fields" sub-field instead. The
+	 * sortable version of the field is still available as [fieldname].untouched
+	 */
+	private struct function _getSortableSearchableFieldMapping( required string name, required struct mapping ) {
+		var sortableMapping = Duplicate( arguments.mapping );
+
+		if ( sortableMapping.type == "text" ) {
+			sortableMapping.fields = {
+				untouched = { type="text", analyzer="preside_sortable", fielddata=true }
+			};
+		}
+
+		return sortableMapping;
 	}
 }

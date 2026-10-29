@@ -78,14 +78,7 @@ component {
 		var mapping = _getBaseFieldMapping( argumentCollection=arguments );
 
 		if ( arguments.sortable && arguments.searchable ) {
-			mapping = {
-				  type   = "multi_field"
-				, fields = {
-					  "#arguments.name#" = Duplicate( mapping )
-					, untouched          = Duplicate( mapping )
-				}
-			};
-			mapping.fields.untouched.analyzer = "preside_sortable";
+			mapping = _getSortableSearchableFieldMapping( name=arguments.name, mapping=mapping );
 		}
 
 		if ( arguments.type == "date" ){
@@ -118,6 +111,24 @@ component {
 		_notImplemented( "generateSearchDsl" );
 	}
 
+	/**
+	 * Returns a struct with "uri" and "body" keys for a "more like this" search
+	 * for the given document.
+	 *
+	 * @baseUri   URI of the index and document type, e.g. "/myindex/mytype"
+	 * @dsl       Search DSL generated from the search arguments, or a full DSL supplied by the caller
+	 * @isFullDsl Whether or not the DSL was supplied in full by the caller (in which case it is sent as is)
+	 */
+	public struct function getMoreLikeThisRequest(
+		  required string  baseUri
+		, required string  index
+		, required string  documentId
+		, required struct  dsl
+		,          boolean isFullDsl = false
+	) {
+		_notImplemented( "getMoreLikeThisRequest" );
+	}
+
 	public string function getDefaultHighlightEncoder() {
 		return "default";
 	}
@@ -137,6 +148,13 @@ component {
 	}
 
 	/**
+	 * Returns the Preside document type of a single search hit
+	 */
+	public string function getHitType( required struct hit ) {
+		return arguments.hit._type ?: "";
+	}
+
+	/**
 	 * Returns a struct with "type" and "message" keys, parsed from the "error"
 	 * element of an error response
 	 */
@@ -147,6 +165,23 @@ component {
 // PRIVATE HELPERS
 	private struct function _getBaseFieldMapping() {
 		_notImplemented( "_getBaseFieldMapping" );
+	}
+
+	/**
+	 * Mapping for a field that is both searchable (analyzed) and sortable. The
+	 * sortable version of the field is available as [fieldname].untouched
+	 */
+	private struct function _getSortableSearchableFieldMapping( required string name, required struct mapping ) {
+		var multiFieldMapping = {
+			  type   = "multi_field"
+			, fields = {
+				  "#arguments.name#" = Duplicate( arguments.mapping )
+				, untouched          = Duplicate( arguments.mapping )
+			}
+		};
+		multiFieldMapping.fields.untouched.analyzer = "preside_sortable";
+
+		return multiFieldMapping;
 	}
 
 	private numeric function _calculateStartRecordFromPageInfo( required numeric page, required numeric pageOffset, required numeric pageSize ) {

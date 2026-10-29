@@ -60,7 +60,7 @@ component output=false singleton=true {
 			var hit = arguments.hits[i];
 
 			QueryAddRow( results );
-			QuerySetCell( results, "type" , hit._type  );
+			QuerySetCell( results, "type" , dialect.getHitType( hit ) );
 
 			if ( not IsNull (hit._score) ) {
 				QuerySetCell( results, "score", hit._score );

@@ -18,6 +18,15 @@ Combines the 1.x (ElasticSearch 1.7) and 6.x (ElasticSearch 6.3) releases into a
 * New `searchPageSize` setting. `indexPageSize` now sets the indexing batch size for all versions (default 100).
 * The `site` and `asset_folder` properties on the core objects now have `searchType="keyword"` plus `searchSearchable`/`searchSortable` annotations, which give the right mapping on every engine version. On ElasticSearch 1.x, `keyword` and `text` search types are mapped to `string`.
 
+Fixes for ElasticSearch 6.x:
+
+* Searches for specific objects returned documents of every type in the same index. Results are now filtered on the document `type` field.
+* `moreLikeThis()` called the `_mlt` endpoint, which was removed in ElasticSearch 2.0. It now uses a `more_like_this` query and keeps any filters.
+* Fields that were both searchable and sortable used the `multi_field` mapping type, which no longer exists. They now use a `fields` sub-field, which is still available as `[fieldname].untouched` for sorting.
+* Sortable text fields could not be sorted on (they now have `fielddata` enabled), and sortable non-text fields (e.g. dates) were given an analyzer, which made index creation fail.
+* The first and last characters of error messages were removed.
+* The `type` column of search results was always `doc`. It now holds the Preside document type.
+
 ## v6.3.14
 
 * Build fixes

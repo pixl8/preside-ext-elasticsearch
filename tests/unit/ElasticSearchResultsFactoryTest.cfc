@@ -22,6 +22,13 @@ component extends="testbox.system.BaseSpec" {
 				expect( results.tags[ 1 ]  ).toBe( "a" );
 			} );
 
+			it( "should report the Preside document type, rather than 'doc', when using ElasticSearch 6.3", function(){
+				var rawResult = { took=3, hits={ total=1, hits=[ { _type="doc", _score=1.5, _source={ title="One", type="page" } } ] } };
+				var results   = _getFactory( "6.3" ).newSearchResult( rawResult=rawResult, page=1, pageSize=10, returnFields="title" ).getResults();
+
+				expect( results.type[ 1 ] ).toBe( "page" );
+			} );
+
 			it( "should join highlights and remove truncated HTML entities", function(){
 				var rawResult = { took=3, hits={ total=1, hits=[ { _type="doc", _score=1, _source={}, highlight={ title=[ "one", "two &amp" ] } } ] } };
 				var results   = _getFactory( "6.3" ).newSearchResult( rawResult=rawResult, page=1, pageSize=10, highlightFields="title" ).getResults();
