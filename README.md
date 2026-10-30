@@ -60,7 +60,7 @@ Documentation is a work in progress. For now, we intend to use the [Github Wiki]
 
 ## Versioning
 
-We use [SemVer](https://semver.org) for versioning. As of **6.3**, we aim to keep versioning inline with the minimum ElasticSearch engine version that the extension supports.
+We use [SemVer](https://semver.org) for versioning. As of **7.0**, the extension is universal and covers multiple versions of ElasticSearch.
 
 For the versions available, see the [tags on this repository](https://github.com/pixl8/preside-ext-elasticsearch/releases). Project releases can also be found and installed from [Forgebox](https://forgebox.io/view/preside-ext-elasticsearch)
 
