@@ -1,10 +1,10 @@
-component output="false" extends="preside.system.base.AdminHandler" {
+component extends="preside.system.base.AdminHandler" {
 
 	property name="elasticSearchEngine"        inject="elasticSearchEngine";
 	property name="systemConfigurationService" inject="systemConfigurationService";
 	property name="messagebox"                 inject="coldbox:plugin:messagebox";
 
-	function prehandler( event, rc, prc ) output=false {
+	function prehandler( event, rc, prc ) {
 		super.preHandler( argumentCollection = arguments );
 
 		_checkPermissions( event=event, key="elasticSearchControl.navigate" );
@@ -15,15 +15,16 @@ component output="false" extends="preside.system.base.AdminHandler" {
 		);
 	}
 
-	public void function index( event, rc, prc ) output=false {
+	public void function index( event, rc, prc ) {
 		prc.pageTitle    = translateResource( "cms:elasticSearchControl.page.title"    );
 		prc.pageSubTitle = translateResource( "cms:elasticSearchControl.page.subtitle" );
 		prc.pageIcon     = "search";
 
-		prc.stats = elasticSearchEngine.getStats();
+		prc.stats        = elasticSearchEngine.getStats();
+		prc.versionCheck = elasticSearchEngine.checkServerVersion();
 	}
 
-	public void function rebuildAction( event, rc, prc ) output=false {
+	public void function rebuildAction( event, rc, prc ) {
 		var indexName = rc.index ?: "";
 
 		_checkPermissions( event, "rebuild" );
@@ -38,7 +39,7 @@ component output="false" extends="preside.system.base.AdminHandler" {
 
 	}
 
-	public void function terminateRebuildAction( event, rc, prc ) output=false {
+	public void function terminateRebuildAction( event, rc, prc ) {
 		var indexName = rc.index ?: "";
 
 		_checkPermissions( event, "rebuild" );
@@ -50,7 +51,7 @@ component output="false" extends="preside.system.base.AdminHandler" {
 		setNextEvent( url=event.buildAdminLink( linkTo="elasticSearchControl" ) );
 	}
 
-	public void function configure( event, rc, prc ) output=false {
+	public void function configure( event, rc, prc ) {
 		_checkPermissions( event, "configure" );
 
 		prc.configuration = systemConfigurationService.getCategorySettings( "elasticsearch" );
@@ -64,7 +65,7 @@ component output="false" extends="preside.system.base.AdminHandler" {
 		);
 	}
 
-	public void function saveConfigurationAction( event, rc, prc ) output=false {
+	public void function saveConfigurationAction( event, rc, prc ) {
 		_checkPermissions( event, "configure" );
 
 		var formData = event.getCollectionForForm( "elasticsearch.config" );
@@ -84,7 +85,7 @@ component output="false" extends="preside.system.base.AdminHandler" {
 
 
 // PRIVATE HELPERS
-	private void function _checkPermissions( required any event, required string key ) output=false {
+	private void function _checkPermissions( required any event, required string key ) {
 		var permitted = true;
 		var context   = "elasticSearchControl";
 		var permKey   = context & "." & arguments.key;

@@ -456,6 +456,9 @@ component extends="testbox.system.BaseSpec" {
 			} );
 		} );
 
+		_runFieldTypeSpecs( engineVersion="1.7", expected={ stringType="string", defaultType="string", keywordType="string", keywordSearchable=true } );
+		_runFieldTypeSpecs( engineVersion="6.3", expected={ stringType="text"  , defaultType="text"  , keywordType="keyword", keywordSearchable=false } );
+
 		describe( "listIndexes()", function(){
 			it( "should return an array of unique index names defined across all the objects", function(){
 				var svc     = _getService();
@@ -607,13 +610,84 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 // HELPERS
-	private any function _getService() {
+	private void function _runFieldTypeSpecs( required string engineVersion, required struct expected ) {
+		var version  = arguments.engineVersion;
+		var expected = arguments.expected;
+
+		describe( "getFieldConfiguration() field types (ElasticSearch #version#)", function(){
+			it( "should return '#expected.stringType#' type, searchable with the default analyzer, when property is a string", function(){
+				var svc        = _getService( version );
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "pk", false ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type       ?: "" ).toBe( expected.stringType );
+				expect( configuration.searchable ?: "" ).toBe( true );
+				expect( configuration.analyzer   ?: "" ).toBe( "default" );
+			} );
+
+			it( "should return '#expected.defaultType#' for types other than date, boolean, string and numeric", function(){
+				var svc        = _getService( version );
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "jazz" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "pk", false ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( expected.defaultType );
+			} );
+
+			it( "should return '#expected.keywordType#' type when searchType is 'keyword'", function(){
+				var svc        = _getService( version );
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchType", "" ).$results( "keyword" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "pk", false ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( expected.keywordType );
+				expect( configuration.searchable ?: "" ).toBe( expected.keywordSearchable );
+			} );
+
+			it( "should honour searchSearchable=false for keyword fields so that they are not analyzed", function(){
+				var svc        = _getService( version );
+				var objectName = "someobject";
+				var fieldName  = "somefield";
+
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "type" ).$results( "string" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchType", "" ).$results( "keyword" );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "searchSearchable" ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute" ).$args( objectName, fieldName, "pk", false ).$results( false );
+				mockPresideObjectService.$( "getObjectPropertyAttribute", "" );
+
+				var configuration = svc.getFieldConfiguration( objectName, fieldName );
+
+				expect( configuration.type ?: "" ).toBe( expected.keywordType );
+				expect( configuration.searchable ?: "" ).toBe( false );
+			} );
+		} );
+	}
+
+	private any function _getService( string engineVersion="6.3" ) {
 		mockPresideObjectService = getMockBox().createStub();
 		mockConfigurationService = getMockBox().createStub();
 
 		var svc = new elasticsearch.services.ElasticSearchPresideObjectConfigurationReader(
 			  presideObjectService       = mockPresideObjectService
 			, systemConfigurationService = mockConfigurationService
+			, dialectFactory             = new elasticsearch.services.ElasticSearchDialectFactory( engineVersion=arguments.engineVersion )
 		);
 
 		return getMockBox().createMock( object=svc );

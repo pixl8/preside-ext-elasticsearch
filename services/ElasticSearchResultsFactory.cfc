@@ -1,7 +1,12 @@
-component output=false singleton=true {
+component singleton=true {
 
 // CONSTRUCTOR
-	public any function init() output=false {
+	/**
+	 * @dialectFactory.inject elasticSearchDialectFactory
+	 */
+	public any function init( required any dialectFactory ) {
+		_setDialectFactory( arguments.dialectFactory );
+
 		return this;
 	}
 
@@ -13,7 +18,7 @@ component output=false singleton=true {
 		,          string  returnFields    = ""
 		,          string  highlightFields = ""
 		,          string  q               = ""
-	) output=false {
+	) {
 		var args = StructNew();
 
 		args.page     = arguments.page;
@@ -42,28 +47,29 @@ component output=false singleton=true {
 
 
 // PRIVATE HELPERS
-	private query function _hitsToResults( required array hits, required string fieldList, required string highlightFields ) output=false {
+	private query function _hitsToResults( required array hits, required string fieldList, required string highlightFields ) {
 		var fields     = ListToArray( arguments.fieldList );
 		var highlights = ListToArray( arguments.highlightFields );
 		var results    = QueryNew( _calculateResultQueryColumns( arguments.fieldList, highlights ) );
+		var dialect    = _getDialect();
 		var field      = "";
 		var i          = 0;
 		var n          = 0;
 
-		for( i=1; i lte ArrayLen( arguments.hits ); i=i+1 ){
+		for( i=1; i <= ArrayLen( arguments.hits ); i=i+1 ){
 			var hit = arguments.hits[i];
 
 			QueryAddRow( results );
-			QuerySetCell( results, "type" , hit._type  );
+			QuerySetCell( results, "type" , dialect.getHitType( hit ) );
 
-			if ( not IsNull (hit._score) ) {
+			if ( !IsNull( hit._score ) ) {
 				QuerySetCell( results, "score", hit._score );
 			} else {
 				QuerySetCell( results, "score", 0 );
 			}
 
 			if ( StructKeyExists( hit, 'highlight' ) ) {
-				for( n=1; n lte ArrayLen( highlights ); n=n+1 ){
+				for( n=1; n <= ArrayLen( highlights ); n=n+1 ){
 					QuerySetCell(
 						  results
 						, highlights[n] & "_highlight"
@@ -72,13 +78,14 @@ component output=false singleton=true {
 				}
 			}
 
-			for( n=1; n lte ArrayLen( fields ); n=n+1 ){
+			var hitFields = dialect.getHitFields( hit );
+			for( n=1; n <= ArrayLen( fields ); n=n+1 ){
 				field = fields[ n ];
-				if ( StructKeyExists( hit._source, field ) ) {
-					if ( IsArray( hit._source[ field ] ) && hit._source[ field ].len() < 2 ) {
-						hit._source[ field ] = hit._source[ field ].toList();
+				if ( StructKeyExists( hitFields, field ) ) {
+					if ( IsArray( hitFields[ field ] ) && ArrayLen( hitFields[ field ] ) < 2 ) {
+						hitFields[ field ] = ArrayToList( hitFields[ field ] );
 					}
-					QuerySetCell( results, field, hit._source[ field ] );
+					QuerySetCell( results, field, hitFields[ field ] );
 				}
 			}
 		}
@@ -86,7 +93,7 @@ component output=false singleton=true {
 		return results;
 	}
 
-	private string function _calculateResultQueryColumns( required string fieldList, required array highlightFields ) output=false {
+	private string function _calculateResultQueryColumns( required string fieldList, required array highlightFields ) {
 		var columns = ListAppend( arguments.fieldList, "type,score" );
 
 		for( var field in arguments.highlightFields ){
@@ -96,7 +103,7 @@ component output=false singleton=true {
 		return columns;
 	}
 
-	private string function _formatHighlight( required struct highlights, required string highlightField ) output=false {
+	private string function _formatHighlight( required struct highlights, required string highlightField ) {
 		var highlight      = [];
 		var highlightArray = [];
 		var maxHighlights  = 3;
@@ -106,27 +113,27 @@ component output=false singleton=true {
 		if ( StructKeyExists( arguments.highlights, arguments.highlightField ) ) {
 			highlightArray = arguments.highlights[ arguments.highlightField ];
 
-			for( i=1; i lte ArrayLen( highlightArray ) and i lte maxHighlights; i=i+1 ) {
-				highlight.append( rereplace( highlightArray[i], "&[a-z]*$", "" ) );
+			for( i=1; i <= ArrayLen( highlightArray ) && i <= maxHighlights; i=i+1 ) {
+				ArrayAppend( highlight, ReReplace( highlightArray[i], "&[a-z]*$", "" ) );
 			}
 		}
 
-		return arrayToList( highlight, dotdotdot );
+		return ArrayToList( highlight, dotdotdot );
 	}
 
-	private struct function _transformFacets( required struct facets ) output=false {
+	private struct function _transformFacets( required struct facets ) {
 		var transformed = StructNew();
 		var facet       = "";
 		var facetKeys   = StructKeyArray( arguments.facets );
 		var i           = "";
 		var n           = "";
 
-		for( i=1; i lte ArrayLen( facetKeys ); i=i+1 ){
+		for( i=1; i <= ArrayLen( facetKeys ); i=i+1 ){
 			facet = facetKeys[i];
 
 			transformed[ facet ] = QueryNew('id,label,count');
 
-			for( n=1; n lte ArrayLen( arguments.facets[ facet ].terms ); n=n+1 ){
+			for( n=1; n <= ArrayLen( arguments.facets[ facet ].terms ); n=n+1 ){
 				QueryAddRow( transformed[ facet ] );
 				QuerySetCell(transformed[ facet ] , 'id'   , arguments.facets[ facet ].terms[n].term  );
 				QuerySetCell(transformed[ facet ] , 'label', arguments.facets[ facet ].terms[n].term  );
@@ -135,5 +142,17 @@ component output=false singleton=true {
 		}
 
 		return transformed;
+	}
+
+// GETTERS AND SETTERS
+	private any function _getDialectFactory() {
+		return _dialectFactory;
+	}
+	private void function _setDialectFactory( required any dialectFactory ) {
+		_dialectFactory = arguments.dialectFactory;
+	}
+
+	private any function _getDialect() {
+		return _getDialectFactory().getDialect();
 	}
 }
