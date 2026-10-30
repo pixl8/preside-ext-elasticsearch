@@ -8,12 +8,14 @@ component {
 	/**
 	 * @presideObjectService.inject       presideObjectService
 	 * @systemConfigurationService.inject systemConfigurationService
+	 * @dialectFactory.inject             elasticSearchDialectFactory
 	 *
 	 */
-	public any function init( required any presideObjectService, required any systemConfigurationService ) {
+	public any function init( required any presideObjectService, required any systemConfigurationService, required any dialectFactory ) {
 		_setLocalCache( {} );
 		_setPresideObjectService( arguments.presideObjectService );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
+		_setDialectFactory( arguments.dialectFactory );
 
 		return this;
 	}
@@ -31,7 +33,7 @@ component {
 				}
 			}
 
-			return indexes.keyArray();
+			return StructKeyArray( indexes );
 		} );
 	}
 
@@ -49,7 +51,7 @@ component {
 				}
 			}
 
-			return docTypes.keyArray();
+			return StructKeyArray( docTypes );
 		} );
 	}
 
@@ -95,7 +97,7 @@ component {
 		return _simpleLocalCache( "listSearchEnabledObjects", function(){
 			var poService = _getPresideObjectService();
 
-			return poService.listObjects().filter( function( objectName ){
+			return ArrayFilter( poService.listObjects(), function( objectName ){
 				var isPageType       = _isPageType( objectName );
 				var isAssetObject    = _isAssetObject( objectName );
 				var isSystemPageType = isPageType && poService.getObjectAttribute( objectName, "isSystemPageType", false );
@@ -136,17 +138,17 @@ component {
 				var searchEnabled = prop.searchEnabled ?: "";
 
 				if ( IsBoolean( searchEnabled ) && searchEnabled ){
-					configuration.fields.append( propName );
+					ArrayAppend( configuration.fields, propName );
 				}
 			}
-			if ( !configuration.fields.find( "id" ) ) {
-				configuration.fields.append( "id" );
+			if ( !ArrayFind( configuration.fields, "id" ) ) {
+				ArrayAppend( configuration.fields, "id" );
 			}
 
-			if ( !configuration.indexFilters.len() && _isPageType( args.objectName ) ) {
+			if ( !ArrayLen( configuration.indexFilters ) && _isPageType( args.objectName ) ) {
 				configuration.indexFilters = [ "elasticSearchPageFilter", "livePages" ];
 			}
-			if ( !configuration.indexFilters.len() && _isAssetObject( args.objectName ) ) {
+			if ( !ArrayLen( configuration.indexFilters ) && _isAssetObject( args.objectName ) ) {
 				configuration.indexFilters = [ "elasticSearchAssetFilter" ];
 			}
 
@@ -159,6 +161,7 @@ component {
 
 		return _simpleLocalCache( "getFieldConfiguration" & args.objectName & args.fieldname, function(){
 			var poService     = _getPresideObjectService();
+			var dialect       = _getDialect();
 			var configuration = {};
 			var fieldType     = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "type" );
 			var primaryKey    = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "pk" , false );
@@ -172,7 +175,6 @@ component {
 			if ( !Len( Trim( configuration.type ?: "" ) ) ) {
 				switch( fieldType ){
 					case "string":
-						configuration.type = "text";
 					case "date":
 					case "boolean":
 						configuration.type = fieldType;
@@ -205,16 +207,18 @@ component {
 					break;
 
 					default:
-						configuration.type = "text";
+						configuration.type = dialect.getDefaultFieldType();
 				}
 			}
 
+			configuration.type = dialect.translateFieldType( configuration.type );
+
 			switch( configuration.type ){
 				case "string":
-					configuration.type = "text";
+					configuration.type = dialect.getStringFieldType();
 					configuration.searchable = poService.getObjectPropertyAttribute( args.objectName, args.fieldName, "searchSearchable" );
-					if(primaryKey){
-						configuration.searchable=IsBoolean(configuration.searchable)?configuration.searchable:false; //default to false for primary key if setting is not found
+					if ( primaryKey ) {
+						configuration.searchable = IsBoolean( configuration.searchable ) ? configuration.searchable : false; //default to false for primary key if setting is not found
 					}
 					if ( !Len( Trim( configuration.searchable ) ) ) {
 						configuration.searchable = true;
@@ -281,7 +285,7 @@ component {
 	private any function _simpleLocalCache( required string cacheKey, required any generator ) {
 		var cache = _getLocalCache();
 
-		if ( !cache.keyExists( cacheKey ) ) {
+		if ( !StructKeyExists( cache, cacheKey ) ) {
 			cache[ cacheKey ] = generator();
 		}
 
@@ -312,6 +316,17 @@ component {
 	}
 	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
+	}
+
+	private any function _getDialectFactory() {
+		return _dialectFactory;
+	}
+	private void function _setDialectFactory( required any dialectFactory ) {
+		_dialectFactory = arguments.dialectFactory;
+	}
+
+	private any function _getDialect() {
+		return _getDialectFactory().getDialect();
 	}
 
 	private struct function _getLocalCache() {

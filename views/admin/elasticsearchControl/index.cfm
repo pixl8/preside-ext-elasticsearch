@@ -1,5 +1,6 @@
 <cfscript>
-	stats = prc.stats ?: {};
+	stats        = prc.stats        ?: {};
+	versionCheck = prc.versionCheck ?: {};
 
 	errorStatus = translateResource( "cms:elasticSearchControl.statstable.stats.error" );
 
@@ -18,6 +19,24 @@
 			</a>
 		</cfif>
 	</div>
+
+	<cfif Len( versionCheck.configuredVersion ?: "" )>
+		<cfif IsFalse( versionCheck.compatible ?: true )>
+			<div class="alert alert-danger">
+				<i class="fa fa-fw fa-exclamation-triangle"></i>
+				#translateResource( uri="cms:elasticSearchControl.version.mismatch", data=[ versionCheck.configuredVersion, versionCheck.serverVersion ] )#
+			</div>
+		<cfelse>
+			<p class="grey">
+				<i class="fa fa-fw fa-info-circle"></i>
+				<cfif Len( versionCheck.serverVersion ?: "" )>
+					#translateResource( uri="cms:elasticSearchControl.version.info", data=[ versionCheck.configuredVersion, versionCheck.serverVersion ] )#
+				<cfelse>
+					#translateResource( uri="cms:elasticSearchControl.version.info.noserver", data=[ versionCheck.configuredVersion ] )#
+				</cfif>
+			</p>
+		</cfif>
+	</cfif>
 
 	<div class="table-responsive">
 		<table class="table table-striped table-hover">

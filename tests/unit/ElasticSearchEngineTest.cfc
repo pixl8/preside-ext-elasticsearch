@@ -273,94 +273,152 @@ component extends="testbox.system.BaseSpec" {
 			} );
 		} );
 
-		describe( "getIndexMappings()", function(){
-			it( "should create mappings based on the configured fields and document types for the index", function(){
-				var engine    = _getSearchEngine();
-				var indexName = "some_index";
-				var docTypes  = {
-					  type_a = { field_x={ fieldName="field_1", type="string", searchable=true, sortable=true }, field_2={ fieldName="field_2", type="date", searchable=false, ignoreMalformedDates=true, dateFormat="yyyy-mm-dd", sortable=true }, field_3={ fieldName="field_3", type="boolean", searchable=false, sortable=true } }
-					, type_b = { field_x={ fieldName="field_4", type="string", searchable=false, sortable=true }, field_5={ fieldName="field_5", type="number", sortable=true }, field_6={ fieldName="field_6", type="string", analyzer="test", searchable=true, sortable=false } }
-				};
-				var expectedMappings = {
-					doc = { properties={
-						  field_1 = { test="field_1" }
-						, field_2 = { test="field_2" }
-						, field_3 = { test="field_3" }
-						, field_4 = { test="field_4" }
-						, field_5 = { test="field_5" }
-						, field_6 = { test="field_6" }
-						, access_restricted = { type="boolean" }
-						, type = { type="keyword" }
-					} }
-				};
+		describe( "indexRecord() document type handling", function(){
+			it( "should add the document type to the indexed document when using ElasticSearch 6.3", function(){
+				var doc = _indexRecordWithVersion( "6.3" );
 
-				mockConfigReader.$( "listDocumentTypes" ).$args( indexName ).$results( docTypes.keyArray() );
-				for( var dt in docTypes ){
-					mockConfigReader.$( "getFields" ).$args( indexName, dt ).$results( docTypes[ dt ] );
-					for( var field in docTypes[ dt ] ) {
-						engine.$( "getElasticSearchMappingFromFieldConfiguration" ).$args( argumentCollection=docTypes[ dt ][ field ], name=docTypes[ dt ][ field ].fieldName ).$results( { test=docTypes[ dt ][ field ].fieldName } );
-					}
-				}
+				expect( doc.type ?: "" ).toBe( "somedoctype" );
+			} );
 
-				expect( engine.getIndexMappings( indexName ) ).toBe( expectedMappings );
+			it( "should not add the document type to the indexed document when using ElasticSearch 1.7", function(){
+				var doc = _indexRecordWithVersion( "1.7" );
+
+				expect( StructKeyExists( doc, "type" ) ).toBeFalse();
 			} );
 		} );
 
-		describe( "getElasticSearchMappingFromFieldConfiguration()", function(){
-			it( "should return configured type", function(){
-				var engine = _getSearchEngine();
-				var field = { name="myfield", type="boolean" };
-
-				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
-
-				expect( mapping.type ).toBe( field.type );
+		describe( "search() default page size", function(){
+			it( "should default to 10 when no searchPageSize is configured", function(){
+				expect( _getSearchPageSizeUsed( "6.3", { indexPageSize=50 } ) ).toBe( 10 );
+				expect( _getSearchPageSizeUsed( "1.7", {} ) ).toBe( 10 );
 			} );
 
-			it( "should return index='true' when field is not searchable or sortable", function(){
-				var engine = _getSearchEngine();
-				var field = { name="myfield", type="boolean", searchable=false, sortable=false };
-
-				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
-
-				expect( mapping.index ?: '' ).toBe( 'true' );
+			it( "should use configured searchPageSize", function(){
+				expect( _getSearchPageSizeUsed( "6.3", { searchPageSize=15, indexPageSize=50 } ) ).toBe( 15 );
+				expect( _getSearchPageSizeUsed( "1.7", { searchPageSize=15, indexPageSize=50 } ) ).toBe( 15 );
 			} );
 
-			it( "should return analyzer when field is searchable and analyzer supplied", function(){
-				var engine = _getSearchEngine();
-				var field = { name="myfield", type="string", searchable=true, sortable=false, analyzer="someanalyzer" };
+			it( "should fall back to indexPageSize for ElasticSearch 1.x, for compatibility with legacy releases of the extension", function(){
+				expect( _getSearchPageSizeUsed( "1.7", { indexPageSize=25 } ) ).toBe( 25 );
+			} );
+		} );
 
-				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+		describe( "getObjectDataForIndexing() groupByRecordIdOnly", function(){
+			it( "should use automatic group by by default", function(){
+				var args = _getSelectDataArgsForIndexing( {} );
 
-				expect( mapping.analyzer ?: '' ).toBe( 'someanalyzer' );
+				expect( args.autoGroupBy ).toBeTrue();
+				expect( args.groupBy ).toBe( "" );
 			} );
 
-			it( "should return 'preside_sortable' analyzer when field is sortable but not searchable", function(){
-				var engine = _getSearchEngine();
-				var field = { name="myfield", type="string", searchable=false, sortable=true };
+			it( "should group by the object's id field when groupByRecordIdOnly is set", function(){
+				var args = _getSelectDataArgsForIndexing( { groupByRecordIdOnly=true } );
 
-				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+				expect( args.autoGroupBy ).toBeFalse();
+				expect( args.groupBy ).toBe( "myobj.id" );
+			} );
+		} );
 
-				expect( mapping.analyzer ?: '' ).toBe( 'preside_sortable' );
+		describe( "checkServerVersion()", function(){
+			it( "should report compatible when the server's major version matches the configured version", function(){
+				var engine = _getSearchEngine( "6.3" );
+
+				mockApiWrapper.$( "ping", { version={ number="6.3.2" } } );
+
+				expect( engine.checkServerVersion() ).toBe( { configuredVersion="6.3", serverVersion="6.3.2", compatible=true } );
 			} );
 
-			it( "should return split definition when field is both searchable and sortable", function(){
-				var engine = _getSearchEngine();
-				var field = { name="myfield", type="string", searchable=true, sortable=true, analyzer="anotheranalyzer" };
+			it( "should report incompatible when the server's major version differs from the configured version", function(){
+				var engine = _getSearchEngine( "6.3" );
 
-				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+				mockApiWrapper.$( "ping", { version={ number="1.7.6" } } );
 
-				expect( mapping.type ?: '' ).toBe( "multi_field" );
-				expect( mapping.fields.myfield   ?: {} ).toBe( { type="string", analyzer="anotheranalyzer", index=true, fielddata=true } );
-				expect( mapping.fields.untouched ?: {} ).toBe( { type="string", analyzer="preside_sortable", index=true, fielddata=true } );
+				expect( engine.checkServerVersion() ).toBe( { configuredVersion="6.3", serverVersion="1.7.6", compatible=false } );
 			} );
 
-			it( "should return dateformat and ignore malformed options when type is date", function(){
-				var engine = _getSearchEngine();
-				var field = { name="myfield", type="date", searchable=false, sortable=true, analyzer="anotheranalyzer", dateFormat="yyyy-MM-d", ignoreMalformedDates=true };
+			it( "should not report incompatible when the server version cannot be retrieved", function(){
+				var engine = _getSearchEngine( "1.7" );
+
+				mockApiWrapper.$( method="ping", throwException=true, throwType="cfelasticsearch.communicationError" );
+
+				expect( engine.checkServerVersion() ).toBe( { configuredVersion="1.7", serverVersion="", compatible=true } );
+			} );
+		} );
+
+		_runMappingSpecs( engineVersion="1.7", expected={
+			  indexMappings = {
+				type_a = { properties={
+					  field_1 = { test="field_1" }
+					, field_2 = { test="field_2" }
+					, field_3 = { test="field_3" }
+					, access_restricted = { type="boolean" }
+				} },
+				type_b = { properties={
+					  field_4 = { test="field_4" }
+					, field_5 = { test="field_5" }
+					, field_6 = { test="field_6" }
+					, access_restricted = { type="boolean" }
+				} }
+			  }
+			, notSearchableOrSortableIndex = "not_analyzed"
+			, splitMapping                 = { type="multi_field", fields={
+				  myfield   = { type="string", analyzer="anotheranalyzer" }
+				, untouched = { type="string", analyzer="preside_sortable" }
+			  } }
+			, sortableDateMapping          = { type="date", analyzer="preside_sortable", format="yyyy-MM-d", ignore_malformed=true }
+		} );
+
+		_runMappingSpecs( engineVersion="6.3", expected={
+			  indexMappings = {
+				doc = { properties={
+					  field_1 = { test="field_1" }
+					, field_2 = { test="field_2" }
+					, field_3 = { test="field_3" }
+					, field_4 = { test="field_4" }
+					, field_5 = { test="field_5" }
+					, field_6 = { test="field_6" }
+					, access_restricted = { type="boolean" }
+					, type = { type="keyword" }
+				} }
+			  }
+			, notSearchableOrSortableIndex = true
+			, splitMapping                 = {
+				  type      = "text"
+				, analyzer  = "anotheranalyzer"
+				, index     = true
+				, fielddata = true
+				, fields    = { untouched={ type="text", analyzer="preside_sortable", fielddata=true } }
+			  }
+			, sortableDateMapping          = { type="date", index=true, format="yyyy-MM-d", ignore_malformed=true }
+		} );
+
+		describe( "getElasticSearchMappingFromFieldConfiguration() (ElasticSearch 6.3)", function(){
+			it( "should return a plain indexed keyword mapping for keyword fields", function(){
+				var engine = _getSearchEngine( "6.3" );
+				var field = { name="myfield", type="keyword", searchable=false, sortable=true };
 
 				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
 
-				expect( mapping ).toBe( { type="date", analyzer="preside_sortable", format="yyyy-MM-d", ignore_malformed=true } );
+				expect( mapping ).toBe( { type="keyword", index=true } );
+			} );
+
+			it( "should enable fielddata on sortable text fields so that they can be sorted on", function(){
+				var engine = _getSearchEngine( "6.3" );
+				var field = { name="myfield", type="text", searchable=false, sortable=true };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping ).toBe( { type="text", analyzer="preside_sortable", fielddata=true } );
+			} );
+
+			it( "should not add analyzers to sortable non-text fields", function(){
+				var engine = _getSearchEngine( "6.3" );
+
+				for( var type in [ "integer", "boolean", "keyword" ] ) {
+					var mapping = engine.getElasticSearchMappingFromFieldConfiguration( name="myfield", type=type, searchable=false, sortable=true );
+
+					expect( mapping ).toBe( { type=type, index=true } );
+				}
 			} );
 		} );
 
@@ -521,6 +579,22 @@ component extends="testbox.system.BaseSpec" {
 						, idField = "id"
 					} );
 				}
+			} );
+		} );
+
+		describe( "indexAllRecords() error reporting", function(){
+			it( "should log string item errors returned by ElasticSearch 1.x", function(){
+				var logged = _getIndexingErrorLogged( "MapperParsingException[failed to parse]" );
+
+				expect( logged ).toBe( "Error adding document(s). First found error report: MapperParsingException[failed to parse]" );
+			} );
+
+			it( "should log structured item errors returned by ElasticSearch 6.x", function(){
+				var logged = _getIndexingErrorLogged( { type="mapper_parsing_exception", reason="failed to parse" } );
+
+				expect( logged ).toInclude( "First found error report: " );
+				expect( logged ).toInclude( "mapper_parsing_exception" );
+				expect( logged ).toInclude( "failed to parse" );
 			} );
 		} );
 
@@ -920,7 +994,162 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 // PRIVATE HELPERS
-	private function _getSearchEngine() {
+	private void function _runMappingSpecs( required string engineVersion, required struct expected ) {
+		var version  = arguments.engineVersion;
+		var expected = arguments.expected;
+
+		describe( "getIndexMappings() (ElasticSearch #version#)", function(){
+			it( "should create mappings based on the configured fields and document types for the index", function(){
+				var engine    = _getSearchEngine( version );
+				var indexName = "some_index";
+				var docTypes  = {
+					  type_a = { field_x={ fieldName="field_1", type="string", searchable=true, sortable=true }, field_2={ fieldName="field_2", type="date", searchable=false, ignoreMalformedDates=true, dateFormat="yyyy-mm-dd", sortable=true }, field_3={ fieldName="field_3", type="boolean", searchable=false, sortable=true } }
+					, type_b = { field_x={ fieldName="field_4", type="string", searchable=false, sortable=true }, field_5={ fieldName="field_5", type="number", sortable=true }, field_6={ fieldName="field_6", type="string", analyzer="test", searchable=true, sortable=false } }
+				};
+
+				mockConfigReader.$( "listDocumentTypes" ).$args( indexName ).$results( docTypes.keyArray() );
+				for( var dt in docTypes ){
+					mockConfigReader.$( "getFields" ).$args( indexName, dt ).$results( docTypes[ dt ] );
+					for( var field in docTypes[ dt ] ) {
+						engine.$( "getElasticSearchMappingFromFieldConfiguration" ).$args( argumentCollection=docTypes[ dt ][ field ], name=docTypes[ dt ][ field ].fieldName ).$results( { test=docTypes[ dt ][ field ].fieldName } );
+					}
+				}
+
+				expect( engine.getIndexMappings( indexName ) ).toBe( expected.indexMappings );
+			} );
+		} );
+
+		describe( "getElasticSearchMappingFromFieldConfiguration() (ElasticSearch #version#)", function(){
+			it( "should return configured type", function(){
+				var engine = _getSearchEngine( version );
+				var field = { name="myfield", type="boolean" };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping.type ).toBe( field.type );
+			} );
+
+			it( "should return the version specific 'index' setting when field is not searchable or sortable", function(){
+				var engine = _getSearchEngine( version );
+				var field = { name="myfield", type="boolean", searchable=false, sortable=false };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping.index ?: '' ).toBe( expected.notSearchableOrSortableIndex );
+			} );
+
+			it( "should return analyzer when field is searchable and analyzer supplied", function(){
+				var engine = _getSearchEngine( version );
+				var field = { name="myfield", type="string", searchable=true, sortable=false, analyzer="someanalyzer" };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping.analyzer ?: '' ).toBe( 'someanalyzer' );
+			} );
+
+			it( "should return 'preside_sortable' analyzer when field is sortable but not searchable", function(){
+				var engine = _getSearchEngine( version );
+				var field = { name="myfield", type="string", searchable=false, sortable=true };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping.analyzer ?: '' ).toBe( 'preside_sortable' );
+			} );
+
+			it( "should return split definition, with an 'untouched' sortable version of the field, when field is both searchable and sortable", function(){
+				var engine = _getSearchEngine( version );
+				var field = { name="myfield", type="string", searchable=true, sortable=true, analyzer="anotheranalyzer" };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping ).toBe( expected.splitMapping );
+			} );
+
+			it( "should return dateformat and ignore malformed options when type is date", function(){
+				var engine = _getSearchEngine( version );
+				var field = { name="myfield", type="date", searchable=false, sortable=true, analyzer="anotheranalyzer", dateFormat="yyyy-MM-d", ignoreMalformedDates=true };
+
+				var mapping = engine.getElasticSearchMappingFromFieldConfiguration( argumentCollection=field );
+
+				expect( mapping ).toBe( expected.sortableDateMapping );
+			} );
+		} );
+	}
+
+	private string function _getIndexingErrorLogged( required any itemError ) {
+		var engine     = _getSearchEngine();
+		var objectName = "testObject";
+		var indexAlias = "someindex";
+		var logger     = getMockBox().createStub();
+
+		logger.$( "canDebug", false );
+		logger.$( "canInfo" , false );
+		logger.$( "canWarn" , false );
+		logger.$( "canError", true  );
+		logger.$( "error" );
+
+		engine.$( "isIndexReindexing" ).$args( indexAlias ).$results( true );
+		engine.$( "$raiseError" );
+		mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
+		mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results( { documentType="somedoctype" } );
+		engine.$( "getPaginatedRecordsForObject", [ { id="1" } ] );
+		mockApiWrapper.$( "addDocs", { errors=true, items=[ { index={ _id="1", error=arguments.itemError } } ] } );
+
+		expect( engine.indexAllRecords( objectName, "someindex_123", indexAlias, logger ) ).toBeFalse();
+
+		return logger.$callLog().error[ 1 ][ 1 ];
+	}
+
+	private struct function _indexRecordWithVersion( required string engineVersion ) {
+		var engine     = _getSearchEngine( arguments.engineVersion );
+		var recordId   = CreateUUId();
+		var objectName = "some_object";
+		var object     = getMockbox().createStub();
+
+		object.$( "getDataForSearchEngine" ).$args( recordId ).$results( [ { id=recordId, test="this" } ] );
+		mockApiWrapper.$( "addDoc", {} );
+		mockPresideObjectService.$( "getObject" ).$args( objectName ).$results( object );
+		mockConfigReader.$( "isObjectSearchEnabled" ).$args( objectName ).$results( true );
+		mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results({
+			  indexName        = "myindex"
+			, documentType     = "somedoctype"
+			, hasOwnDataGetter = true
+		} );
+
+		engine.indexRecord( objectName, recordId );
+
+		return mockApiWrapper.$callLog().addDoc[1].doc;
+	}
+
+	private numeric function _getSearchPageSizeUsed( required string engineVersion, required struct initArgs ) {
+		var engine = _getSearchEngine( arguments.engineVersion, arguments.initArgs );
+
+		mockApiWrapper.$( "search", {} );
+		mockResultsFactory.$( "newSearchResult", {} );
+		mockConfigReader.$( "listIndexes", [ "test" ] );
+
+		engine.search();
+
+		return mockApiWrapper.$callLog().search[1].pageSize;
+	}
+
+	private struct function _getSelectDataArgsForIndexing( required struct initArgs ) {
+		var engine     = _getSearchEngine( initArgs=arguments.initArgs );
+		var objectName = "myobj";
+
+		mockConfigReader.$( "getObjectConfiguration" ).$args( objectName ).$results( { indexFilters=[] } );
+		mockPresideObjectService.$( "selectData", QueryNew('') );
+		engine.$( "calculateSelectFieldsForIndexing" ).$args( objectName ).$results( [ "myobj.id" ] );
+		engine.$( "convertQueryToArrayOfDocs", [] );
+		engine.$( "_isPageType", false );
+		engine.$( "_isAssetObject", false );
+
+		engine.getObjectDataForIndexing( objectName );
+
+		return mockPresideObjectService.$callLog().selectData[1];
+	}
+
+	private function _getSearchEngine( string engineVersion="6.3", struct initArgs={} ) {
 		mockConfigReader               = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchPresideObjectConfigurationReader" );
 		mockApiWrapper                 = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchApiWrapper" );
 		mockResultsFactory             = getMockBox().createEmptyMock( "elasticsearch.services.ElasticSearchResultsFactory" );
@@ -969,7 +1198,9 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "clearReindexingQueue" );
 		engine.$( "processReindexingQueue" );
 
-		return engine.init(
+		mockPresideObjectService.$( "getIdField", "id" );
+
+		var args = {
 			  configurationReader        = mockConfigReader
 			, apiWrapper                 = mockApiWrapper
 			, presideObjectService       = mockPresideObjectService
@@ -982,7 +1213,11 @@ component extends="testbox.system.BaseSpec" {
 			, statusDao                  = mockStatusDao
 			, systemConfigurationService = mockSystemConfigurationService
 			, tenancyService             = mockTenancyService
-		);
+			, dialectFactory             = new elasticsearch.services.ElasticSearchDialectFactory( engineVersion=arguments.engineVersion )
+		};
+		args.append( arguments.initArgs );
+
+		return engine.init( argumentCollection=args );
 	}
 
 }

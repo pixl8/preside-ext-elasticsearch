@@ -17,11 +17,14 @@ component {
 	 * @statusDao.inject                  presidecms:object:elasticsearch_indexing_status
 	 * @systemConfigurationService.inject provider:systemConfigurationService
 	 * @tenancyService.inject             provider:tenancyService
+	 * @dialectFactory.inject             provider:elasticSearchDialectFactory
 	 * @indexPageSize.inject              coldbox:setting:elasticSearchConfig.indexPageSize
+	 * @searchPageSize.inject             coldbox:setting:elasticSearchConfig.searchPageSize
+	 * @groupByRecordIdOnly.inject        coldbox:setting:elasticSearchConfig.groupByRecordIdOnly
 	 * @indexExpiryUnit.inject            coldbox:setting:elasticSearchConfig.indexExpiryUnit
 	 * @indexExpiryMeasure.inject         coldbox:setting:elasticSearchConfig.indexExpiryMeasure
 	 */
-	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, numeric indexPageSize=100, string indexExpiryUnit="d", numeric indexExpiryMeasure=1 ) {
+	public any function init( required any apiWrapper, required any configurationReader, required any presideObjectService, required any contentRendererService, required any pageDao, required any siteService, required any siteTreeService, required any resultsFactory, required any statusDao, required any systemConfigurationService, required any tenancyService, required any dialectFactory, any indexPageSize="", any searchPageSize="", boolean groupByRecordIdOnly=false, string indexExpiryUnit="d", numeric indexExpiryMeasure=1 ) {
 		_setLocalCache( {} );
 		_setApiWrapper( arguments.apiWrapper );
 		_setConfigurationReader( arguments.configurationReader );
@@ -34,7 +37,10 @@ component {
 		_setStatusDao( arguments.statusDao );
 		_setSystemConfigurationService( arguments.systemConfigurationService );
 		_setTenancyService( arguments.tenancyService );
+		_setDialectFactory( arguments.dialectFactory );
 		_setIndexPageSize( arguments.indexPageSize );
+		_setSearchPageSize( arguments.searchPageSize );
+		_setGroupByRecordIdOnly( arguments.groupByRecordIdOnly );
 		_setIndexExpiryUnit( arguments.indexExpiryUnit );
 		_setIndexExpiryMeasure( arguments.indexExpiryMeasure );
 
@@ -51,10 +57,10 @@ component {
 		, string  queryFields      = ""
 		, string  sortOrder        = ""
 		, numeric page             = 1
-		, numeric pageSize         = 10
+		, numeric pageSize         = _getDefaultSearchPageSize()
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
-		, string  highlightEncoder = "default"
+		, string  highlightEncoder = ""
 		, string  fuzziness        = "0"
 		, numeric prefixLength     = 3
 		, numeric minimumScore     = 0
@@ -67,7 +73,7 @@ component {
 
 		searchArgs.index = "";
 		searchArgs.type  = "";
-		searchArgs.delete( "objects" );
+		StructDelete( searchArgs, "objects" );
 
 		for( var objName in arguments.objects ){
 			var conf = configReader.getObjectConfiguration( objName );
@@ -80,7 +86,7 @@ component {
 		}
 
 		if ( !Len( Trim( searchArgs.index ) ) ) {
-			searchArgs.index = configReader.listIndexes().toList();
+			searchArgs.index = ArrayToList( configReader.listIndexes() );
 		}
 
  		var apiCallResult = _getApiWrapper().search( argumentCollection=searchArgs );
@@ -95,12 +101,33 @@ component {
 		);
 	}
 
+	/**
+	 * Compares the configured engine version with the version reported by the
+	 * ElasticSearch server. Returns a struct with keys: configuredVersion,
+	 * serverVersion (empty if the server could not be contacted) and compatible
+	 * (false only when the server responded and the major versions differ).
+	 */
+	public struct function checkServerVersion() {
+		var configuredVersion = _getDialectFactory().getEngineVersion();
+		var serverVersion     = "";
+
+		try {
+			serverVersion = _getApiWrapper().ping().version.number ?: "";
+		} catch( any e ) {}
+
+		return {
+			  configuredVersion = configuredVersion
+			, serverVersion     = serverVersion
+			, compatible        = !Len( serverVersion ) || ListFirst( serverVersion, "." ) == ListFirst( configuredVersion, "." )
+		};
+	}
+
 	public void function ensureIndexesExist() {
 		var indexes    = _getConfigurationReader().listIndexes();
 		var apiWrapper = _getApiWrapper();
 
 		for( var ix in indexes ){
-			if ( !apiWrapper.getAliasIndexes( ix ).len() ) {
+			if ( !ArrayLen( apiWrapper.getAliasIndexes( ix ) ) ) {
 				var ux = createIndex( ix );
 
 				_createAlias( index=ux, alias=ix );
@@ -146,6 +173,13 @@ component {
 		var canError   = haveLogger && arguments.logger.canError();
 
 		$announceInterception( "preElasticSearchRebuildIndex", { alias = arguments.indexName } );
+
+		if ( canWarn ) {
+			var versionCheck = checkServerVersion();
+			if ( !versionCheck.compatible ) {
+				arguments.logger.warn( "The configured ElasticSearch engine version [#versionCheck.configuredVersion#] does not match the version reported by the server [#versionCheck.serverVersion#]. Set settings.elasticSearchConfig.engineVersion (or the ELASTICSEARCH_VERSION environment variable) to match your server." );
+			}
+		}
 
 		transaction {
 			if ( isIndexReindexing( arguments.indexName ) ) {
@@ -263,61 +297,27 @@ component {
 	}
 
 	public struct function getIndexMappings( required string indexName ) {
-		var mappings      = {};
-		var configWrapper = _getConfigurationReader();
-		var docTypes      = configWrapper.listDocumentTypes( arguments.indexName );
-		mappings.doc = { properties={} };
-		mappings.doc.properties.append( _getCommonPropertyMappings(), false );
+		var configWrapper   = _getConfigurationReader();
+		var docTypes        = configWrapper.listDocumentTypes( arguments.indexName );
+		var docTypeMappings = [];
 
 		for( var docType in docTypes ){
-			var fields = configWrapper.getFields( arguments.indexName, docType );
+			var fields     = configWrapper.getFields( arguments.indexName, docType );
+			var properties = {};
+
 			for( var field in fields ){
 				var fieldName = fields[ field ].fieldName;
-				mappings.doc.properties.append({ "#fieldName#"  = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName ) });
+				properties[ fieldName ] = getElasticSearchMappingFromFieldConfiguration( argumentCollection=fields[ field ], name=fieldName );
 			}
+
+			ArrayAppend( docTypeMappings, { docType=docType, properties=properties } );
 		}
 
-		return mappings;
+		return _getDialect().buildIndexMappings( docTypeMappings );
 	}
 
 	public struct function getElasticSearchMappingFromFieldConfiguration( required string name, required string type, boolean searchable=false, boolean sortable=false, string analyzer="", boolean ignoreMalformedDates=false ) {
-		var mapping = { type=arguments.type };
-
-		if ( arguments.type == "keyword" ) {
-			mapping.index = true;
-		} else if ( arguments.searchable ) {
-			if ( Len( Trim( arguments.analyzer ) ) ) {
-				mapping.analyzer = arguments.analyzer;
-				mapping.fielddata = true;
-				mapping.index = true;
-			}
-		} else {
-			if ( arguments.sortable ) {
-				mapping.analyzer = "preside_sortable";
-			} else {
-				mapping.index = true;
-			}
-		}
-
-		if ( arguments.sortable && arguments.searchable ) {
-			mapping = {
-				  type   = "multi_field"
-				, fields = {
-					  "#arguments.name#" = Duplicate( mapping )
-					, untouched          = Duplicate( mapping )
-				}
-			};
-			mapping.fields.untouched.analyzer = "preside_sortable";
-		}
-
-		if ( arguments.type == "date" ){
-			mapping.ignore_malformed = arguments.ignoreMalformedDates;
-			if ( StructKeyExists( arguments, "dateFormat" ) ) {
-				mapping.format = arguments.dateFormat;
-			}
-		}
-
-		return mapping;
+		return _getDialect().getFieldMapping( argumentCollection=arguments );
 	}
 
 	public string function createUniqueIndexName( required string sourceIndexName ) {
@@ -347,14 +347,14 @@ component {
 
 			$announceInterception( "preElasticSearchIndexDoc", { objectName=objName, id=arguments.id, doc = doc } );
 
-			if ( !IsArray( doc ) || !doc.len() ) {
+			if ( !IsArray( doc ) || !ArrayLen( doc ) ) {
 				return _getApiWrapper().deleteDoc(
 					  index = objectConfig.indexName    ?: ""
 					, type  = objectConfig.documentType ?: ""
 					, id    = arguments.id
 				);
 			}
-			doc[1].type = objectConfig.documentType ?: "";
+			_getDialect().prepareDocForIndexing( doc[1], objectConfig.documentType ?: "" );
 
 			var result = _getApiWrapper().addDoc(
 				  index = objectConfig.indexName    ?: ""
@@ -377,7 +377,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = _getIndexPageSize();
+			var pageSize  = _getIndexingPageSize();
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
@@ -398,16 +398,17 @@ component {
 					, pageSize   = pageSize
 				);
 
-				var recordCount = records.len();
+				var recordCount = ArrayLen( records );
 
 				if ( canDebug ) { arguments.logger.debug( "Fetched #recordCount# #objectName# records ready for indexing." ); }
 
-				$announceInterception( "preElasticSearchIndexDocs", { objectName = arguments.objectName, docs = records } );
+				$announceInterception( "preElasticSearchIndexDocs", { objectName=arguments.objectName, docs=records } );
 
-				if ( canDebug ) { arguments.logger.debug( "preElasticSearchIndexDocs() interception announced. #records.len()# #objectName# records ready for indexing." ); }
+				recordCount = ArrayLen( records );
+				if ( canDebug ) { arguments.logger.debug( "preElasticSearchIndexDocs() interception announced. #recordCount# #objectName# records ready for indexing." ); }
 
-				if ( records.len() ) {
-					total += records.len();
+				if ( recordCount ) {
+					total += recordCount;
 
 					var result = esApi.addDocs(
 						  index   = arguments.indexName
@@ -426,8 +427,10 @@ component {
 						if ( canError ) {
 							var items = result.items ?: [];
 							for( var item in items ) {
-								if ( Len( item.index.error ?: "") ) {
-									arguments.logger.error( "Error adding document(s). First found error report: #item.index.error#" );
+								// ElasticSearch 1.x reports item errors as strings, later versions as structs
+								var itemError = item.index.error ?: "";
+								if ( !IsSimpleValue( itemError ) || Len( itemError ) ) {
+									arguments.logger.error( "Error adding document(s). First found error report: #IsSimpleValue( itemError ) ? itemError : SerializeJson( itemError )#" );
 
 									return false;
 								}
@@ -455,14 +458,18 @@ component {
 	}
 
 	public array function getObjectDataForIndexing( required string objectName, string id, numeric maxRows=100, numeric startRow=1 ) {
-		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var objConfig      = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
+		var idField        = _getPresideObjectService().getIdField( arguments.objectName );
+		var autoGroupBy    = !_getGroupByRecordIdOnly() || !Len( idField );
+		var groupBy        = autoGroupBy ? "" : "#arguments.objectName#.#idField#";
 		var selectDataArgs = {
 			  objectName   = arguments.objectName
 			, selectFields = calculateSelectFieldsForIndexing( arguments.objectName )
 			, savedFilters = objConfig.indexFilters ?: []
 			, maxRows      = arguments.maxRows
 			, startRow     = arguments.startRow
-			, autoGroupBy  = true
+			, autoGroupBy  = autoGroupBy
+			, groupBy      = groupBy
 			, useCache     = false
 		};
 
@@ -500,7 +507,7 @@ component {
 		for( var record in arguments.records ){
 			for( var key in record ){
 				if ( !Len( Trim( record[ key ] ) ) ) {
-					record.delete( key );
+					StructDelete( record, key );
 					continue;
 				}
 
@@ -511,7 +518,7 @@ component {
 
 				record[ key ] = _renderField( arguments.objectName, key, record[ key ] );
 			}
-			docs.append( _convertFieldNames( objectName, record ) );
+			ArrayAppend( docs, _convertFieldNames( objectName, record ) );
 		}
 
 		return docs;
@@ -562,9 +569,9 @@ component {
 
 			for( var field in configuredFields ){
 				if ( poService.isManyToManyProperty( args.objectName, field ) ) {
-					selectFields.append( "group_concat( distinct #field#.id ) as #field#" );
+					ArrayAppend( selectFields, "group_concat( distinct #field#.id ) as #field#" );
 				} else {
-					selectFields.append( args.objectName & "." & field );
+					ArrayAppend( selectFields, args.objectName & "." & field );
 				}
 			}
 
@@ -572,11 +579,11 @@ component {
 				var pageConfiguredFields = _getConfigurationReader().getObjectConfiguration( "page" ).fields ?: [];
 
 				for( var field in pageConfiguredFields ){
-					if ( !configuredFields.find( field ) ) {
+					if ( !ArrayFind( configuredFields, field ) ) {
 						if ( poService.isManyToManyProperty( "page", field ) ) {
-							selectFields.append( "group_concat( distinct page$#field#.id ) as #field#" );
+							ArrayAppend( selectFields, "group_concat( distinct page$#field#.id ) as #field#" );
 						} else {
-							selectFields.append( "page." & field );
+							ArrayAppend( selectFields, "page." & field );
 						}
 					}
 				}
@@ -586,14 +593,14 @@ component {
 				var assetConfiguredFields = _getConfigurationReader().getObjectConfiguration( "asset" ).fields ?: [];
 
 				for( var field in assetConfiguredFields ){
-					if ( !configuredFields.find( field ) ) {
-						selectFields.append( "asset." & field );
+					if ( !ArrayFind( configuredFields, field ) ) {
+						ArrayAppend( selectFields, "asset." & field );
 					}
 				}
 
-				selectFields.append( "asset_folder.internal_search_access" );
-				selectFields.append( "asset_folder.is_system_folder"       );
-				selectFields.append( "asset_folder.hidden"                 );
+				ArrayAppend( selectFields, "asset_folder.internal_search_access" );
+				ArrayAppend( selectFields, "asset_folder.is_system_folder"       );
+				ArrayAppend( selectFields, "asset_folder.hidden"                 );
 			}
 
 			return selectFields;
@@ -629,11 +636,11 @@ component {
 
 	public void function processPageTypeRecordsBeforeIndexing( required string objectName, required array records ) {
 		if ( _isPageType( arguments.objectName ) ) {
-			for( var i=arguments.records.len(); i > 0; i-- ){
+			for( var i=ArrayLen( arguments.records ); i > 0; i-- ){
 				var hierarchicalPageData = _getHierarchalPageData( arguments.records[i] );
 
 				if ( !hierarchicalPageData.validForSearch ) {
-					arguments.records.deleteAt( i );
+					ArrayDeleteAt( arguments.records, i );
 					continue;
 				}
 
@@ -649,7 +656,7 @@ component {
 			var watchProps = [ "active", "embargo_date", "expiry_date", "internal_search_access", "access_restriction" ];
 
 			for ( var prop in watchProps ) {
-				if ( arguments.updatedData.keyExists( prop ) ) {
+				if ( StructKeyExists( arguments.updatedData, prop ) ) {
 					var children = _getSiteTreeService().getDescendants( id=arguments.recordId, selectFields=[ "id", "page_type" ] );
 					for( var child in children ) {
 						indexRecord( child.page_type, child.id );
@@ -734,19 +741,19 @@ component {
 		var data = {
 			is_indexing = arguments.isIndexing
 		};
-		if ( arguments.keyExists( "lastIndexingSuccess" ) ) {
+		if ( StructKeyExists( arguments, "lastIndexingSuccess" ) ) {
 			data.last_indexing_success = arguments.lastIndexingSuccess;
 		}
-		if ( arguments.keyExists( "indexingStartedAt" ) ) {
+		if ( StructKeyExists( arguments, "indexingStartedAt" ) ) {
 			data.indexing_started_at = arguments.indexingStartedAt;
 		}
-		if ( arguments.keyExists( "indexingExpiry" ) ) {
+		if ( StructKeyExists( arguments, "indexingExpiry" ) ) {
 			data.indexing_expiry = arguments.indexingExpiry;
 		}
-		if ( arguments.keyExists( "lastIndexingCompletedAt" ) ) {
+		if ( StructKeyExists( arguments, "lastIndexingCompletedAt" ) ) {
 			data.last_indexing_completed_at = arguments.lastIndexingCompletedAt;
 		}
-		if ( arguments.keyExists( "lastIndexingTimetaken" ) ) {
+		if ( StructKeyExists( arguments, "lastIndexingTimetaken" ) ) {
 			data.last_indexing_timetaken = arguments.lastIndexingTimetaken;
 		}
 
@@ -906,14 +913,14 @@ component {
 			accessRestricted = page.access_restriction != "none";
 		}
 
-		for( var i=lineage.len(); i>0; i-- ){
-			if ( !cache.keyExists( lineage[i] & page.site ) ){
+		for( var i=ArrayLen( lineage ); i>0; i-- ){
+			if ( !StructKeyExists( cache, lineage[i] & page.site ) ){
 				var parentPage = _getPageDao().selectData( filter={ _hierarchy_id=lineage[i] }, selectFields=pageFields, useCache=false );
 				for( var p in parentPage ) { cache[ p._hierarchy_id & p.site ] = p; }
 			}
 			cache[ lineage[ i ] & page.site ] = cache[ lineage[ i ] & page.site ] ?: {};
 
-			if ( cache[ lineage[ i ] & page.site ].count() ) {
+			if ( StructCount( cache[ lineage[ i ] & page.site ] ) ) {
 				var parentPage = cache[ lineage[ i ] & page.site ];
 
 				if ( !isActive( parentPage.active, parentPage.embargo_date, parentPage.expiry_date ) ) {
@@ -940,7 +947,7 @@ component {
 	private any function _simpleLocalCache( required string cacheKey, required any generator ) {
 		var cache = _getLocalCache();
 
-		if ( !cache.keyExists( cacheKey ) ) {
+		if ( !StructKeyExists( cache, cacheKey ) ) {
 			cache[ cacheKey ] = generator();
 		}
 
@@ -952,7 +959,7 @@ component {
 		return _simpleLocalCache( "_isManyToManyField" & args.objectName & args.fieldName, function(){
 			var objConfig = _getConfigurationReader().getObjectConfiguration( args.objectName );
 
-			if ( objConfig.fields.find( args.fieldName ) ) {
+			if ( ArrayFind( objConfig.fields, args.fieldName ) ) {
 				return _getPresideObjectService().isManyToManyProperty( args.objectName, args.fieldName );
 			}
 
@@ -967,7 +974,7 @@ component {
 	private string function _renderField( required string objectName, required string fieldName, required any value ) {
 		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
-		if ( objConfig.fields.find( arguments.fieldName ) ) {
+		if ( ArrayFind( objConfig.fields, arguments.fieldName ) ) {
 			try {
 				return _getContentRendererService().renderField(
 					  object   = arguments.objectName
@@ -1009,11 +1016,11 @@ component {
 		var converted = arguments.data;
 
 		for( var sourceField in mappings ) {
-			if ( converted.keyExists( sourceField ) ) {
+			if ( StructKeyExists( converted, sourceField ) ) {
 				var destinationField = mappings[ sourceField ];
 
 				converted[ destinationField ] = converted[ sourceField ];
-				converted.delete( sourceField );
+				StructDelete( converted, sourceField );
 			}
 		}
 
@@ -1038,13 +1045,6 @@ component {
 		} );
 	}
 
-	private struct function _getCommonPropertyMappings() {
-		return {
-			access_restricted = { type="boolean" },
-			type = { type="keyword" }
-		};
-	}
-
 	private boolean function _objectIsUsingSiteTenancy( required string objectName ) {
 		if ( !_getPresideObjectService().objectExists( arguments.objectName ) ) {
 			return false;
@@ -1056,7 +1056,7 @@ component {
 	private boolean function _hasSearchDataSource( required string objectName ){
 		var objConfig = _getConfigurationReader().getObjectConfiguration( arguments.objectName );
 
-		if ( len( objConfig.searchDataSource ?: "" ) ) {
+		if ( Len( objConfig.searchDataSource ?: "" ) ) {
 			if ( !$getColdbox().handlerExists( objConfig.searchDataSource ) ){
 				throw( type="ElasticSearchEngine.indexing.searchDataSource.notFound", message="Defined searchDataSource method '#objConfig.searchDataSource#' for object '#arguments.objectName#' was not found." );
 			}
@@ -1168,11 +1168,58 @@ component {
 		_tenancyService = arguments.tenancyService;
 	}
 
-	private numeric function _getIndexPageSize() {
+	private any function _getDialectFactory() {
+		return _dialectFactory;
+	}
+	private void function _setDialectFactory( required any dialectFactory ) {
+		_dialectFactory = arguments.dialectFactory;
+	}
+
+	private any function _getDialect() {
+		return _getDialectFactory().getDialect();
+	}
+
+	private any function _getIndexPageSize() {
 		return _indexPageSize;
 	}
-	private void function _setIndexPageSize( required numeric indexPageSize ) {
+	private void function _setIndexPageSize( required any indexPageSize ) {
 		_indexPageSize = arguments.indexPageSize;
+	}
+
+	private any function _getSearchPageSize() {
+		return _searchPageSize;
+	}
+	private void function _setSearchPageSize( required any searchPageSize ) {
+		_searchPageSize = arguments.searchPageSize;
+	}
+
+	private numeric function _getIndexingPageSize() {
+		var indexPageSize = _getIndexPageSize();
+
+		return IsNumeric( indexPageSize ) && indexPageSize > 0 ? indexPageSize : 100;
+	}
+
+	private numeric function _getDefaultSearchPageSize() {
+		var searchPageSize = _getSearchPageSize();
+		var indexPageSize  = _getIndexPageSize();
+
+		if ( IsNumeric( searchPageSize ) && searchPageSize > 0 ) {
+			return searchPageSize;
+		}
+
+		// ElasticSearch 1.x releases of this extension used indexPageSize as the default search page size
+		if ( _getDialect().getMajorVersion() < 6 && IsNumeric( indexPageSize ) && indexPageSize > 0 ) {
+			return indexPageSize;
+		}
+
+		return 10;
+	}
+
+	private boolean function _getGroupByRecordIdOnly() {
+		return _groupByRecordIdOnly;
+	}
+	private void function _setGroupByRecordIdOnly( required boolean groupByRecordIdOnly ) {
+		_groupByRecordIdOnly = arguments.groupByRecordIdOnly;
 	}
 
 	private string function _getIndexExpiryUnit() {

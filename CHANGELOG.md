@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.0.0
+
+* Combines the 1.x (ElasticSearch 1.7) and 6.x (ElasticSearch 6.3) releases into a single release
+
 ## v6.3.14
 
 * Build fixes
