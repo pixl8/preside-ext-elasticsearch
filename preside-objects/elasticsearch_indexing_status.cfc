@@ -2,7 +2,7 @@
  * @nolabel   true
  * @versioned false
  */
-component output=false {
+component {
 	property name="index_name"                 type="string"  dbtype="varchar"  required=true  maxlength=100 indexes="indexstatus|1" uniqueindexes="indexname";
 	property name="is_indexing"                type="boolean" dbtype="boolean"  required=true                indexes="indexstatus|2";
 	property name="indexing_started_at"        type="date"    dbtype="datetime" required=false;

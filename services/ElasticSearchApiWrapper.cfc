@@ -8,12 +8,15 @@ component {
 // CONSTRUCTOR
 	/**
 	 * @systemConfigurationService.inject systemConfigurationService
+	 * @dialectFactory.inject             elasticSearchDialectFactory
 	 *
 	 */
 	public any function init(
-		required any  systemConfigurationService
+		  required any systemConfigurationService
+		, required any dialectFactory
 	) {
 		_setSystemConfigurationService( arguments.systemConfigurationService );
+		_setDialectFactory( arguments.dialectFactory );
 
 		return this;
 	}
@@ -91,10 +94,10 @@ component {
 		var indexes       = [];
 
 		for( var indexName in callResult ) {
-			var indexHasAlias = callResult[ indexName ].keyExists( 'aliases' ) and callResult[ indexName ].aliases.keyExists( arguments.alias );
+			var indexHasAlias = StructKeyExists( callResult[ indexName ], "aliases" ) && StructKeyExists( callResult[ indexName ].aliases, arguments.alias );
 
 			if ( indexHasAlias ) {
-				indexes.append( indexName );
+				ArrayAppend( indexes, indexName );
 			}
 		}
 
@@ -106,12 +109,12 @@ component {
 		var indexes       = [];
 
 		for( var indexName in callResult ) {
-			if ( arguments.keyExists( "filter" ) ) {
+			if ( StructKeyExists( arguments, "filter" ) ) {
 				if ( arguments.filter( indexName ) ) {
-					indexes.append( indexName );
+					ArrayAppend( indexes, indexName );
 				}
 			} else {
-				indexes.append( indexName );
+				ArrayAppend( indexes, indexName );
 			}
 		}
 
@@ -122,7 +125,7 @@ component {
 		var uri    = _getIndexAndTypeUri( args=arguments );
 		var method = "POST";
 
-		if ( StructKeyExists( arguments, 'id' ) and Len( Trim( id ) ) ) {
+		if ( StructKeyExists( arguments, "id" ) && Len( Trim( id ) ) ) {
 			uri    = uri & "/#id#";
 			method = "PUT";
 		}
@@ -139,7 +142,7 @@ component {
 		var body = CreateObject( "java", "java.lang.StringBuffer" );
 		var i    = 0;
 
-		if ( not ArrayLen( docs ) ){
+		if ( !ArrayLen( docs ) ){
 			_throw(
 				  type    = "cfelasticsearch.addDocs.noDocs"
 				, message = "No documents to index."
@@ -147,8 +150,8 @@ component {
 			);
 		}
 
-		for( i=1; i LTE ArrayLen( docs ); i=i+1 ){
-			if ( not IsStruct( docs[i] ) ) {
+		for( i=1; i <= ArrayLen( docs ); i=i+1 ){
+			if ( !IsStruct( docs[i] ) ) {
 				_throw(
 					  type    = "cfelasticsearch.addDocs.badDoc"
 					, message = "The document at index #i# was not of type struct. All docs passed to the addDocs() method must be of type Struct."
@@ -156,12 +159,12 @@ component {
 			}
 
 			if ( StructKeyExists( docs[i], idField ) ) {
-				body.append( '{"index":{"_id":"#docs[i][idField]#"}}' & chr(10) );
+				body.append( '{"index":{"_id":"#docs[i][idField]#"}}' & Chr(10) );
 			} else {
-				body.append( '{"index":{}}' & chr(10) );
+				body.append( '{"index":{}}' & Chr(10) );
 			}
-			docs[i].type = arguments.type;
-			body.append( SerializeJson( docs[i] ) & chr(10) );
+			_getDialect().prepareDocForIndexing( docs[i], arguments.type );
+			body.append( SerializeJson( docs[i] ) & Chr(10) );
 		}
 
 		return _call(
@@ -181,18 +184,18 @@ component {
 				, method = "DELETE"
 			);
 		} catch ( "cfelasticsearch.UnknownError" e ) {
-			if( e.errorCode EQ 404 ) {
+			if ( e.errorCode == 404 ) {
 				return true; // not found, same as deleted
 			}
 
 			_throw(argumentCollection=e);
 		}
 
-		return IsDefined( 'result.ok') and IsBoolean( result.ok ) and result.ok;
+		return IsDefined( "result.ok" ) && IsBoolean( result.ok ) && result.ok;
 	}
 
 	public boolean function deleteDocs( required string index, required string type, required array ids ){
-		if ( !arrayLen( arguments.ids ) ){
+		if ( !ArrayLen( arguments.ids ) ){
 			_throw(
 				  type    = "cfelasticsearch.deleteDocs.noIds"
 				, message = "No IDs to delete."
@@ -203,15 +206,15 @@ component {
 		var uri  = _getIndexAndTypeUri( args=arguments ) & "/_bulk";
 		var body = CreateObject( "java", "java.lang.StringBuffer" );
 
-		for( var i = 1; i <= arrayLen( arguments.ids ); i++ ){
-			if ( !isSimpleValue( arguments.ids[ i ] ) ) {
+		for( var i = 1; i <= ArrayLen( arguments.ids ); i++ ){
+			if ( !IsSimpleValue( arguments.ids[ i ] ) ) {
 				_throw(
 					  type    = "cfelasticsearch.deleteDocs.badId"
 					, message = "The record id at index #i# was not a simple value."
 				);
 			}
 
-			body.append( "{""delete"":{""_id"":""#arguments.ids[ i ]#""}}" & chr(10) );
+			body.append( "{""delete"":{""_id"":""#arguments.ids[ i ]#""}}" & Chr(10) );
 		}
 
 		try {
@@ -241,7 +244,7 @@ component {
 		, numeric pageSize           = 10
 		, string  defaultOperator    = "OR"
 		, string  highlightFields    = ""
-		, string  highlightEncoder   = "default"
+		, string  highlightEncoder   = ""
 		, string  fuzziness          = "0"
 		, numeric prefixLength       = 3
 		, numeric minimumScore       = 0
@@ -254,6 +257,10 @@ component {
 			body = arguments.fullDsl;
 		} else {
 			body = generateSearchDsl( argumentCollection = arguments );
+		}
+
+		if ( !StructKeyExists( body, "timeout" ) ) {
+			body.timeout = _getRequestTimeoutInSeconds() & "s";
 		}
 
 		return _call(
@@ -274,25 +281,25 @@ component {
 		,          struct  basicFilter = {}
 		,          struct  fullDsl
 	) {
-		var uri  = _getIndexAndTypeUri( args=arguments ) & "/#arguments.documentId#/_mlt";
-		var body = "";
-
-		if ( StructKeyExists( arguments, "fullDsl" ) ) {
-			body = arguments.fullDsl;
-		} else {
-			body = generateSearchDsl( argumentCollection = arguments );
-			StructDelete( body, 'query' ); // this will be auto generated by the More Like this engine
-		}
+		var isFullDsl  = StructKeyExists( arguments, "fullDsl" );
+		var mltRequest = _getDialect().getMoreLikeThisRequest(
+			  baseUri    = _getIndexAndTypeUri( args=arguments )
+			, index      = _safeIndexName( arguments.index )
+			, documentId = arguments.documentId
+			, dsl        = isFullDsl ? arguments.fullDsl : generateSearchDsl( argumentCollection = arguments )
+			, isFullDsl  = isFullDsl
+		);
 
 		return _call(
-			  uri    = uri
+			  uri    = mltRequest.uri
 			, method = "POST"
-			, body   = SerializeJson( body )
+			, body   = SerializeJson( mltRequest.body )
 		);
 	}
 
 	public struct function generateSearchDsl(
 		  string  q                = "*"
+		, string  type             = ""
 		, string  fieldList        = ""
 		, string  queryFields      = ""
 		, string  sortOrder        = ""
@@ -301,7 +308,7 @@ component {
 		, numeric pageSize         = 10
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
-		, string  highlightEncoder = "default"
+		, string  highlightEncoder = ""
 		, string  fuzziness        = "0"
 		, numeric prefixLength     = 3
 		, numeric minimumScore     = 0
@@ -309,66 +316,9 @@ component {
 		, struct  directFilter     = {}
 		, string  idList           = ""
 		, string  excludeIdList    = ""
-		, array   objects		   = []
-
+		, array   objects          = []
 	) {
-		var body = StructNew();
-		var idList = "";
-
-		body['from'] = _calculateStartRecordFromPageInfo( arguments.page, arguments.pageOffset, arguments.pageSize );
-		body['size'] = pageSize;
-		if (Len(Trim(arguments.fieldList))) {
-			body['_source'] = ListToArray(arguments.fieldList);
-		}
-		body['query'] = StructNew();
-		body['query']['bool'] = StructNew();
-		body['query']['bool']['filter'] = arrayNew();
-		body['query']['bool']['must_not'] = arrayNew();
-		body['query']['bool']['must'] = StructNew();
-		body['query']['bool']['must']['multi_match'] = StructNew();
-
-		body['query']['bool']['must']['multi_match']['query'] = escapeSpecialChars( arguments.q );
-		body['query']['bool']['must']['multi_match']['fuzziness'] = arguments.fuzziness;
-		body['query']['bool']['must']['multi_match']['prefix_length'] = arguments.prefixLength;
-		body['query']['bool']['must']['multi_match']['operator'] = UCase( arguments.defaultOperator );
-
-		if ( Len( Trim( arguments.queryFields ) ) ) {
-			body['query']['bool']['must']['multi_match']['fields'] = ListToArray(arguments.queryFields);
-		}
-
-		if ( Len( Trim( arguments.sortOrder ) ) ) {
-			body['sort'] = _generateSortOrder( arguments.sortOrder );
-		}
-
-		if ( Len( Trim( arguments.highlightFields ) ) ) {
-			body['highlight'] = _generateHighlightsDsl( arguments.highlightFields, arguments.highlightEncoder );
-		}
-		if ( arguments.minimumScore ) {
-			body['min_score'] = arguments.minimumScore;
-		}
-
-		if ( not StructIsEmpty( arguments.basicFilter ) ) {
-			body['query']['bool']['filter'] = _generateBasicFilter( arguments.basicFilter );
-		}
-
-		if ( not StructIsEmpty( arguments.directFilter ) ) {
-			body['query']['bool']['filter'] = _generateDirectFilter( arguments.directFilter );
-		}
-
-		if ( objects.len() > 0 ){
-			var term = {};
-			for ( var object in objects ){
-				term = { type = object };
-				body['query']['bool']['filter'].append( { term = term } );
-			}
-		}
-
-		if ( Len( Trim( arguments.idList ) ) ) {
-			body['query']['bool']['filter'].append( { terms={ _id=ListToArray( arguments.idList ) } } );
-		}
-		if ( Len( Trim( arguments.excludeIdList ) ) ) {
-			body['query']['bool']['must_not'].append( { terms={ _id=ListToArray( arguments.excludeIdList ) } } );
-		}
+		var body = _getDialect().generateSearchDsl( argumentCollection=arguments );
 
 		$announceInterception( "postElasticSearchGenerateDsl", { dsl=body } );
 
@@ -394,7 +344,7 @@ component {
 			return true;
 
 		} catch ( "cfelasticsearch.UnknownError" e ) {
-			if( e.errorCode EQ 404 ) {
+			if( e.errorCode == 404 ) {
 				return false;
 			}
 
@@ -403,9 +353,7 @@ component {
 	}
 
 	public string function escapeSpecialChars( required string q ) {
-		var specialCharsRegex = '([\+\-!\(\)\{\}\[\]\^\"~\?:\/\\])';
-
-		return ReReplace( arguments.q, specialCharsRegex, "\\1", "all" );
+		return _getDialect().escapeSpecialChars( arguments.q );
 	}
 
 	public string function safeIndexName( required string indexName ){
@@ -423,7 +371,7 @@ component {
 
 		while( !success && attempts < maxAttempts ) {
 			try {
-				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" getAsBinary="false" timeout=_getRequestTimeoutInSeconds() {
+				http url=endpoints[ endpointIndex ] & arguments.uri method=arguments.method result="result" getAsBinary="false" timeout=_getRequestTimeoutInSeconds()+1 {
 					if ( StructKeyExists( arguments, "body" ) ) {
 						httpparam type="body" value=arguments.body;
 						httpparam type="header" name="Content-Type" value="application/json; charset=#_getCharset()#";
@@ -437,7 +385,7 @@ component {
 			if ( !success ) {
 				attempts++;
 				endpointIndex++;
-				if ( endpointIndex > endpoints.len() ) {
+				if ( endpointIndex > ArrayLen( endpoints ) ) {
 					endpointIndex = 1;
 				}
 			}
@@ -464,7 +412,7 @@ component {
 				, detail  = result.filecontent
 			);
 		}
-		if ( left( result.responseHeader.status_code ?: 500, 1 ) EQ "2" ) {
+		if ( Left( result.responseHeader.status_code ?: 500, 1 ) == "2" ) {
 			return deserialized;
 		}
 
@@ -476,12 +424,11 @@ component {
 		var errorType    = "UnknownError";
 		var errorDetail  = SerializeJson( result );
 
-		if ( IsStruct( result ) and StructKeyExists( result, "error" ) ) {
-			errorType    = result.error.type;
-			errorMessage = result.error.reason;
-			if ( Len( Trim( errorMessage ) ) gt 2 ) {
-				errorMessage = mid( errorMessage, 2, Len( errorMessage) - 2 );
-			}
+		if ( IsStruct( result ) && StructKeyExists( result, "error" ) ) {
+			var parsedError = _getDialect().parseError( result.error );
+
+			errorType    = parsedError.type;
+			errorMessage = parsedError.message;
 		}
 
 		_throw(
@@ -503,25 +450,14 @@ component {
 			uri = "/#_safeIndexName( args.index )#";
 		}
 
-		if ( typeAllowed and Len( Trim( args.type ?: "" ) ) ) {
-			if ( uri EQ "" ) {
+		if ( typeAllowed && Len( Trim( args.type ?: "" ) ) ) {
+			if ( uri == "" ) {
 				uri = "/_all";
 			}
-			uri = uri & "/doc";
+			uri = uri & _getDialect().getTypeUriSegment( args.type );
 		}
 
 		return uri;
-	}
-
-	private numeric function _calculateStartRecordFromPageInfo( required numeric page, required numeric pageOffset, required numeric pageSize ) {
-		if ( page lte 0 ) {
-			_throw(
-				  type    = "cfelasticsearch.search.invalidPage"
-				, message = "Page number must be greater than zero. Page number supplied was '#page#'."
-			);
-		}
-
-		return ((page-1) * pageSize) + pageOffset;
 	}
 
 	private void function _throw(
@@ -534,100 +470,23 @@ component {
 		throw( type=arguments.type, message=arguments.message, detail=arguments.detail, errorcode=arguments.errorCode );
 	}
 
-	private struct function _generateHighlightsDsl( required string highlightFields, string highlightEncoder="default" ) {
-		var highlights = StructNew();
-		var i          = "";
-		var field      = "";
-
-		highlights.fields      = StructNew();
-		highlights.tags_schema = "styled";
-		highlights.encoder     = arguments.highlightEncoder;
-
-		for( i=1; i lte ListLen( arguments.highlightFields ); i=i+1 ){
-			field = ListGetAt( arguments.highlightFields, i );
-			highlights.fields[field] = StructNew();
-		}
-
-		return highlights;
-	}
-
-	private array function _generateBasicFilter ( required struct filters ) {
-		var filter     = ArrayNew();
-		var fields     = StructKeyArray( arguments.filters );
-		var i          = 0;
-		var termFilter = "";
-
-		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
-			termFilter = StructNew();
-			if ( IsArray( arguments.filters[ fields[i] ] ) ) {
-				termFilter['terms'] = StructNew();
-				termFilter['terms'][fields[i]] = arguments.filters[ fields[i] ];
-			} else if ( IsSimpleValue( arguments.filters[ fields[i] ] ) ) {
-				if ( Len( Trim( arguments.filters[ fields[i] ] ) ) ) {
-					termFilter['term'] = StructNew();
-					termFilter['term'][fields[i]] = arguments.filters[ fields[i] ];
-				} else {
-					termFilter['exists'] = StructNew();
-					termFilter['exists']['field'] = fields[i];
-				}
-			}
-			ArrayAppend( filter, termFilter );
-		}
-
-		return filter;
-	}
-
-	private array function _generateDirectFilter( required struct filters ) {
-		var filter     = ArrayNew();
-		var fields     = StructKeyArray( arguments.filters );
-		var i          = 0;
-		var directFilter = "";
-
-		for( i=1; i lte ArrayLen( fields ); i=i+1 ){
-			directFilter = StructNew();
-
-			if ( Len( Trim( arguments.filters[ fields[i] ] ) ) ) {
-				directFilter[fields[i]] = StructNew();
-				directFilter[fields[i]]['value'] = arguments.filters[ fields[i] ];
-			}
-
-			ArrayAppend( filter, directFilter );
-		}
-
-		return filter;
-	}
-
-	private array function _generateSortOrder( required string sortorder ) {
-		var so = ListToArray( arguments.sortOrder );
-		var field = "";
-		var fieldName = "";
-		var order = "";
-		var i = 0;
-
-		for( i=1; i lte ArrayLen( so ); i=i+1 ){
-			field = StructNew();
-			fieldName = ListFirst( so[i], ' ' );
-
-			field[ fieldName ] = StructNew();
-			if ( ListLen( so[i], ' ' ) eq 1 ) {
-				field[ fieldName ][ 'order' ] = 'asc';
-			} else {
-				order = Trim( ListGetAt( so[i], 2, ' ') );
-				field[ fieldName ][ 'order' ] = iif( order eq 'desc', DE('desc'), DE('asc') );
-			}
-
-			so[i] = field;
-		}
-
-		return so;
-	}
-
 // GETTERS AND SETTERS
 	private any function _getSystemConfigurationService() {
 		return _systemConfigurationService;
 	}
 	private void function _setSystemConfigurationService( required any systemConfigurationService ) {
 		_systemConfigurationService = arguments.systemConfigurationService;
+	}
+
+	private any function _getDialectFactory() {
+		return _dialectFactory;
+	}
+	private void function _setDialectFactory( required any dialectFactory ) {
+		_dialectFactory = arguments.dialectFactory;
+	}
+
+	private any function _getDialect() {
+		return _getDialectFactory().getDialect();
 	}
 
 	private array function _getEndpoint() {

@@ -4,7 +4,7 @@
     "location":"$DOWNLOAD_URL",
     "author":"Pixl8 Interactive",
     "directory":"application/extensions",
-    "homepage":"",
+    "homepage":"https://github.com/pixl8/preside-ext-elasticsearch",
     "documentation":"https://.github.com/pixl8/preside-ext-elasticsearch",
     "repository":{
         "type":"git",
@@ -12,7 +12,7 @@
     },
     "slug":"preside-ext-elasticsearch",
     "type":"preside-extensions",
-    "projectURL":"",
+    "projectURL":"https://github.com/pixl8/preside-ext-elasticsearch",
     "ignore":[
         ".git/*",
         ".gitignore",

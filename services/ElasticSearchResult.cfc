@@ -1,4 +1,4 @@
-component output=false {
+component {
 
 	variables._result              = {};
 	variables._result.results      = QueryNew('');
@@ -26,26 +26,26 @@ component output=false {
 		, struct  facets       = {}
 		, struct  aggregations = {}
 		, struct  suggestions  = {}
-	) output=false {
-		_result.append( arguments );
+	) {
+		StructAppend( _result, arguments );
 
 		return this;
 	}
 
 // PUBLIC API METHODS
-	public query function getResults() output=false {
+	public query function getResults() {
 		return _result.results;
 	}
 
-	public struct function getSuggestion() output=false {
+	public struct function getSuggestion() {
 		return _result.suggestions;
 	}
 
-	public numeric function getTimeTaken() output=false {
+	public numeric function getTimeTaken() {
 		return _result.timetaken;
 	}
 
-	public numeric function getPage() output=false {
+	public numeric function getPage() {
 		if ( getTotalResults() ) {
 			return _result.page;
 		}
@@ -53,72 +53,72 @@ component output=false {
 		return 0;
 	}
 
-	public numeric function getPageSize() output=false {
+	public numeric function getPageSize() {
 		return _result.pageSize;
 	}
 
-	public numeric function getTotalResults() output=false {
+	public numeric function getTotalResults() {
 		return _result.totalResults;
 	}
 
-	public boolean function getSuccess() output=false {
+	public boolean function getSuccess() {
 		return _result.success;
 	}
 
-	public string function getError() output=false {
+	public string function getError() {
 		return _result.error;
 	}
 
-	public string function getSortBy() output=false {
+	public string function getSortBy() {
 		return _result.sortBy;
 	}
 
-	public struct function getFacets() output=false {
+	public struct function getFacets() {
 		return _result.facets;
 	}
 
-	public struct function getAggregations() output=false {
+	public struct function getAggregations() {
 		return _result.aggregations;
 	}
 
-	public numeric function getTotalPages() output=false {
+	public numeric function getTotalPages() {
 		return Ceiling( getTotalResults() / getPageSize() );
 	}
 
-	public boolean function hasNextPage() output=false {
-		return getPage() LT getTotalPages();
+	public boolean function hasNextPage() {
+		return getPage() < getTotalPages();
 	}
 
-	public boolean function hasPreviousPage() output=false {
-		return getPage() GT 1;
+	public boolean function hasPreviousPage() {
+		return getPage() > 1;
 	}
 
-	public numeric function getNextPage() output=false {
+	public numeric function getNextPage() {
 		return getPage() + 1;
 	}
 
-	public numeric function getPreviousPage() output=false {
+	public numeric function getPreviousPage() {
 		return getPage() - 1;
 	}
 
-	public numeric function getStartRow() output=false {
+	public numeric function getStartRow() {
 		return ( ( getPage() - 1 ) * getPageSize() ) + 1;
 	}
 
-	public numeric function getFirstPage( numeric offset=0 ) output=false {
+	public numeric function getFirstPage( numeric offset=0 ) {
 		var offsetPage = 1;
 		var minPage = 1;
 		var maxPage = getTotalPages() - ( arguments.offset * 2 );
 
-		if ( maxPage lt minPage ) {
+		if ( maxPage < minPage ) {
 			maxPage = minPage;
 		}
 
 		if ( arguments.offset ) {
 			offsetPage = getPage() - arguments.offset;
-			if ( offsetPage GT maxPage ) {
+			if ( offsetPage > maxPage ) {
 				offsetPage = maxPage;
-			} else if ( offsetPage LT minPage ) {
+			} else if ( offsetPage < minPage ) {
 				offsetPage = minPage;
 			}
 		}
@@ -126,23 +126,23 @@ component output=false {
 		return offsetPage;
 	}
 
-	public numeric function getLastPage( numeric offset=0 ) output=false {
+	public numeric function getLastPage( numeric offset=0 ) {
 		var offsetPage = 1;
 		var total   = getTotalPages();
 		var minPage = (offset * 2) + 1;
 		var maxPage = total;
 
-		if ( minPage lt 1 ){
+		if ( minPage < 1 ){
 			minPage = 1;
-		} else if ( minPage gt maxPage ) {
+		} else if ( minPage > maxPage ) {
 			minPage = maxPage;
 		}
 
 		if ( arguments.offset ) {
 			offsetPage = getPage() + arguments.offset;
-			if ( offsetPage GT maxPage ) {
+			if ( offsetPage > maxPage ) {
 				offsetPage = maxPage;
-			} else if ( offsetPage LT minPage ) {
+			} else if ( offsetPage < minPage ) {
 				offsetPage = minPage;
 			}
 		}
@@ -150,17 +150,17 @@ component output=false {
 		return offsetPage;
 	}
 
-	public numeric function getEndRow() output=false {
+	public numeric function getEndRow() {
 		var endRow = ( getStartRow() + getPageSize() ) - 1;
 
-		if ( endRow gt getTotalResults() ) {
+		if ( endRow > getTotalResults() ) {
 			endRow = getTotalResults();
 		}
 
 		return endRow;
 	}
 
-	public struct function getMemento() output=false {
+	public struct function getMemento() {
 		var memento = _result;
 
 		memento.totalPages      = getTotalPages();

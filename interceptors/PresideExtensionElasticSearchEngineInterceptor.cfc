@@ -78,7 +78,7 @@ component extends="coldbox.system.Interceptor" {
 				, recordId   = id
 			);
 			var reindexChildPage = systemConfigurationService.getSetting( "elasticsearch", "reindex_child_pages_on_edit", true )
-			if( isBoolean( reindexChildPage ?: "" ) && reindexChildPage ){
+			if( IsBoolean( reindexChildPage ?: "" ) && reindexChildPage ){
 				if ( _inThread() ) {
 					_getSearchEngine().reindexChildPages( objectName, id, interceptData.data ?: {} );
 				} else {
