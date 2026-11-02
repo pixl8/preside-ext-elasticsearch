@@ -957,6 +957,7 @@ component extends="testbox.system.BaseSpec" {
 		engine.$( "_getStatusDao"                 , mockStatusDao                  );
 		engine.$( "_getSystemConfigurationService", mockSystemConfigurationService );
 		engine.$( "_getTenancyService"            , mockTenancyService             );
+		engine.$( "$isFeatureEnabled" ).$args( "sites" ).$results( true );
 
 		engine.$( "$getColdbox"                   , mockColdbox                    );
 		mockColdbox.$( "getRequestContext"        , mockRequestContext             );
