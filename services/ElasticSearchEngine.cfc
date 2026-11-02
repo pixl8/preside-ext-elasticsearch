@@ -167,13 +167,13 @@ component {
 			var uniqueIndexName = createIndex( arguments.indexName );
 			var objects         = _getConfigurationReader().listObjectsForIndex( arguments.indexName );
 			var indexingSuccess = true;
-
 			var event           = $getColdbox().getRequestContext();
-			var originalSite    = event.getSite();
-			var sites           = _getSiteService().listSites();
+			var sitesEnabled    = $isFeatureEnabled( "sites" );
+			var originalSite    = sitesEnabled ? event.getSite()               : "";
+			var sites           = sitesEnabled ? _getSiteService().listSites() : QueryNew( "" );
 
 			for( var objectName in objects ) {
-				if( _isPageType( objectName ) || _objectIsUsingSiteTenancy( objectName ) ) {
+				if( sitesEnabled && ( _isPageType( objectName ) || _objectIsUsingSiteTenancy( objectName ) ) ) {
 					for( var site in sites ) {
 						event.setSite( site );
 
@@ -197,7 +197,9 @@ component {
 				}
 			}
 
-			event.setSite( originalSite );
+			if ( sitesEnabled ) {
+				event.setSite( originalSite );
+			}
 
 			if ( indexingSuccess ) {
 				_createAlias( index=uniqueIndexName, alias=arguments.indexName );

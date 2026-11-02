@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.35
+
+* Compatability for admin-only applications running latest Preside (stop errors with referencing site tenancy)
+
 ## v1.1.34
 
 * Improve timeout functionality
