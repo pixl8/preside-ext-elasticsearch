@@ -1,6 +1,6 @@
 # ElasticSearch extension for Preside
 
-This is an extension for the Preside Platform that provides APIs and a methodolgy for integrating full-text search with ElasticSearch.
+This is an extension for the Preside Platform that provides APIs and a methodology for integrating full-text search with ElasticSearch.
 
 ## Installation
 
@@ -24,7 +24,7 @@ or in your application's `Config.cfc`:
 settings.elasticSearchConfig.engineVersion = "1.7";
 ```
 
-The default is `6.3`. Currently supported versions:
+The default is `6.3`, although we recommend the version be explicitly set, to avoid potential upgrade issues. Currently supported versions:
 
 | Version | Dialect | Notes |
 |---------|---------|-------|
@@ -61,7 +61,6 @@ Documentation is a work in progress. For now, we intend to use the [Github Wiki]
 ## Versioning
 
 We use [SemVer](https://semver.org) for versioning. As of **7.0**, the extension is universal and covers multiple versions of ElasticSearch.
-
 For the versions available, see the [tags on this repository](https://github.com/pixl8/preside-ext-elasticsearch/releases). Project releases can also be found and installed from [Forgebox](https://forgebox.io/view/preside-ext-elasticsearch)
 
 ## License
