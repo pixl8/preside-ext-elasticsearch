@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.37
+
+* [PXESEARCH-30](https://projects.pixl8.london/browse/PXESEARCH-30) - Configurable index page size patched incorrectly
+
 ## v1.1.35
 
 * Compatability for admin-only applications running latest Preside (stop errors with referencing site tenancy)
