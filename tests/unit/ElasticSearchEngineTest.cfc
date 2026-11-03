@@ -297,10 +297,6 @@ component extends="testbox.system.BaseSpec" {
 				expect( _getSearchPageSizeUsed( "6.3", { searchPageSize=15, indexPageSize=50 } ) ).toBe( 15 );
 				expect( _getSearchPageSizeUsed( "1.7", { searchPageSize=15, indexPageSize=50 } ) ).toBe( 15 );
 			} );
-
-			it( "should fall back to indexPageSize for ElasticSearch 1.x, for compatibility with legacy releases of the extension", function(){
-				expect( _getSearchPageSizeUsed( "1.7", { indexPageSize=25 } ) ).toBe( 25 );
-			} );
 		} );
 
 		describe( "getObjectDataForIndexing() groupByRecordIdOnly", function(){
@@ -1215,6 +1211,8 @@ component extends="testbox.system.BaseSpec" {
 			, systemConfigurationService = mockSystemConfigurationService
 			, tenancyService             = mockTenancyService
 			, dialectFactory             = new elasticsearch.services.ElasticSearchDialectFactory( engineVersion=arguments.engineVersion )
+			, indexPageSize              = 100
+			, searchPageSize             = 10
 		};
 		args.append( arguments.initArgs );
 

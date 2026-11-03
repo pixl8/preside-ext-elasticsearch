@@ -69,9 +69,8 @@ component {
 		esConfig.dialects[ "1.7" ]   = esConfig.dialects[ "1.7" ]   ?: "Es1Dialect";
 		esConfig.dialects[ "6.3" ]   = esConfig.dialects[ "6.3" ]   ?: "Es6Dialect";
 
-		// empty values here mean "use the default" (see ElasticSearchEngine)
-		esConfig.indexPageSize       = esConfig.indexPageSize       ?: "";
-		esConfig.searchPageSize      = esConfig.searchPageSize      ?: "";
+		esConfig.indexPageSize       = esConfig.indexPageSize       ?: 100;
+		esConfig.searchPageSize      = esConfig.searchPageSize      ?: 10;
 		esConfig.groupByRecordIdOnly = esConfig.groupByRecordIdOnly ?: false;
 		esConfig.indexExpiryUnit     = esConfig.indexExpiryUnit     ?: "d";
 		esConfig.indexExpiryMeasure  = esConfig.indexExpiryMeasure  ?: 1;
