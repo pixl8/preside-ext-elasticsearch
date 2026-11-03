@@ -987,6 +987,7 @@ component extends="testbox.system.BaseSpec" {
 			, statusDao                  = mockStatusDao
 			, systemConfigurationService = mockSystemConfigurationService
 			, tenancyService             = mockTenancyService
+			, indexPageSize              = 100
 		);
 	}
 

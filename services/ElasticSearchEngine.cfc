@@ -55,7 +55,7 @@ component {
 		, string  queryFields     = ""
 		, string  sortOrder       = ""
 		, numeric page            = 1
-		, numeric pageSize        = _getIndexPageSize()
+		, numeric pageSize        = 10
 		, string  defaultOperator = "OR"
 		, string  highlightFields = ""
 		, numeric minimumScore    = 0
@@ -376,7 +376,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = 100;
+			var pageSize  = _getIndexPageSize();
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
