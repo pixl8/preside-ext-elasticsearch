@@ -57,7 +57,7 @@ component {
 		, string  queryFields      = ""
 		, string  sortOrder        = ""
 		, numeric page             = 1
-		, numeric pageSize         = _getDefaultSearchPageSize()
+		, numeric pageSize         = _getSearchPageSize()
 		, string  defaultOperator  = "OR"
 		, string  highlightFields  = ""
 		, string  highlightEncoder = ""
@@ -380,7 +380,7 @@ component {
 			var esApi     = _getApiWrapper();
 			var records   = [];
 			var page      = 0;
-			var pageSize  = _getIndexingPageSize();
+			var pageSize  = _getIndexPageSize();
 			var total     = 0;
 			var haveLogger = StructKeyExists( arguments, "logger" );
 			var canDebug   = haveLogger && arguments.logger.canDebug();
@@ -1194,28 +1194,6 @@ component {
 	}
 	private void function _setSearchPageSize( required any searchPageSize ) {
 		_searchPageSize = arguments.searchPageSize;
-	}
-
-	private numeric function _getIndexingPageSize() {
-		var indexPageSize = _getIndexPageSize();
-
-		return IsNumeric( indexPageSize ) && indexPageSize > 0 ? indexPageSize : 100;
-	}
-
-	private numeric function _getDefaultSearchPageSize() {
-		var searchPageSize = _getSearchPageSize();
-		var indexPageSize  = _getIndexPageSize();
-
-		if ( IsNumeric( searchPageSize ) && searchPageSize > 0 ) {
-			return searchPageSize;
-		}
-
-		// ElasticSearch 1.x releases of this extension used indexPageSize as the default search page size
-		if ( _getDialect().getMajorVersion() < 6 && IsNumeric( indexPageSize ) && indexPageSize > 0 ) {
-			return indexPageSize;
-		}
-
-		return 10;
 	}
 
 	private boolean function _getGroupByRecordIdOnly() {

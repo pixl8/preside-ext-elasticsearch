@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.0.1
+
+* [PXESEARCH-30](https://projects.pixl8.london/browse/PXESEARCH-30) - Fix incorrect index page sizing from v1.x
+
 ## v7.0.0
 
 * Combines the 1.x (ElasticSearch 1.7) and 6.x (ElasticSearch 6.3) releases into a single release

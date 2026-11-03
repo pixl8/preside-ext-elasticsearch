@@ -48,7 +48,7 @@ Everything that differs between engine versions lives in a "dialect" component i
 | Setting (`settings.elasticSearchConfig.*`) | Default | Description |
 |---|---|---|
 | `indexPageSize` | `100` | Number of records sent to ElasticSearch in each batch when rebuilding an index. |
-| `searchPageSize` | `10` | Default page size for `search()`. On ElasticSearch 1.x this falls back to `indexPageSize`, if that is set, for compatibility with the 1.x releases of this extension. |
+| `searchPageSize` | `10` | Default page size for `search()`. |
 | `groupByRecordIdOnly` | `false` | Group by the record ID instead of using Preside's `autoGroupBy` when fetching records for indexing. |
 | `indexExpiryUnit` / `indexExpiryMeasure` | `d` / `1` | How long an index rebuild can run before it is considered to have timed out. |
 
